@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+{% block title %}Operatsiya xizmatlari statistikasi{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3>🔪 Operatsiya xizmatlari statistikasi</h3>
+        <div class="text-muted small">Faqat <code>is_operation=True</code> belgilangan xizmatlar</div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'export_operation_service_excel' %}?{{ current_filters }}" class="btn btn-success btn-sm">📥 Excel</a>
+        <a href="{% url 'operation_statistics' %}" class="btn btn-outline-secondary btn-sm">🔪 SurgicalOperation stat.</a>
+    </div>
+</div>
+
+<!-- Filterlar -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">Boshlanish</label>
+                    <input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">Tugash</label>
+                    <input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">Kategoriya</label>
+                    <select name="category" class="form-select form-select-sm">
+                        <option value="">Barchasi</option>
+                        {% for cat in op_categories %}
+                        <option value="{{ cat.pk }}" {% if selected_category == cat.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ cat.icon }} {{ cat.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">Operatsiya</label>
+                    <select name="service" class="form-select form-select-sm">
+                        <option value="">Barchasi</option>
+                        {% for svc in op_services %}
+                        <option value="{{ svc.pk }}" {% if selected_service == svc.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ svc.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">Bemor turi</label>
+                    <select name="patient_category" class="form-select form-select-sm">
+                        <option value="">Barchasi</option>
+                        <option value="railway"      {% if selected_patient_cat == 'railway'      %}selected{% endif %}>🚂 Temir yo'lchi</option>
+                        <option value="paid"         {% if selected_patient_cat == 'paid'         %}selected{% endif %}>💳 Pullik</option>
+                        <option value="non_resident" {% if selected_patient_cat == 'non_resident' %}selected{% endif %}>🌍 Norezident</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex gap-1">
+                    <button type="submit" class="btn btn-primary btn-sm flex-fill">🔍 Filter</button>
+                    <a href="{% url 'operation_service_statistics' %}" class="btn btn-outline-secondary btn-sm">✕</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Umumiy ko'rsatkichlar -->
+<div class="row g-3 mb-4">
+    <div class="col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="h3 fw-bold text-primary mb-1">{{ totals.total_count|default:0 }}</div>
+            <div class="small text-muted">Jami operatsiyalar</div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="h3 fw-bold text-info mb-1">{{ totals.patients|default:0 }}</div>
+            <div class="small text-muted">Bemorlar</div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3" style="border-left:3px solid #0d6efd!important">
+            <div class="h4 fw-bold text-primary mb-1">{{ totals.railway_count|default:0 }}</div>
+            <div class="small text-muted">🚂 Temir yo'lchi</div>
+            <div class="small fw-semibold text-primary">{{ totals.railway_sum|floatformat:0|default:0 }} so'm</div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3" style="border-left:3px solid #198754!important">
+            <div class="h4 fw-bold text-success mb-1">{{ totals.paid_count|default:0 }}</div>
+            <div class="small text-muted">💳 Pullik</div>
+            <div class="small fw-semibold text-success">{{ totals.paid_sum|floatformat:0|default:0 }} so'm</div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3" style="border-left:3px solid #dc3545!important">
+            <div class="h4 fw-bold text-danger mb-1">{{ totals.nonresident_count|default:0 }}</div>
+            <div class="small text-muted">🌍 Norezident</div>
+            <div class="small fw-semibold text-danger">{{ totals.nonresident_sum|floatformat:0|default:0 }} so'm</div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3" style="background:#145a32;">
+            <div class="h4 fw-bold text-white mb-1">{{ totals.total_sum|floatformat:0|default:0 }}</div>
+            <div class="small text-white opacity-75">Umumiy daromad (so'm)</div>
+        </div>
+    </div>
+</div>
+
+<!-- Kategoriya bo'yicha qisqacha -->
+{% if cat_stats %}
+<div class="d-flex flex-wrap gap-2 mb-3">
+    {% for cat in cat_stats %}
+    <div class="card border-0 shadow-sm px-3 py-2 d-flex flex-row align-items-center gap-2">
+        <span class="fs-5">{{ cat.service__category__icon|default:"🔪" }}</span>
+        <div>
+            <div class="small fw-semibold">{{ cat.service__category__name }}</div>
+            <div class="small text-muted">{{ cat.count }} ta &mdash; {{ cat.total|floatformat:0 }} so'm</div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Trend grafigi -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white"><strong>📈 Oylik dinamika</strong></div>
+    <div class="card-body">
+        <canvas id="trendChart" height="70"></canvas>
+    </div>
+</div>
+
+<!-- Batafsil jadval -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white d-flex justify-content-between">
+        <strong>🔪 Har bir operatsiya bo'yicha</strong>
+        <span class="badge bg-primary">{{ op_stats|length }} tur</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3" style="width:40px">№</th>
+                    <th>Operatsiya nomi</th>
+                    <th>Kategoriya</th>
+                    <th class="text-center">Jami<br><small>soni</small></th>
+                    <th class="text-center">Bemorlar</th>
+                    <th class="text-center text-primary">🚂 TY<br><small>soni</small></th>
+                    <th class="text-end text-primary">TY<br><small>summa</small></th>
+                    <th class="text-center text-success">💳 Pullik<br><small>soni</small></th>
+                    <th class="text-end text-success">Pullik<br><small>summa</small></th>
+                    <th class="text-center text-danger">🌍 Nores.<br><small>soni</small></th>
+                    <th class="text-end text-danger pe-3">Nores.<br><small>summa</small></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for op in op_stats %}
+                <tr>
+                    <td class="ps-3 text-muted">{{ forloop.counter }}</td>
+                    <td>
+                        <span class="fw-semibold small">{{ op.service__name }}</span>
+                        {% if op.service__code %}<br><span class="badge bg-light text-dark border small">{{ op.service__code }}</span>{% endif %}
+                    </td>
+                    <td class="small text-muted">{{ op.service__category__icon|default:"🔪" }} {{ op.service__category__name }}</td>
+                    <td class="text-center"><span class="badge bg-primary rounded-pill">{{ op.total_count }}</span></td>
+                    <td class="text-center"><span class="badge bg-secondary rounded-pill">{{ op.patients }}</span></td>
+                    <td class="text-center">
+                        {% if op.railway_count %}<span class="badge bg-primary bg-opacity-25 text-primary">{{ op.railway_count }}</span>{% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    <td class="text-end small">
+                        {% if op.railway_sum %}{{ op.railway_sum|floatformat:0 }}{% else %}—{% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if op.paid_count %}<span class="badge bg-success bg-opacity-25 text-success">{{ op.paid_count }}</span>{% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    <td class="text-end small">
+                        {% if op.paid_sum %}{{ op.paid_sum|floatformat:0 }}{% else %}—{% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if op.nonresident_count %}<span class="badge bg-danger bg-opacity-25 text-danger">{{ op.nonresident_count }}</span>{% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    <td class="text-end pe-3 small">
+                        {% if op.nonresident_sum %}{{ op.nonresident_sum|floatformat:0 }}{% else %}—{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="11" class="text-center text-muted py-5">
+                    Ma'lumot topilmadi.<br>
+                    <small>Avval xizmatlarni Admin panelda <strong>is_operation=True</strong> qilib belgilang.</small>
+                </td></tr>
+                {% endfor %}
+            </tbody>
+            {% if totals.total_count %}
+            <tfoot class="table-light fw-bold">
+                <tr>
+                    <td colspan="3" class="ps-3">JAMI:</td>
+                    <td class="text-center">{{ totals.total_count }}</td>
+                    <td class="text-center">{{ totals.patients }}</td>
+                    <td class="text-center text-primary">{{ totals.railway_count }}</td>
+                    <td class="text-end text-primary">{{ totals.railway_sum|floatformat:0|default:0 }}</td>
+                    <td class="text-center text-success">{{ totals.paid_count }}</td>
+                    <td class="text-end text-success">{{ totals.paid_sum|floatformat:0|default:0 }}</td>
+                    <td class="text-center text-danger">{{ totals.nonresident_count }}</td>
+                    <td class="text-end pe-3 text-danger">{{ totals.nonresident_sum|floatformat:0|default:0 }}</td>
+                </tr>
+                <tr style="background:#145a32; color:#fff;">
+                    <td colspan="10" class="ps-3 py-2">UMUMIY DAROMAD:</td>
+                    <td class="text-end pe-3 py-2 fs-6">{{ totals.total_sum|floatformat:0|default:0 }} so'm</td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+var labels = {{ trend_labels|safe }};
+var counts = {{ trend_counts|safe }};
+var sums   = {{ trend_sums|safe }};
+
+new Chart(document.getElementById('trendChart'), {
+    type: 'bar',
+    data: {
+        labels: labels,
+        datasets: [
+            {
+                label: 'Operatsiyalar soni',
+                data: counts,
+                backgroundColor: 'rgba(13,110,253,0.7)',
+                borderRadius: 4,
+                yAxisID: 'y1',
+            },
+            {
+                label: "Daromad (so'm)",
+                data: sums,
+                type: 'line',
+                borderColor: '#198754',
+                backgroundColor: 'rgba(25,135,84,0.1)',
+                tension: 0.3,
+                yAxisID: 'y2',
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: function(c) {
+                        if (c.dataset.yAxisID === 'y2')
+                            return c.dataset.label + ': ' + c.parsed.y.toLocaleString() + " so'm";
+                        return c.dataset.label + ': ' + c.parsed.y + ' ta';
+                    }
+                }
+            }
+        },
+        scales: {
+            y1: { beginAtZero: true, position: 'left', ticks: { stepSize: 1 } },
+            y2: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false },
+                  ticks: { callback: v => v.toLocaleString() } }
+        }
+    }
+});
+</script>
+{% endblock %}

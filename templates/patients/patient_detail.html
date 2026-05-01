@@ -1,0 +1,618 @@
+<!-- templates/patients/patient_detail.html -->
+{% extends 'base.html' %}
+{% block title %}{{ patient.full_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3>📋 Bemor kartasi</h3>
+    <div class="d-flex gap-2">
+        {% if patient.contract %}
+              <a href="{% url 'download_contract' patient.contract.pk %}" target="_blank">
+                 📄 Shartnoma (PDF)
+              </a>
+            {% endif %}
+        <a href="{% url 'patient_services' patient.pk %}" class="btn btn-info">
+            🏥 Xizmatlar
+            {% with cnt=patient.patient_services.count %}
+                {% if cnt %}<span class="badge bg-white text-dark">{{ cnt }}</span>{% endif %}
+            {% endwith %}
+        </a>
+        <a href="{% url 'patient_edit' patient.pk %}" class="btn btn-warning">✏️ Tahrirlash</a>
+        <a href="{% url 'patient_list' %}" class="btn btn-secondary">← Ro'yxatga</a>
+        <a href="{% url 'patient_card_pdf' patient.pk %}" class="btn btn-danger">📄 PDF</a>
+        <a href="{% url 'patient_card_excel' patient.pk %}" class="btn btn-success">📥 Excel</a>
+        <a href="{% url 'patient_invoice' patient.pk %}" class="btn btn-outline-primary">🧾 Hisob-faktura</a>
+    </div>
+</div>
+
+<!-- 1. Bemor ma'lumotlari -->
+<div class="card mb-3">
+    <div class="card-header bg-primary text-white">
+        <strong>👤 Bemor ma'lumotlari</strong>
+        <span class="badge bg-light text-dark ms-2">{{ patient.medical_record_number }}</span>
+        <span class="badge {% if patient.resident_status == 'resident' %}bg-success{% else %}bg-warning text-dark{% endif %} ms-1">
+            {{ patient.get_resident_status_display }}
+        </span>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <strong>Ism-familiya:</strong><br>
+                {{ patient.full_name }}
+            </div>
+            <div class="col-md-2">
+                <strong>Jinsi:</strong><br>
+                {{ patient.get_gender_display }}
+            </div>
+            <div class="col-md-2">
+                <strong>Tug'ilgan sana:</strong><br>
+                {{ patient.birth_date|date:"d.m.Y" }}
+            </div>
+            <div class="col-md-2">
+                <strong>Ijtimoiy holat:</strong><br>
+                {{ patient.get_social_status_display }}
+                {% if patient.social_status == 'dependent' and patient.parent_name %}
+                <div class="mt-1 p-2 bg-light rounded border small">
+                    👨‍👩‍👦 <strong>Ota-ona:</strong> {{ patient.parent_name }}
+                    {% if patient.parent_jshshir %}<br>JSHSHIR: {{ patient.parent_jshshir }}{% endif %}
+                    {% if patient.parent_workplace_org %}<br>Ish joyi: {{ patient.parent_workplace_org }}{% endif %}
+                </div>
+                {% endif %}
+            </div>
+            {% if patient.resident_status == 'resident' %}
+            <div class="col-md-3">
+                <strong>Passport:</strong><br>
+                {{ patient.passport_serial|default:"—" }}
+            </div>
+            {% endif %}
+
+            {% if patient.resident_status == 'resident' %}
+            <div class="col-md-12 mt-2">
+                <strong>Manzil:</strong>
+                {% if patient.country %}{{ patient.country }}, {% endif %}
+                {% if patient.region %}{{ patient.region }}, {% endif %}
+                {% if patient.district %}{{ patient.district }}, {% endif %}
+                {% if patient.city %}{{ patient.city }}, {% endif %}
+                {{ patient.street_address|default:"" }}
+            </div>
+            {% else %}
+            <div class="col-md-12 mt-2">
+                <span class="badge bg-warning text-dark">Norezident — manzil ko'rsatilmagan</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- 2. Qabul ma'lumotlari -->
+<div class="card mb-3">
+    <div class="card-header bg-info text-white">
+        <strong>🏥 Qabul ma'lumotlari</strong>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <strong>Kim olib kelgan:</strong><br>
+                {{ patient.get_referral_type_display }}
+            </div>
+            {% if patient.referral_organization %}
+            <div class="col-md-4">
+                <strong>Yo'llagan muassasa:</strong><br>
+                {{ patient.referral_organization }}
+            </div>
+            {% endif %}
+            <div class="col-md-3">
+                <strong>Yotqizilgan sana:</strong><br>
+                {{ patient.admission_date|date:"d.m.Y H:i" }}
+            </div>
+            <div class="col-md-2">
+                <strong>Bo'lim:</strong><br>
+                {{ patient.department|default:"—" }}
+            </div>
+            <div class="col-md-2">
+                <strong>Tashrif turi:</strong><br>
+                {% if patient.visit_type == 'ambulatory' %}
+                <span class="badge" style="background:#6f42c1;font-size:13px;">🚶 Ambulator</span>
+                {% else %}
+                <span class="badge bg-info text-dark" style="font-size:13px;">🏥 Statsionar</span>
+                {% endif %}
+            </div>
+
+            <div class="col-md-4 mt-2">
+                <strong>Yo'llagan muassasa tashxisi:</strong><br>
+                {{ patient.referring_diagnosis|default:"—" }}
+            </div>
+            <div class="col-md-4 mt-2">
+                <strong>Qabul bo'limi tashxisi:</strong><br>
+                {{ patient.admission_diagnosis|default:"—" }}
+            </div>
+            <div class="col-md-4 mt-2">
+                <strong>Kasallanishdan keyin:</strong><br>
+                {{ patient.get_hours_after_illness_display }}
+            </div>
+
+            <div class="col-md-3 mt-2">
+                <strong>Shoshilinch:</strong><br>
+                <span class="badge {% if patient.is_emergency %}bg-danger{% else %}bg-secondary{% endif %}">
+                    {% if patient.is_emergency %}Ha{% else %}Yo'q{% endif %}
+                </span>
+            </div>
+            <div class="col-md-3 mt-2">
+                <strong>Pullik:</strong><br>
+                <span class="badge {% if patient.is_paid %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                    {% if patient.is_paid %}Ha{% else %}Yo'q{% endif %}
+                </span>
+            </div>
+            <div class="col-md-3 mt-2">
+                <strong>Yotqizilish:</strong><br>
+                <span class="badge bg-info text-dark">
+                    {{ patient.get_admission_count_display }}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 3. Chiqish ma'lumotlari -->
+<div class="card mb-3">
+    <div class="card-header bg-secondary text-white">
+        <strong>📤 Chiqish ma'lumotlari</strong>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <strong>Yakun:</strong><br>
+                <span class="badge fs-6
+                    {% if patient.outcome == 'discharged' %}bg-success
+                    {% elif patient.outcome == 'deceased' %}bg-danger
+                    {% else %}bg-warning text-dark{% endif %}">
+                    {{ patient.get_outcome_display }}
+                </span>
+            </div>
+            <div class="col-md-3">
+                <strong>Chiqish xulosasi:</strong><br>
+                {% if patient.discharge_conclusion %}
+                    <span class="badge bg-primary fs-6">
+                        {{ patient.discharge_conclusion }}
+                    </span>
+                {% else %}
+                    —
+                {% endif %}
+            </div>
+            <div class="col-md-3">
+                <strong>Chiqgan sana:</strong><br>
+                {{ patient.discharge_date|date:"d.m.Y H:i"|default:"—" }}
+            </div>
+            <div class="col-md-3">
+                <strong>Yotgan kunlar:</strong><br>
+                {{ patient.days_in_hospital }} kun
+            </div>
+            <div class="col-md-3 mt-2">
+                <strong>Urush qatnashchisi:</strong><br>
+                <span class="badge {% if patient.is_war_veteran %}bg-danger{% else %}bg-secondary{% endif %}">
+                    {% if patient.is_war_veteran %}Ha{% else %}Yo'q{% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 4. Yakuniy tashxis -->
+<div class="card mb-3">
+    <div class="card-header bg-dark text-white">
+        <strong>🔬 Yakuniy tashxis</strong>
+    </div>
+    <div class="card-body">
+        <table class="table table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th></th>
+                    <th>Asosiy tashxis (MKB-10)</th>
+                    <th>Yo'ldosh kasalliklar</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Klinik</strong></td>
+                    <td>
+                        {% if patient.clinical_main_diagnosis %}
+                            <span class="badge bg-primary">{{ patient.clinical_main_diagnosis }}</span>
+                            {{ patient.clinical_main_diagnosis_text }}
+                        {% else %}—{% endif %}
+                    </td>
+                    <td>{{ patient.clinical_comorbidities|default:"—" }}</td>
+                </tr>
+                {% if patient.outcome == 'deceased' %}
+                <tr>
+                    <td><strong>Patologoanatomik</strong></td>
+                    <td>
+                        {% if patient.pathological_main_diagnosis %}
+                            <span class="badge bg-danger">{{ patient.pathological_main_diagnosis }}</span>
+                            {{ patient.pathological_main_diagnosis_text }}
+                        {% else %}—{% endif %}
+                    </td>
+                    <td>{{ patient.pathological_comorbidities|default:"—" }}</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 5. O'lim sababi -->
+{% if death_cause %}
+<div class="card mb-3 border-danger">
+    <div class="card-header bg-danger text-white">
+        <strong>💀 O'lim sababi</strong>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-12 mb-2">
+                <strong>a) O'limga olib kelgan bevosita sabab:</strong><br>
+                {{ death_cause.immediate_cause }}
+            </div>
+            <div class="col-md-12 mb-2">
+                <strong>b) O'lim sababini bevosita chaqiruvchi kasallik:</strong><br>
+                {{ death_cause.underlying_cause }}
+            </div>
+            <div class="col-md-4 mb-2">
+                <strong>v) Asosiy kasallik kodi:</strong><br>
+                <span class="badge bg-danger fs-6">{{ death_cause.main_disease_code }}</span>
+            </div>
+            {% if death_cause.other_significant_conditions %}
+            <div class="col-md-12">
+                <strong>Bog'liq bo'lmagan boshqa muhim kasalliklar:</strong><br>
+                {{ death_cause.other_significant_conditions }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 6. Jarrohlik amaliyotlari -->
+<div class="card mb-3">
+    <div class="card-header bg-warning text-dark">
+        <strong>🔪 Jarrohlik amaliyotlari</strong>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>№</th>
+                    <th>Sana</th>
+                    <th>Amaliyot nomi</th>
+                    <th>Narkoz</th>
+                    <th>Asorati</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for op in patient.operations.all %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ op.operation_date|date:"d.m.Y" }}</td>
+                    <td>
+                        {% if op.operation_type %}
+                            {{ op.operation_type.name }}
+                        {% elif op.operation_name %}
+                            {{ op.operation_name }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td>{{ op.get_anesthesia_display|default:"—" }}</td>
+                    <td>{{ op.complication|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 7. Tekshiruvlar -->
+<div class="card mb-3">
+    <div class="card-header bg-light">
+        <strong>🧪 Laboratoriya tekshiruvlari</strong>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <strong>OITS tekshiruvi sanasi:</strong><br>
+                {{ patient.aids_test_date|date:"d.m.Y"|default:"—" }}
+            </div>
+            <div class="col-md-3">
+                <strong>OITS natijasi:</strong><br>
+                {{ patient.aids_test_result|default:"—" }}
+            </div>
+            <div class="col-md-3">
+                <strong>WP tekshiruvi sanasi:</strong><br>
+                {{ patient.wp_test_date|date:"d.m.Y"|default:"—" }}
+            </div>
+            <div class="col-md-3">
+                <strong>WP natijasi:</strong><br>
+                {{ patient.wp_test_result|default:"—" }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 8. Shifokorlar -->
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <strong>👨‍⚕️ Mas'ul shifokorlar</strong>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <strong>Davolovchi shifokor:</strong><br>
+                {{ patient.attending_doctor|default:"—" }}
+            </div>
+            <div class="col-md-6">
+                <strong>Bo'lim mudiri:</strong><br>
+                {{ patient.department_head|default:"—" }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- OLDINGI TASHRIFLAR -->
+{% if prev_visits %}
+<div class="card mb-3 border-warning">
+    <div class="card-header bg-warning bg-opacity-10 d-flex align-items-center gap-2">
+        <span style="font-size:18px;">⚠️</span>
+        <strong>Bu bemor avval ham kelgan — {{ prev_visits|length }} ta tashrif</strong>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Bayonnoma</th>
+                    <th>Qabul sanasi</th>
+                    <th>Bo'lim</th>
+                    <th>Tashxis</th>
+                    <th>Holat</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for visit in prev_visits %}
+                <tr>
+                    <td class="ps-3 fw-semibold">{{ visit.medical_record_number }}</td>
+                    <td>{{ visit.admission_date|date:"d.m.Y" }}</td>
+                    <td>{{ visit.department|default:"—" }}</td>
+                    <td><small class="text-muted">{{ visit.admission_diagnosis|truncatechars:50|default:"—" }}</small></td>
+                    <td>
+                        {% if visit.status == 'registered' %}
+                            <span class="badge bg-warning text-dark">Registratsiya</span>
+                        {% elif visit.status == 'admitted' %}
+                            <span class="badge bg-primary">Yotqizilgan</span>
+                        {% else %}
+                            <span class="badge bg-success">Yakunlangan</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'patient_detail' visit.pk %}"
+                           class="btn btn-sm btn-outline-secondary">Ko'rish</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- 9. Xizmatlar -->
+<div class="card mb-4">
+    <div class="card-header bg-info bg-opacity-10 d-flex justify-content-between align-items-center">
+        <strong>🏥 Bajarilgan xizmatlar
+            {% if patient_services %}
+                <span class="badge bg-info text-dark ms-1">{{ patient_services.count }} ta</span>
+            {% endif %}
+        </strong>
+        <a href="{% url 'patient_services' patient.pk %}" class="btn btn-sm btn-info">
+            + Boshqarish
+        </a>
+    </div>
+    <div class="card-body p-0">
+        {% if patient_services %}
+        <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Xizmat</th>
+                    <th>Kategoriya</th>
+                    <th>Shifokor</th>
+                    <th class="text-center">Miqdor</th>
+                    <th class="text-end">Narx</th>
+                    <th class="text-end pe-3">Jami</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for svc in patient_services %}
+                <tr>
+                    <td class="ps-3 fw-semibold">{{ svc.service.name }}</td>
+                    <td>
+                        <small class="text-muted">
+                            {{ svc.service.category.icon|default:"🏥" }}
+                            {{ svc.service.category.name }}
+                        </small>
+                    </td>
+                    <td><small>{{ svc.ordered_by|default:"—" }}</small></td>
+                    <td class="text-center">{{ svc.quantity }}</td>
+                    <td class="text-end">{{ svc.price|floatformat:0 }} so'm</td>
+                    <td class="text-end pe-3 fw-semibold">{{ svc.total_price|floatformat:0 }} so'm</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot class="table-light">
+                <tr>
+                    <td colspan="5" class="text-end fw-bold">Xizmatlar jami:</td>
+                    <td class="text-end pe-3 fw-bold text-info">
+                        {{ services_total|floatformat:0 }} so'm
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+        {% else %}
+        <div class="text-center text-muted py-4">
+            Hali xizmat qo'shilmagan.
+            <a href="{% url 'patient_services' patient.pk %}">+ Qo'shish</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 9b. Dori-darmonlar -->
+{% if patient.status == 'statsionar' %}
+<div class="card mb-4">
+    <div class="card-header bg-warning bg-opacity-10 d-flex justify-content-between align-items-center">
+        <strong>💊 Dori-darmonlar
+            {% if patient_medicines %}
+                <span class="badge bg-warning text-dark ms-1">{{ patient_medicines.count }} ta</span>
+            {% endif %}
+        </strong>
+        <a href="{% url 'patient_services' patient.pk %}" class="btn btn-sm btn-warning text-dark">
+            + Boshqarish
+        </a>
+    </div>
+    <div class="card-body p-0">
+        {% if patient_medicines %}
+        <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Dori nomi</th>
+                    <th>Birlik</th>
+                    <th>Shifokor</th>
+                    <th class="text-center">Miqdori</th>
+                    <th class="text-end">Narxi</th>
+                    <th class="text-end pe-3">Jami</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for med in patient_medicines %}
+                <tr>
+                    <td class="ps-3 fw-semibold">{{ med.medicine.name }}</td>
+                    <td><small class="text-muted">{{ med.medicine.unit }}</small></td>
+                    <td><small>{{ med.ordered_by|default:"—" }}</small></td>
+                    <td class="text-center">{{ med.quantity }}</td>
+                    <td class="text-end">{{ med.price|floatformat:0 }} so'm</td>
+                    <td class="text-end pe-3 fw-semibold">{{ med.total_price|floatformat:0 }} so'm</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot class="table-light">
+                <tr>
+                    <td colspan="5" class="text-end fw-bold">Dorilar jami:</td>
+                    <td class="text-end pe-3 fw-bold text-warning">
+                        {{ medicines_total|floatformat:0 }} so'm
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+        {% else %}
+        <div class="text-center text-muted py-4">
+            Hali dori qo'shilmagan.
+            <a href="{% url 'patient_services' patient.pk %}">+ Qo'shish</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Umumiy jami -->
+{% if services_total or medicines_total %}
+<div class="card mb-4 border-success">
+    <div class="card-body py-3 d-flex justify-content-between align-items-center">
+        <div class="d-flex gap-4">
+            <span class="text-muted small">Xizmatlar: <strong class="text-info">{{ services_total|floatformat:0 }} so'm</strong></span>
+         {% if patient.status == 'statsionar' %}
+            <span class="text-muted small">Dorilar: <strong class="text-warning">{{ medicines_total|floatformat:0 }} so'm</strong></span>
+        {% endif %}
+        </div>
+        <div>
+            <strong class="text-muted me-2">Umumiy jami:</strong>
+            <strong class="text-success fs-5">{{ grand_total|floatformat:0 }} so'm</strong>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 10. Bo'lim ko'chirish tarixi -->
+{% if patient.transfers.all %}
+<div class="card mb-4">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <strong>🔄 Bo'lim ko'chirish tarixi</strong>
+        <span class="badge bg-secondary">{{ patient.transfers.count }} ta</span>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Sana</th>
+                    <th>Qayerdan</th>
+                    <th>Qayerga</th>
+                    <th>Kim</th>
+                    <th>Sabab</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in patient.transfers.all %}
+                <tr>
+                    <td class="ps-3">{{ t.transferred_at|date:"d.m.Y H:i" }}</td>
+                    <td class="text-muted">{{ t.from_department|default:"—" }}</td>
+                    <td class="fw-semibold">{{ t.to_department|default:"—" }}</td>
+                    <td><small>{{ t.transferred_by|default:"—" }}</small></td>
+                    <td><small class="text-muted">{{ t.reason|default:"—"|truncatechars:40 }}</small></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Bo'lim ko'chirish formasi -->
+{% if request.user.role in 'admin,doctor,statistician' or request.user.is_superuser %}
+{% if patient.status == 'statsionar' %}
+{% if patient.status != 'completed' %}
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <strong>🔄 Bo'limga ko'chirish</strong>
+    </div>
+    <div class="card-body">
+        <form method="post" action="{% url 'transfer_department' patient.pk %}" class="row g-2 align-items-end">
+            {% csrf_token %}
+            <div class="col-md-5">
+                <label class="form-label small">Yangi bo'lim</label>
+                <select name="department" class="form-select form-select-sm" required>
+                    <option value="">— Tanlang —</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept.pk }}"
+                        {% if dept.pk == patient.department_id %}disabled{% endif %}>
+                        {{ dept.name }}
+                        {% if dept.pk == patient.department_id %}(hozirgi){% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label small">Sabab (ixtiyoriy)</label>
+                <input type="text" name="reason" class="form-control form-control-sm"
+                       placeholder="Ko'chirish sababi...">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-warning btn-sm w-100">Ko'chirish</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+{% endif %}
+
+<!-- Meta -->
+<div class="text-muted small mb-5">
+    Yaratilgan: {{ patient.created_at|date:"d.m.Y H:i" }} |
+    Yangilangan: {{ patient.updated_at|date:"d.m.Y H:i" }}
+</div>
+{% endblock %}

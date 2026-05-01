@@ -1,0 +1,651 @@
+{% extends 'base.html' %}
+{% block title %}Statistika{% endblock %}
+
+{% block content %}
+<h3 class="mb-3">📊 Statistika paneli</h3>
+
+<!-- FILTERLAR -->
+<div class="card mb-4">
+    <div class="card-header bg-light"><strong>🔍 Filterlar</strong></div>
+    <div class="card-body">
+        <form method="get" id="stat-filter-form">
+            <div class="row g-2">
+                <div class="col-md-2">
+                    <label class="form-label small">Boshlanish sanasi</label>
+                    <input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Tugash sanasi</label>
+                    <input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to }}">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label small">Yil</label>
+                    <select name="year" class="form-select form-select-sm">
+                        <option value="">Barchasi</option>
+                        {% for y in years %}
+                        <option value="{{ y }}" {% if selected_year == y|stringformat:"s" %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label small">Oy</label>
+                    <select name="month" class="form-select form-select-sm">
+                        <option value="">Barchasi</option>
+                        <option value="1"  {% if selected_month == '1'  %}selected{% endif %}>Yanvar</option>
+                        <option value="2"  {% if selected_month == '2'  %}selected{% endif %}>Fevral</option>
+                        <option value="3"  {% if selected_month == '3'  %}selected{% endif %}>Mart</option>
+                        <option value="4"  {% if selected_month == '4'  %}selected{% endif %}>Aprel</option>
+                        <option value="5"  {% if selected_month == '5'  %}selected{% endif %}>May</option>
+                        <option value="6"  {% if selected_month == '6'  %}selected{% endif %}>Iyun</option>
+                        <option value="7"  {% if selected_month == '7'  %}selected{% endif %}>Iyul</option>
+                        <option value="8"  {% if selected_month == '8'  %}selected{% endif %}>Avgust</option>
+                        <option value="9"  {% if selected_month == '9'  %}selected{% endif %}>Sentabr</option>
+                        <option value="10" {% if selected_month == '10' %}selected{% endif %}>Oktabr</option>
+                        <option value="11" {% if selected_month == '11' %}selected{% endif %}>Noyabr</option>
+                        <option value="12" {% if selected_month == '12' %}selected{% endif %}>Dekabr</option>
+                    </select>
+                </div>
+                {% if request.user.role == 'admin' or request.user.is_superuser %}
+                <div class="col-md-2">
+                    <label class="form-label small">Bo'lim</label>
+                    <select name="department" class="form-select form-select-sm">
+                        <option value="">Barchasi</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.pk }}" {% if selected_dept == dept.pk|stringformat:"s" %}selected{% endif %}>{{ dept.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                <div class="col-md-2">
+                    <label class="form-label small">Shifokor</label>
+                    <select name="doctor" class="form-select form-select-sm">
+                        <option value="">Barchasi</option>
+                        {% for doc in doctors %}
+                        <option value="{{ doc.pk }}" {% if selected_doctor == doc.pk|stringformat:"s" %}selected{% endif %}>{{ doc.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Yakun</label>
+                    <select name="outcome" class="form-select form-select-sm">
+                        <option value="">Barchasi</option>
+                        <option value="discharged"  {% if selected_outcome == 'discharged'  %}selected{% endif %}>Chiqarildi</option>
+                        <option value="deceased"    {% if selected_outcome == 'deceased'    %}selected{% endif %}>Vafot etdi</option>
+                        <option value="transferred" {% if selected_outcome == 'transferred' %}selected{% endif %}>O'tkazildi</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Status</label>
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">Barchasi</option>
+                        <option value="registered" {% if selected_status == 'registered' %}selected{% endif %}>🟡 Registratsiya</option>
+                        <option value="admitted"   {% if selected_status == 'admitted'   %}selected{% endif %}>🔵 Yotqizilgan</option>
+                        <option value="completed"  {% if selected_status == 'completed'  %}selected{% endif %}>🟢 Yakunlangan</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label small">Jins</label>
+                    <select name="gender" class="form-select form-select-sm">
+                        <option value="">Barchasi</option>
+                        <option value="M" {% if selected_gender == 'M' %}selected{% endif %}>Erkak</option>
+                        <option value="F" {% if selected_gender == 'F' %}selected{% endif %}>Ayol</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Kategoriya</label>
+                    <select name="patient_category" class="form-select form-select-sm">
+                        <option value="">Barchasi</option>
+                        <option value="railway"      {% if selected_category == 'railway'      %}selected{% endif %}>Temir yo'lchi</option>
+                        <option value="paid"         {% if selected_category == 'paid'         %}selected{% endif %}>Pullik</option>
+                        <option value="non_resident" {% if selected_category == 'non_resident' %}selected{% endif %}>Norezident</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Yosh guruhi</label>
+                    <select name="age_group" class="form-select form-select-sm">
+                        <option value="">Barchasi</option>
+                        <option value="under16" {% if age_group == 'under16' %}selected{% endif %}>👶 16 yoshgacha</option>
+                        <option value="adult"   {% if age_group == 'adult'   %}selected{% endif %}>🧑 16 yoshdan katta</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Rezidentlik</label>
+                    <select name="resident_status" class="form-select form-select-sm">
+                        <option value="">Barchasi</option>
+                        <option value="resident"     {% if selected_resident == 'resident'     %}selected{% endif %}>Rezident</option>
+                        <option value="non_resident" {% if selected_resident == 'non_resident' %}selected{% endif %}>Norezident</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Qabul turi</label>
+                    <select name="referral_type" class="form-select form-select-sm">
+                        <option value="">Barchasi</option>
+                        <option value="self"      {% if selected_referral == 'self'      %}selected{% endif %}>O'zi kelgan</option>
+                        <option value="ambulance" {% if selected_referral == 'ambulance' %}selected{% endif %}>Tez yordam</option>
+                        <option value="referral"  {% if selected_referral == 'referral'  %}selected{% endif %}>Yo'llanma</option>
+                        <option value="liniya"    {% if selected_referral == 'liniya'    %}selected{% endif %}>Liniya</option>
+                    </select>
+                </div>
+
+                <!-- Ish joyi select -->
+                <div class="col-md-3">
+                    <label class="form-label small">🏢 Ish joyi</label>
+                    <select name="org" id="org-select" class="form-select form-select-sm">
+                        <option value="">Barchasi</option>
+                        {% for org in organizations %}
+                        <option value="{{ org.pk }}" {% if selected_org == org.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ org.enterprise_name }}{% if org.branch_name %} — {{ org.branch_name }}{% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-12 d-flex gap-2 mt-2">
+                    <button type="submit" class="btn btn-primary btn-sm">🔍 Filtrlash</button>
+                    <a href="{% url 'statistics_dashboard' %}" class="btn btn-outline-secondary btn-sm">✕ Tozalash</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- KARTOCHKALAR -->
+<div class="row g-2 mb-4">
+    <div class="col-md-2">
+        <div class="card border-primary text-center">
+            <div class="card-body py-2">
+                <h3 class="text-primary mb-0">{{ total }}</h3>
+                <small>Jami bemorlar</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-success text-center">
+            <div class="card-body py-2">
+                <h3 class="text-success mb-0">{{ discharged }}</h3>
+                <small>Chiqarildi</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-danger text-center">
+            <div class="card-body py-2">
+                <h3 class="text-danger mb-0">{{ deceased }}</h3>
+                <small>Vafot etdi</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-warning text-center">
+            <div class="card-body py-2">
+                <h3 class="text-warning mb-0">{{ transferred }}</h3>
+                <small>O'tkazildi</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-info text-center">
+            <div class="card-body py-2">
+                <h3 class="text-info mb-0">{{ avg_days }}</h3>
+                <small>O'rtacha kun</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-secondary text-center">
+            <div class="card-body py-2">
+                <h3 class="text-secondary mb-0">{{ non_resident_count }}</h3>
+                <small>Norezident</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status -->
+<div class="row g-2 mb-4">
+    <div class="col-md-4">
+        <div class="card text-center" style="border-color:#ffc107;">
+            <div class="card-body py-2"><h4 class="mb-0">🟡 {{ registered }}</h4><small>Registratsiya</small></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center" style="border-color:#0d6efd;">
+            <div class="card-body py-2"><h4 class="mb-0">🔵 {{ admitted }}</h4><small>Yotqizilgan</small></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center" style="border-color:#198754;">
+            <div class="card-body py-2"><h4 class="mb-0">🟢 {{ completed }}</h4><small>Yakunlangan</small></div>
+        </div>
+    </div>
+</div>
+
+<!-- GRAFIKLAR -->
+<div class="row g-3 mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">Oylik dinamika</div>
+            <div class="card-body"><canvas id="monthlyChart" height="100"></canvas></div>
+        </div>
+    </div>
+    <!-- Yosh guruhi -->
+    <div class="col-12 mb-2">
+        {% if not age_group %}
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body d-flex align-items-center gap-3 py-2">
+                        <div style="font-size:32px">👶</div>
+                        <div class="flex-fill">
+                            <div class="text-muted small">16 yoshgacha bemorlar</div>
+                            <div class="h4 fw-bold text-warning mb-0">{{ under16_count|default:0 }} ta</div>
+                            {% if total and under16_count %}
+                            <div class="progress mt-1" style="height:3px;">
+                                <div class="progress-bar bg-warning" style="width:{% widthratio under16_count total 100 %}%"></div>
+                            </div>
+                            <div class="text-muted small">Jami bemorlarning {% widthratio under16_count total 100 %}%</div>
+                            {% endif %}
+                        </div>
+                        <a href="?age_group=under16&year={{ selected_year }}&month={{ selected_month }}&department={{ selected_department }}&patient_category={{ selected_category }}"
+                           class="btn btn-sm btn-outline-warning">Ko'rish</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body d-flex align-items-center gap-3 py-2">
+                        <div style="font-size:32px">🧑</div>
+                        <div class="flex-fill">
+                            <div class="text-muted small">16 yoshdan katta bemorlar</div>
+                            <div class="h4 fw-bold text-info mb-0">{{ adult_count|default:0 }} ta</div>
+                            {% if total and adult_count %}
+                            <div class="progress mt-1" style="height:3px;">
+                                <div class="progress-bar bg-info" style="width:{% widthratio adult_count total 100 %}%"></div>
+                            </div>
+                            <div class="text-muted small">Jami bemorlarning {% widthratio adult_count total 100 %}%</div>
+                            {% endif %}
+                        </div>
+                        <a href="?age_group=adult&year={{ selected_year }}&month={{ selected_month }}&department={{ selected_department }}&patient_category={{ selected_category }}"
+                           class="btn btn-sm btn-outline-info">Ko'rish</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info d-flex align-items-center gap-2 py-2 mb-0">
+            {% if age_group == 'under16' %}👶 <strong>16 yoshgacha bemorlar:</strong>
+            {% else %}🧑 <strong>16 yoshdan katta bemorlar:</strong>{% endif %}
+            {{ total }} ta bemor ko'rsatilmoqda
+            <a href="?year={{ selected_year }}&month={{ selected_month }}&department={{ selected_department }}&patient_category={{ selected_category }}"
+               class="btn btn-sm btn-outline-secondary ms-auto">✕ Filtrni olib tashlash</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">Jins bo'yicha</div>
+            <div class="card-body"><canvas id="genderChart"></canvas></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">Kategoriya bo'yicha</div>
+            <div class="card-body"><canvas id="categoryChart"></canvas></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">Kasallanish yakuni</div>
+            <div class="card-body"><canvas id="outcomeChart"></canvas></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">Qabul turi</div>
+            <div class="card-body"><canvas id="emergencyChart"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<!-- Bo'lim jadvali -->
+<div class="card mb-3">
+    <div class="card-header">Bo'limlar bo'yicha</div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr><th>Bo'lim</th><th>Bemorlar</th><th>Ulushi</th></tr>
+            </thead>
+            <tbody>
+                {% for item in dept_stats %}
+                <tr>
+                    <td>{{ item.department__name }}</td>
+                    <td>{{ item.count }}</td>
+                    <td>
+                        <div class="progress" style="height:18px;">
+                            <div class="progress-bar"
+                                 style="width:{% if total %}{% widthratio item.count total 100 %}%{% else %}0%{% endif %}">
+                                {% if total %}{% widthratio item.count total 100 %}%{% endif %}
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" class="text-center text-muted">Ma'lumot yo'q</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if doctor_stats %}
+<div class="card mb-4">
+    <div class="card-header">Shifokorlar bo'yicha (Top 10)</div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr><th>Shifokor</th><th>Bemorlar</th></tr>
+            </thead>
+            <tbody>
+                {% for item in doctor_stats %}
+                <tr>
+                    <td>{{ item.attending_doctor__full_name }}</td>
+                    <td>{{ item.count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- TASHKILOT BO'YICHA STATISTIKA -->
+{% if org_stats %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <strong>🏢 Tashkilot bo'yicha statistika</strong>
+        <span class="badge bg-secondary">{{ org_stats|length }} ta</span>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover table-sm align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Tashkilot</th>
+                    <th class="text-center">Kod</th>
+                    <th class="text-center">Filial</th>
+                    <th class="text-center">Bemorlar</th>
+                    <th class="text-end pe-3">Xizmatlar summasi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for org in org_stats %}
+                <tr>
+                    <td class="ps-3"><span class="fw-semibold small">{{ org.name }}</span></td>
+                    <td class="text-center"><span class="badge bg-light text-dark border small">{{ org.enterprise_code|default:"—" }}</span></td>
+                    <td class="text-center"><span class="badge bg-light text-dark border small">{{ org.branch_code|default:"—" }}</span></td>
+                    <td class="text-center"><span class="badge bg-primary rounded-pill">{{ org.patient_count }}</span></td>
+                    <td class="text-end pe-3 fw-semibold text-success small">
+                        {% if org.service_total %}{{ org.service_total|floatformat:0 }} so'm
+                        {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white"><strong>📊 Tashkilotlar bo'yicha bemorlar soni</strong></div>
+    <div class="card-body"><canvas id="orgChart" height="80"></canvas></div>
+</div>
+{% endif %}
+
+<!-- Export -->
+<!-- XIZMAT VA DORI UMUMIY JAMI -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row text-center g-2">
+            <div class="col-md-4">
+                <div class="text-muted small mb-1">Xizmatlar jami</div>
+                <div class="fw-bold text-info fs-5">{{ services_grand_total|floatformat:0 }} so'm</div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-muted small mb-1">Dorilar jami</div>
+                <div class="fw-bold text-warning fs-5">{{ medicines_grand_total|floatformat:0 }} so'm</div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-muted small mb-1">Umumiy jami</div>
+                <div class="fw-bold text-success fs-4">{{ services_grand_total|add:medicines_grand_total|floatformat:0 }} so'm</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DORI STATISTIKASI -->
+{% if top_medicines %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <strong>💊 Eng ko'p ishlatiladigan dorilar (Top 15)</strong>
+        <span class="badge bg-warning text-dark">{{ medicines_grand_total|floatformat:0 }} so'm</span>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover table-sm align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3" style="width:40px">№</th>
+                    <th>Dori nomi</th>
+                    <th class="text-center">Birlik</th>
+                    <th class="text-center">Jami miqdor</th>
+                    <th class="text-center">Bemorlar</th>
+                    <th class="text-end pe-3">Jami summa</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for med in top_medicines %}
+                <tr>
+                    <td class="ps-3 text-muted">{{ forloop.counter }}</td>
+                    <td class="fw-semibold">{{ med.medicine__name }}</td>
+                    <td class="text-center"><span class="badge bg-light text-dark border">{{ med.medicine__unit }}</span></td>
+                    <td class="text-center">{{ med.total_qty|floatformat:0 }}</td>
+                    <td class="text-center"><span class="badge bg-primary rounded-pill">{{ med.patient_count }}</span></td>
+                    <td class="text-end pe-3 fw-semibold text-warning">{{ med.total_sum|floatformat:0 }} so'm</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot class="table-light">
+                <tr>
+                    <td colspan="5" class="text-end fw-bold">Jami:</td>
+                    <td class="text-end pe-3 fw-bold text-warning">{{ medicines_grand_total|floatformat:0 }} so'm</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div class="d-flex gap-2 mb-5">
+    <a href="{% url 'export_excel' %}?{{ current_filters }}" class="btn btn-success">📥 Excel (eski)</a>
+    <a href="{% url 'export_monthly_report' %}?{{ current_filters }}" class="btn btn-warning text-dark">📋 Oylik rasmiy hisobot</a>
+    <a href="{% url 'export_full_report' %}?{{ current_filters }}" class="btn btn-primary">📊 To'liq hisobot (8 sheet)</a>
+    <a href="{% url 'export_pdf' %}?{{ current_filters }}" class="btn btn-danger">📄 PDF</a>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<!-- Select2 -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet"/>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function(){
+    $('#org-select').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Barchasi',
+        allowClear: true,
+        width: '100%',
+        language: {
+            noResults: function(){ return "Topilmadi"; },
+            searching: function(){ return "Qidirilmoqda..."; }
+        }
+    });
+});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const genderData    = {{ gender_data|safe }};
+const categoryData  = {{ category_data|safe }};
+const monthlyLabels = {{ monthly_labels|safe }};
+const monthlyValues = {{ monthly_values|safe }};
+
+new Chart(document.getElementById('monthlyChart'), {
+    type: 'line',
+    data: {
+        labels: monthlyLabels,
+        datasets: [{ label: 'Bemorlar', data: monthlyValues,
+            borderColor: '#0d6efd', backgroundColor: 'rgba(13,110,253,0.1)',
+            tension: 0.3, fill: true }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } } }
+});
+
+new Chart(document.getElementById('genderChart'), {
+    type: 'doughnut',
+    data: { labels: ['Erkak', 'Ayol'],
+        datasets: [{ data: [genderData.M, genderData.F],
+            backgroundColor: ['#0d6efd', '#e83e8c'] }] },
+    options: { responsive: true }
+});
+
+new Chart(document.getElementById('categoryChart'), {
+    type: 'doughnut',
+    data: { labels: ["Temir yo'lchi", 'Pullik', 'Norezident'],
+        datasets: [{ data: [categoryData.railway, categoryData.paid, categoryData.non_resident],
+            backgroundColor: ['#0d6efd', '#ffc107', '#dc3545'] }] },
+    options: { responsive: true }
+});
+
+new Chart(document.getElementById('outcomeChart'), {
+    type: 'doughnut',
+    data: { labels: ['Chiqarildi', 'Vafot', "O'tkazildi"],
+        datasets: [{ data: [{{ discharged }}, {{ deceased }}, {{ transferred }}],
+            backgroundColor: ['#198754', '#dc3545', '#ffc107'] }] },
+    options: { responsive: true }
+});
+
+new Chart(document.getElementById('emergencyChart'), {
+    type: 'doughnut',
+    data: { labels: ['Shoshilinch', 'Oddiy'],
+        datasets: [{ data: [{{ emergency_count }}, {{ non_emergency_count }}],
+            backgroundColor: ['#dc3545', '#6c757d'] }] },
+    options: { responsive: true }
+});
+
+{% if org_stats %}
+new Chart(document.getElementById('orgChart'), {
+    type: 'bar',
+    data: {
+        labels: [{% for org in org_stats %}"{{ org.name|truncatechars:35 }}"{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{ label: 'Bemorlar', data: [{% for org in org_stats %}{{ org.patient_count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            backgroundColor: 'rgba(13,110,253,0.7)', borderRadius: 4 }]
+    },
+    options: { responsive: true, indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+});
+{% endif %}
+
+// ===== ISH JOYI AJAX QIDIRUV =====
+(function() {
+    const input    = document.getElementById('org-filter-input');
+    const idInput  = document.getElementById('org-filter-id');
+    const dropdown = document.getElementById('org-filter-dropdown');
+    const clearBtn = document.getElementById('org-filter-clear');
+    if (!input) return;
+
+    let timer;
+
+    function doSearch(q) {
+        if (!dropdown) return;
+        dropdown.innerHTML = '<div style="padding:9px 14px;color:#888;font-size:13px;">⏳ Qidirilmoqda...</div>';
+        dropdown.style.display = 'block';
+
+        fetch('/patients/ajax/organizations/?q=' + encodeURIComponent(q))
+            .then(function(r) {
+                if (!r.ok) throw new Error('Server xatosi: ' + r.status);
+                return r.json();
+            })
+            .then(function(data) {
+                if (!data.length) {
+                    dropdown.innerHTML = '<div style="padding:9px 14px;color:#888;font-size:13px;">Topilmadi</div>';
+                    return;
+                }
+                var html = '';
+                data.forEach(function(org) {
+                    var label = org.enterprise_name + (org.branch_name ? ' — ' + org.branch_name : '');
+                    var meta = [];
+                    if (org.enterprise_code) meta.push('Kod: ' + org.enterprise_code);
+                    if (org.branch_code)     meta.push('Filial: ' + org.branch_code);
+                    if (org.enterprise_inn)  meta.push('INN: ' + org.enterprise_inn);
+
+                    html += '<div class="org-dd-item" data-id="' + org.id + '" data-label="' + label.replace(/"/g, '&quot;') + '"'
+                          + ' style="padding:9px 14px;cursor:pointer;border-bottom:1px solid #f0f0f0;">'
+                          + '<div style="font-size:13px;font-weight:600;color:#212529;">' + org.enterprise_name + '</div>';
+                    if (org.branch_name) {
+                        html += '<div style="font-size:12px;color:#6c757d;">↳ ' + org.branch_name + '</div>';
+                    }
+                    if (meta.length) {
+                        html += '<div style="font-size:11px;color:#adb5bd;">' + meta.join(' | ') + '</div>';
+                    }
+                    html += '</div>';
+                });
+                dropdown.innerHTML = html;
+
+                dropdown.querySelectorAll('.org-dd-item').forEach(function(item) {
+                    item.addEventListener('mouseover', function() { this.style.background = '#e8f4fd'; });
+                    item.addEventListener('mouseout',  function() { this.style.background = ''; });
+                    item.addEventListener('mousedown', function(e) {
+                        e.preventDefault();
+                        idInput.value = this.dataset.id;
+                        input.value   = this.dataset.label;
+                        dropdown.style.display = 'none';
+                    });
+                });
+            })
+            .catch(function(err) {
+                dropdown.innerHTML = '<div style="padding:9px 14px;color:#dc3545;font-size:13px;">❌ ' + err.message + '</div>';
+            });
+    }
+
+    input.addEventListener('input', function() {
+        clearTimeout(timer);
+        var q = this.value;
+        timer = setTimeout(function() { doSearch(q); }, 250);
+    });
+
+    input.addEventListener('focus', function() {
+        doSearch(this.value);
+    });
+
+    input.addEventListener('blur', function() {
+        setTimeout(function() {
+            if (dropdown) dropdown.style.display = 'none';
+        }, 250);
+    });
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            idInput.value = '';
+            input.value   = '';
+            document.getElementById('stat-filter-form').submit();
+        });
+    }
+
+    document.getElementById('stat-filter-form').addEventListener('submit', function() {
+        if (!idInput.value) input.value = '';
+    });
+})();
+</script>
+{% endblock %}

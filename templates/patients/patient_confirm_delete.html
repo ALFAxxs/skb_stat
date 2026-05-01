@@ -1,0 +1,42 @@
+<!-- templates/patients/patient_confirm_delete.html -->
+{% extends 'base.html' %}
+{% block title %}Bemorni o'chirish{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card border-danger shadow">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">🗑 Bemorni o'chirish</h5>
+            </div>
+            <div class="card-body text-center py-4">
+                <div class="mb-3" style="font-size: 48px;">⚠️</div>
+                <h5 class="mb-2">Rostdan ham o'chirishni xohlaysizmi?</h5>
+                <p class="text-muted mb-1">
+                    <strong>{{ patient.full_name }}</strong>
+                </p>
+                <p class="text-muted small">
+                    Bayonnoma: {{ patient.medical_record_number }} |
+                    {{ patient.admission_date|date:"d.m.Y" }}
+                </p>
+                <div class="alert alert-warning text-start mt-3">
+                    <strong>Diqqat!</strong> Bu amal qaytarib bo'lmaydi.
+                    Bemorga biriktirilgan barcha ma'lumotlar ham o'chiriladi.
+                </div>
+            </div>
+            <div class="card-footer d-flex justify-content-between">
+                <a href="{% url 'patient_detail' patient.pk %}"
+                   class="btn btn-secondary px-4">
+                    ← Bekor qilish
+                </a>
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger px-4">
+                        🗑 Ha, o'chirish
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

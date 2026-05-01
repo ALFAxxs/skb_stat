@@ -1,0 +1,142 @@
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Shifoxona Statistikasi{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .form-section {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .form-section h5 {
+            color: #0d6efd;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+        }
+        #death-section { display: none; }
+
+        /* ===== GLOBAL TOGGLE BUTTONS ===== */
+        .toggle-group { display: flex; gap: 8px; }
+        .toggle-btn {
+            padding: 6px 20px;
+            border-radius: 20px;
+            border: 2px solid #dee2e6;
+            background: #f8f9fa;
+            color: #6c757d;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            user-select: none;
+            outline: none;
+        }
+        .toggle-btn:hover { border-color: #adb5bd; background: #e9ecef; }
+        .toggle-btn:focus { box-shadow: none; outline: none; }
+        .toggle-btn.active-yes {
+            border-color: #198754;
+            background: #198754;
+            color: #fff;
+        }
+        .toggle-btn.active-no {
+            border-color: #dc3545;
+            background: #dc3545;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-primary mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'patient_list' %}">
+                🏥 Shifoxona Statistikasi
+            </a>
+            <div class="d-flex align-items-center gap-3">
+
+                {% if request.user.is_authenticated %}
+
+                    <!-- Bemorlar ro'yxati — hammaga -->
+                    <a href="{% url 'patient_list' %}" class="text-white text-decoration-none">
+                        👥 Bemorlar
+                    </a>
+
+                    <!-- Qabul qilish — faqat reception va admin -->
+                    {% if request.user.role == 'reception' or request.user.role == 'admin' or request.user.is_superuser %}
+                        <a href="{% url 'reception_create' %}" class="text-white text-decoration-none">
+                            📋 Statsionar qabul
+                        </a>
+                        <a href="{% url 'ambulatory_create' %}" class="text-white text-decoration-none">
+                            🚶 Ambulator qabul
+                        </a>
+                    {% endif %}
+
+
+
+                    <!-- Xizmatlar statistikasi — faqat admin va statistician -->
+                    {% if request.user.role == 'admin' or request.user.role == 'statistician' or request.user.is_superuser %}
+                    <a href="{% url 'statistics_dashboard' %}" class="text-white text-decoration-none">
+                            📊 Statistika
+                        </a>
+
+                        <a href="{% url 'service_statistics' %}" class="text-white text-decoration-none">
+                            📊 Xizmatlar statistikasi
+                        </a>
+
+                    {% endif %}
+
+                    <!-- Foydalanuvchilar — faqat admin -->
+                    {% if request.user.role == 'admin' or request.user.is_superuser %}
+                        <a href="{% url 'user_list' %}" class="text-white text-decoration-none">
+                            ⚙️ Foydalanuvchilar
+                        </a>
+                    {% endif %}
+
+                    <!-- Bo'lim nomi -->
+                    {% if request.user.department %}
+                        <span class="badge bg-light text-dark">
+                            🏢 {{ request.user.department.name }}
+                        </span>
+                    {% endif %}
+
+                    <!-- Foydalanuvchi ismi va roli -->
+                    <span class="text-white opacity-75 small">
+                        👤 {{ request.user.get_full_name|default:request.user.username }}
+                        ({{ request.user.get_role_display }})
+                    </span>
+
+                    <!-- Logout -->
+                    <form method="post" action="{% url 'logout' %}" class="m-0">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-light btn-sm">
+                            Chiqish
+                        </button>
+                    </form>
+
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-outline-light btn-sm">Kirish</a>
+                {% endif %}
+
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

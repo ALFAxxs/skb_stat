@@ -1,0 +1,1090 @@
+<!-- templates/patients/patient_form.html -->
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<style>
+    select[name$="operation_type"] { display: none !important; }
+
+    /* ===== TOGGLE BUTTONS ===== */
+    .toggle-group { display: flex; gap: 8px; }
+    .toggle-btn {
+        padding: 6px 20px;
+        border-radius: 20px;
+        border: 2px solid #dee2e6;
+        background: #f8f9fa;
+        color: #6c757d;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        user-select: none;
+    }
+    .toggle-btn:hover { border-color: #adb5bd; background: #e9ecef; }
+    .toggle-btn.active-yes { border-color: #198754; background: #198754; color: #fff; }
+    .toggle-btn.active-no  { border-color: #dc3545; background: #dc3545; color: #fff; }
+</style>
+
+<div class="row">
+    <div class="col-12">
+        <h3>{{ title }}</h3>
+        <form method="post">
+            {% csrf_token %}
+
+            <!-- Yashirin maydonlar -->
+            <input type="hidden" name="status"
+                   value="{{ form.instance.status|default:'registered' }}">
+            <input type="hidden" name="registered_by"
+                   value="{{ form.instance.registered_by_id|default:'' }}">
+
+            {% if form.errors %}
+            <div class="alert alert-danger">
+                <strong>Xatoliklar bor:</strong><br>
+                {% for field, errors in form.errors.items %}
+                    <div>• <b>{{ field }}</b>: {{ errors|join:", " }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% for error in surgery_formset.errors %}
+                {% if error %}
+                <div class="alert alert-warning">
+                    <strong>Jarrohlik formasi xatolari:</strong>
+                    {% for field, msgs in error.items %}
+                        <div>• {{ field }}: {{ msgs|join:", " }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% endfor %}
+
+            <!-- 1. Bemor ma'lumotlari -->
+            <div class="form-section">
+                <h5>👤 Bemor ma'lumotlari</h5>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">{{ form.medical_record_number.label }}</label>
+                        {{ form.medical_record_number }}
+                        <div class="text-danger small">{{ form.medical_record_number.errors }}</div>
+                    </div>
+                    <div class="col-md-8 mb-3">
+                        <label class="form-label">{{ form.full_name.label }}</label>
+                        {{ form.full_name }}
+                        <div class="text-danger small">{{ form.full_name.errors }}</div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label fw-bold d-block">Rezidentlik holati</label>
+                        <div class="toggle-group mt-2">
+                            <button type="button" class="toggle-btn" id="res-yes">🏠 Rezident</button>
+                            <button type="button" class="toggle-btn" id="res-no">🌍 Norezident</button>
+                        </div>
+                        <input type="hidden" name="resident_status" id="resident_status_val"
+                               value="{{ form.instance.resident_status|default:'resident' }}">
+                        <div class="text-danger small">{{ form.resident_status.errors }}</div>
+                    </div>
+                    <div class="col-md-3 mb-3" id="patient-category-field">
+                        <label class="form-label">{{ form.patient_category.label }}</label>
+                        {{ form.patient_category }}
+                        <div class="text-danger small">{{ form.patient_category.errors }}</div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">{{ form.gender.label }}</label>
+                        {{ form.gender }}
+                        <div class="text-danger small">{{ form.gender.errors }}</div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">{{ form.birth_date.label }}</label>
+                        {{ form.birth_date }}
+                        <div class="text-danger small">{{ form.birth_date.errors }}</div>
+                    </div>
+                    <div class="col-md-3 mb-3" id="passport-field">
+                        <label class="form-label">{{ form.passport_serial.label }}</label>
+                        {{ form.passport_serial }}
+                        <div class="text-danger small">{{ form.passport_serial.errors }}</div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">{{ form.JSHSHIR.label }}</label>
+                        {{ form.JSHSHIR }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">{{ form.phone.label }}</label>
+                        {{ form.phone }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">{{ form.social_status.label }}</label>
+                        {{ form.social_status }}
+                        <div class="text-danger small">{{ form.social_status.errors }}</div>
+                    </div>
+                    <!-- Ish joyi — temir yo'lchilar uchun dropdown -->
+                    <div class="col-md-6 mb-3" id="workplace-field">
+                        <label class="form-label fw-bold">
+                            Ish joyi
+                            <span class="badge bg-primary ms-1 small" id="railway-badge" style="display:none;">
+                                🚂 Temir yo'lchi
+                            </span>
+                        </label>
+                        <!-- Temir yo'lchi uchun AJAX qidiruv -->
+                        <div id="org-search-block" style="display:none;">
+                            <div class="position-relative">
+                                <input type="text" id="org-search-input"
+                                       class="form-control"
+                                       placeholder="🔍 Korxona kodi, INN, nomi yoki filial bo'yicha qidiring..."
+                                       autocomplete="off">
+                                <div id="org-dropdown"
+                                     style="display:none; position:absolute; top:100%; left:0; right:0;
+                                            z-index:1050; background:#fff; border:1px solid #dee2e6;
+                                            border-radius:8px; max-height:300px; overflow-y:auto;
+                                            box-shadow:0 4px 16px rgba(0,0,0,.12);">
+                                </div>
+                            </div>
+                            <input type="hidden" name="workplace_org" id="workplace_org_id"
+                                   value="{{ form.instance.workplace_org_id|default:'' }}">
+                            <div id="org-selected" class="mt-2" style="display:none;">
+                                <div class="alert alert-success py-2 mb-0 d-flex justify-content-between align-items-start">
+                                    <div id="org-selected-info" class="small"></div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary ms-2"
+                                            id="org-clear">✕</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Boshqa kategoriyalar uchun oddiy input -->
+                        <div id="workplace-text-block">
+                            {{ form.workplace }}
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3" id="position-field">
+                        <label class="form-label">{{ form.position.label }}</label>
+                        {{ form.position }}
+                    </div>
+
+                    <!-- Urush qatnashchisi — TOGGLE -->
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label fw-bold d-block">Urush qatnashchisi?</label>
+                        <div class="toggle-group mt-2">
+                            <button type="button" class="toggle-btn" id="vet-yes">&#9876; Ha</button>
+                            <button type="button" class="toggle-btn" id="vet-no">&#10007; Yo'q</button>
+                        </div>
+                        <input type="hidden" name="is_war_veteran" id="is_war_veteran_val"
+                               value="{{ form.instance.is_war_veteran|yesno:'True,False' }}">
+                    </div>
+
+                    <!-- Pensioner — TOGGLE -->
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label fw-bold d-block">Pensioner?</label>
+                        <div class="toggle-group mt-2">
+                            <button type="button" class="toggle-btn" id="pen-yes">&#128081; Ha</button>
+                            <button type="button" class="toggle-btn" id="pen-no">&#10007; Yo'q</button>
+                        </div>
+                        <input type="hidden" name="is_pensioner" id="is_pensioner_val"
+                               value="{{ form.instance.is_pensioner|yesno:'True,False'|default:'False' }}">
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- 2. Yashash manzili -->
+            <div class="form-section" id="address-section">
+                <h5>📍 Yashash manzili</h5>
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Davlat</label>
+                        {{ form.country }}
+                        <div class="text-danger small">{{ form.country.errors }}</div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Viloyat</label>
+                        <select name="region" id="id_region" class="form-select">
+                            <option value="">— Tanlang —</option>
+                            {% if form.instance.region %}
+                                <option value="{{ form.instance.region.id }}" selected>
+                                    {{ form.instance.region.name }}
+                                </option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Tuman</label>
+                        <select name="district" id="id_district" class="form-select">
+                            <option value="">— Tanlang —</option>
+                            {% if form.instance.district %}
+                                <option value="{{ form.instance.district.id }}" selected>
+                                    {{ form.instance.district.name }}
+                                </option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Shahar/Qishloq</label>
+                        <select name="city" id="id_city" class="form-select">
+                            <option value="">— Tanlang —</option>
+                            {% if form.instance.city %}
+                                <option value="{{ form.instance.city.id }}" selected>
+                                    {{ form.instance.city.name }}
+                                </option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">Ko'cha nomi va uy raqami</label>
+                        {{ form.street_address }}
+                        <div class="text-danger small">{{ form.street_address.errors }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Qabul ma'lumotlari -->
+            <div class="form-section">
+                <h5>🏥 Qabul ma'lumotlari</h5>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">{{ form.referral_type.label }}</label>
+                        {{ form.referral_type }}
+                        <div class="text-danger small">{{ form.referral_type.errors }}</div>
+                    </div>
+                    <div class="col-md-8 mb-3" id="org-field">
+                        <label class="form-label">{{ form.referral_organization.label }}</label>
+                        {{ form.referral_organization }}
+                        <div class="text-danger small">{{ form.referral_organization.errors }}</div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{{ form.referring_diagnosis.label }}</label>
+                        {{ form.referring_diagnosis }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{{ form.admission_diagnosis.label }}</label>
+                        {{ form.admission_diagnosis }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">{{ form.hours_after_illness.label }}</label>
+                        {{ form.hours_after_illness }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">{{ form.admission_date.label }}</label>
+                        {{ form.admission_date }}
+                        <div class="text-danger small">{{ form.admission_date.errors }}</div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">{{ form.department.label }}</label>
+                        {{ form.department }}
+                        <div class="text-danger small">{{ form.department.errors }}</div>
+                    </div>
+                    <div class="col-md-3 mb-3" id="hospital-type-field">
+                        <label class="form-label">{{ form.hospital_type.label }}</label>
+                        {{ form.hospital_type }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">{{ form.admission_count.label }}</label>
+                        {{ form.admission_count }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold d-block">Shoshilinch olib kelinganmi?</label>
+                        <div class="toggle-group mt-2">
+                            <button type="button" class="toggle-btn" id="emg-yes">&#10003; Ha</button>
+                            <button type="button" class="toggle-btn" id="emg-no">&#10007; Yo'q</button>
+                        </div>
+                        <input type="hidden" name="is_emergency" id="is_emergency_val"
+                               value="{{ form.instance.is_emergency|yesno:'True,False' }}">
+                        <div class="text-danger small">{{ form.is_emergency.errors }}</div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- 4. Chiqish ma'lumotlari -->
+            <div class="form-section">
+                <h5>📋 Chiqish ma'lumotlari</h5>
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">{{ form.days_in_hospital.label }}</label>
+                        {{ form.days_in_hospital }}
+                        <div class="text-danger small">{{ form.days_in_hospital.errors }}</div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">{{ form.outcome.label }}</label>
+                        {{ form.outcome }}
+                        <div class="text-danger small">{{ form.outcome.errors }}</div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">{{ form.discharge_conclusion.label }}</label>
+                        <div class="input-group">
+                            {{ form.discharge_conclusion }}
+                            <button type="button" class="btn btn-outline-danger"
+                                    id="clear-conclusion" title="Tozalash">✕</button>
+                        </div>
+                        <div class="text-danger small">{{ form.discharge_conclusion.errors }}</div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">{{ form.discharge_date.label }}</label>
+                        {{ form.discharge_date }}
+                        <div class="text-danger small">{{ form.discharge_date.errors }}</div>
+                    </div>
+                </div>
+                <div class="mt-2" id="add-conclusion-block">
+                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                            id="toggle-add-conclusion">+ Yangi xulosa qo'shish</button>
+                    <div id="new-conclusion-form" style="display:none;" class="mt-2">
+                        <div class="input-group" style="max-width: 400px;">
+                            <input type="text" id="new-conclusion-name"
+                                   class="form-control" placeholder="Xulosa nomi...">
+                            <button type="button" class="btn btn-success" id="save-conclusion">Saqlash</button>
+                            <button type="button" class="btn btn-secondary" id="cancel-conclusion">Bekor</button>
+                        </div>
+                        <div id="conclusion-msg" class="small mt-1"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. Yakuniy tashxis -->
+            <div class="form-section">
+                <h5>🔬 Yakuniy tashxis</h5>
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">{{ form.clinical_main_diagnosis.label }}</label>
+                        {{ form.clinical_main_diagnosis }}
+                        <div class="text-danger small">{{ form.clinical_main_diagnosis.errors }}</div>
+                    </div>
+                    <div class="col-md-9 mb-3">
+                        <label class="form-label">Klinik tashxis matni</label>
+                        {{ form.clinical_main_diagnosis_text }}
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">Klinik yo'ldosh kasalliklar</label>
+                        {{ form.clinical_comorbidities }}
+                    </div>
+                </div>
+                <div id="patho-section">
+                    <hr>
+                    <h6 class="text-danger">Patologoanatomik tashxis</h6>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">{{ form.pathological_main_diagnosis.label }}</label>
+                            {{ form.pathological_main_diagnosis }}
+                            <div class="text-danger small">{{ form.pathological_main_diagnosis.errors }}</div>
+                        </div>
+                        <div class="col-md-9 mb-3">
+                            <label class="form-label">Patologoanatomik tashxis matni</label>
+                            {{ form.pathological_main_diagnosis_text }}
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Patologoanatomik yo'ldosh kasalliklar</label>
+                            {{ form.pathological_comorbidities }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. O'lim sababi -->
+            <div class="form-section" id="death-section">
+                <h5 class="text-danger">💀 O'lim sababi</h5>
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">{{ death_form.immediate_cause.label }}</label>
+                        {{ death_form.immediate_cause }}
+                        <div class="text-danger small">{{ death_form.immediate_cause.errors }}</div>
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">{{ death_form.underlying_cause.label }}</label>
+                        {{ death_form.underlying_cause }}
+                        <div class="text-danger small">{{ death_form.underlying_cause.errors }}</div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">{{ death_form.main_disease_code.label }}</label>
+                        {{ death_form.main_disease_code }}
+                        <div class="text-danger small">{{ death_form.main_disease_code.errors }}</div>
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">{{ death_form.other_significant_conditions.label }}</label>
+                        {{ death_form.other_significant_conditions }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. Jarrohlik amaliyotlari -->
+            <div class="form-section">
+                <h5>🔪 Jarrohlik amaliyotlari</h5>
+                {{ surgery_formset.management_form }}
+                <div id="surgery-forms">
+                    {% for sform in surgery_formset %}
+                    <div class="surgery-form border rounded p-3 mb-2">
+                        <div class="row">
+                            <div class="col-md-2 mb-2">
+                                <label class="form-label">Sana</label>
+                                {{ sform.operation_date }}
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">Amaliyot turi</label>
+                                <div class="position-relative">
+                                    <input type="text"
+                                           class="form-control op-search-input"
+                                           placeholder="Kod yoki nom kiriting..."
+                                           autocomplete="off">
+                                    {{ sform.operation_type }}
+                                    <ul class="op-suggest list-group position-absolute w-100"
+                                        style="display:none; max-height:200px; overflow-y:auto; z-index:999;"></ul>
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-2">
+                                <label class="form-label">Narkoz</label>
+                                {{ sform.anesthesia }}
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">Asorati</label>
+                                {{ sform.complication }}
+                            </div>
+                            {% if sform.instance.pk %}
+                            <div class="col-md-12 mt-1">
+                                <div class="form-check">
+                                    {{ sform.DELETE }}
+                                    <label class="form-check-label text-danger">O'chirish</label>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {{ sform.id }}
+                    </div>
+                    {% endfor %}
+                </div>
+                <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="add-surgery">
+                    + Amaliyot qo'shish
+                </button>
+            </div>
+
+            <!-- 8. Tekshiruvlar -->
+            <div class="form-section">
+                <h5>🧪 Tekshiruvlar</h5>
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">OITS tekshiruvi sanasi</label>
+                        {{ form.aids_test_date }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">OITS natijasi</label>
+                        {{ form.aids_test_result }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">WP tekshiruvi sanasi</label>
+                        {{ form.wp_test_date }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">WP natijasi</label>
+                        {{ form.wp_test_result }}
+                    </div>
+                    <!-- is_war_veteran Bemor ma'lumotlari bo'limiga ko'chirildi -->
+                </div>
+            </div>
+
+            <!-- 9. Shifokorlar -->
+            <!-- 9. Shifokorlar bo'limida -->
+<div class="col-md-6 mb-3">
+    <label class="form-label fw-bold">
+        {{ form.attending_doctor.label }} <span class="text-danger">*</span>
+    </label>
+    {{ form.attending_doctor }}
+    <div class="text-danger small">{{ form.attending_doctor.errors }}</div>
+</div>
+<div class="col-md-6 mb-3">
+    <label class="form-label fw-bold">
+        {{ form.department_head.label }} <span class="text-danger">*</span>
+    </label>
+    {{ form.department_head }}
+    <div class="text-danger small">{{ form.department_head.errors }}</div>
+</div>
+
+            <div class="d-flex gap-2 mb-5">
+                <button type="submit" class="btn btn-primary btn-lg">💾 Saqlash</button>
+                <a href="{% url 'patient_list' %}" class="btn btn-secondary btn-lg">Bekor qilish</a>
+            </div>
+
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    // Bootstrap stillarini qo'llash
+    document.querySelectorAll('input, select, textarea').forEach(el => {
+        if (!el.classList.contains('form-check-input') && el.type !== 'hidden') {
+            el.classList.add('form-control');
+        }
+    });
+    document.querySelectorAll('select').forEach(el => {
+        el.classList.remove('form-control');
+        el.classList.add('form-select');
+    });
+
+    // ==================== TOGGLE FUNKSIYASI ====================
+    function initToggle(yesBtnId, noBtnId, hiddenId) {
+        const yesBtn = document.getElementById(yesBtnId);
+        const noBtn  = document.getElementById(noBtnId);
+        const input  = document.getElementById(hiddenId);
+        if (!yesBtn || !noBtn || !input) return;
+
+        function update(val) {
+            input.value = val;
+            if (val === 'True') {
+                yesBtn.classList.add('active-yes');
+                noBtn.classList.remove('active-no');
+            } else {
+                noBtn.classList.add('active-no');
+                yesBtn.classList.remove('active-yes');
+            }
+        }
+        update(input.value === 'True' ? 'True' : 'False');
+        yesBtn.addEventListener('click', () => update('True'));
+        noBtn.addEventListener('click',  () => update('False'));
+    }
+
+    initToggle('emg-yes',  'emg-no',  'is_emergency_val');
+    initToggle('vet-yes',  'vet-no',  'is_war_veteran_val');
+    initToggle('pen-yes',  'pen-no',  'is_pensioner_val');
+
+    // ==================== REZIDENT TOGGLE ====================
+    (function() {
+        const resYes = document.getElementById('res-yes');
+        const resNo  = document.getElementById('res-no');
+        const input  = document.getElementById('resident_status_val');
+        if (!resYes || !resNo || !input) return;
+
+        function updateRes(val) {
+            input.value = val;
+            if (val === 'resident') {
+                resYes.classList.add('active-yes');
+                resNo.classList.remove('active-no');
+            } else {
+                resNo.classList.add('active-no');
+                resYes.classList.remove('active-yes');
+            }
+            const passportField    = document.getElementById('passport-field');
+            const addressSection   = document.getElementById('address-section');
+            const categoryField    = document.getElementById('patient-category-field');
+            const hospitalField    = document.getElementById('hospital-type-field');
+            const isNR = val === 'non_resident';
+            if (passportField)  passportField.style.display  = isNR ? 'none' : 'block';
+            if (addressSection) addressSection.style.display = isNR ? 'none' : 'block';
+            if (categoryField)  categoryField.style.display  = isNR ? 'none' : 'block';
+            if (hospitalField)  hospitalField.style.display  = isNR ? 'none' : 'block';
+        }
+
+        const current = input.value || 'resident';
+        updateRes(current);
+        resYes.addEventListener('click', () => updateRes('resident'));
+        resNo.addEventListener('click',  () => updateRes('non_resident'));
+    })();
+
+    // Rezident toggle — yuqoridagi initToggle blokida boshqariladi
+
+    // ==================== IJTIMOIY HOLAT ====================
+    const socialStatus  = document.getElementById('id_social_status');
+    const workplaceField = document.getElementById('workplace-field');
+    const positionField  = document.getElementById('position-field');
+
+    // ==================== ISH JOYI — TEMIR YO'LCHI ====================
+    const ORG_SEARCH_URL  = "{% url 'organization_search' %}";
+    const orgSearchInput  = document.getElementById('org-search-input');
+    const orgDropdown     = document.getElementById('org-dropdown');
+    const orgSearchBlock  = document.getElementById('org-search-block');
+    const orgTextBlock    = document.getElementById('workplace-text-block');
+    const orgSelected     = document.getElementById('org-selected');
+    const orgSelectedInfo = document.getElementById('org-selected-info');
+    const orgIdInput      = document.getElementById('workplace_org_id');
+    const railwayBadge    = document.getElementById('railway-badge');
+    const catSelect       = document.getElementById('id_patient_category');
+
+    // Barcha ish joyi ko'rsatish logikasi bir joyda
+    function updateWorkplaceBlock() {
+        if (!socialStatus || !catSelect) return;
+
+        const social    = socialStatus.value;
+        const category  = catSelect.value;
+        const isRailway = category === 'railway';
+        const isWorking = ['employed', 'student_higher', 'student_school'].includes(social);
+
+        // Ish joyi maydoni — faqat ishlaydi/o'qiydi bo'lganda
+        const showWorkplace = isWorking;
+        const showPosition  = social === 'employed';
+        const showDropdown  = isRailway && isWorking;
+
+        if (workplaceField) workplaceField.style.display = showWorkplace ? 'block' : 'none';
+        if (positionField)  positionField.style.display  = showPosition  ? 'block' : 'none';
+
+        // Dropdown vs oddiy input
+        if (orgSearchBlock) orgSearchBlock.style.display = showDropdown ? 'block' : 'none';
+        if (orgTextBlock)   orgTextBlock.style.display   = showDropdown ? 'none'  : 'block';
+        if (railwayBadge)   railwayBadge.style.display   = showDropdown ? 'inline-block' : 'none';
+    }
+
+    function toggleWorkplace() {
+        updateWorkplaceBlock();
+    }
+
+    if (socialStatus) {
+        socialStatus.addEventListener('change', updateWorkplaceBlock);
+    }
+    if (catSelect) {
+        catSelect.addEventListener('change', updateWorkplaceBlock);
+    }
+
+    // Sahifa yuklanganda
+    updateWorkplaceBlock();
+
+    // Mavjud qiymat bo'lsa ko'rsatish
+    const existingOrgId = orgIdInput ? orgIdInput.value : '';
+    if (existingOrgId) {
+        fetch(`${ORG_SEARCH_URL}?q=`)
+            .then(r => r.json())
+            .then(data => {
+                // id bo'yicha topish
+                fetch(`${ORG_SEARCH_URL}?id=${existingOrgId}`)
+                    .then(r => r.json())
+                    .then(orgs => {
+                        if (orgs.length > 0) showOrgSelected(orgs[0]);
+                    }).catch(() => {});
+            }).catch(() => {});
+    }
+
+    function fetchOrgs(q) {
+        const url = `${ORG_SEARCH_URL}?q=${encodeURIComponent(q)}`;
+        orgDropdown.innerHTML = '<div style="padding:10px;color:#888;">⏳ Qidirilmoqda...</div>';
+        orgDropdown.style.display = 'block';
+
+        fetch(url)
+            .then(r => r.json())
+            .then(data => {
+                if (!data.length) {
+                    orgDropdown.innerHTML = '<div style="padding:10px;color:#888;">Topilmadi</div>';
+                    return;
+                }
+                orgDropdown.innerHTML = data.map(org => `
+                    <div class="org-item" data-id="${org.id}"
+                         data-name="${org.enterprise_name.replace(/"/g,'&quot;')}"
+                         data-branch="${(org.branch_name||'').replace(/"/g,'&quot;')}"
+                         data-code="${org.enterprise_code}"
+                         data-inn="${org.enterprise_inn}"
+                         data-bcode="${org.branch_code}"
+                         style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #f1f1f1;">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <div class="fw-semibold small">${org.enterprise_name}</div>
+                                ${org.branch_name ? `<div class="text-muted small">↳ ${org.branch_name}</div>` : ''}
+                            </div>
+                            <div class="text-end text-muted small ms-2">
+                                ${org.enterprise_code ? `<span class="badge bg-light text-dark border">${org.enterprise_code}</span>` : ''}
+                                ${org.branch_code ? `<span class="badge bg-light text-dark border ms-1">${org.branch_code}</span>` : ''}
+                                ${org.enterprise_inn ? `<div>INN: ${org.enterprise_inn}</div>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                orgDropdown.querySelectorAll('.org-item').forEach(item => {
+                    item.addEventListener('mouseenter', () => item.style.background = '#e8f4fd');
+                    item.addEventListener('mouseleave', () => item.style.background = '');
+                    item.addEventListener('click', () => showOrgSelected({
+                        id: item.dataset.id,
+                        enterprise_name: item.dataset.name,
+                        branch_name: item.dataset.branch,
+                        enterprise_code: item.dataset.code,
+                        enterprise_inn: item.dataset.inn,
+                        branch_code: item.dataset.bcode,
+                    }));
+                });
+            })
+            .catch(() => {
+                orgDropdown.innerHTML = '<div style="padding:10px;color:red;">❌ Xato</div>';
+            });
+    }
+
+    function showOrgSelected(org) {
+        if (orgIdInput) orgIdInput.value = org.id;
+        if (orgSearchInput) orgSearchInput.value = '';
+        if (orgDropdown) orgDropdown.style.display = 'none';
+        if (orgSelected) orgSelected.style.display = 'block';
+        if (orgSelectedInfo) {
+            let html = `<strong>${org.enterprise_name}</strong>`;
+            if (org.branch_name) html += `<br><span class="text-muted">↳ ${org.branch_name}</span>`;
+            const badges = [];
+            if (org.enterprise_code) badges.push(`Kod: ${org.enterprise_code}`);
+            if (org.branch_code)     badges.push(`Filial kodi: ${org.branch_code}`);
+            if (org.enterprise_inn)  badges.push(`INN: ${org.enterprise_inn}`);
+            if (badges.length) html += `<br><small class="text-muted">${badges.join(' | ')}</small>`;
+            orgSelectedInfo.innerHTML = html;
+        }
+        // workplace text ni ham to'ldirish
+        const workplaceInput = document.getElementById('id_workplace');
+        if (workplaceInput && !workplaceInput.value) {
+            workplaceInput.value = org.branch_name
+                ? `${org.enterprise_name} — ${org.branch_name}`
+                : org.enterprise_name;
+        }
+    }
+
+    function clearOrgSelected() {
+        if (orgIdInput) orgIdInput.value = '';
+        if (orgSelected) orgSelected.style.display = 'none';
+        if (orgSelectedInfo) orgSelectedInfo.innerHTML = '';
+        if (orgSearchInput) { orgSearchInput.value = ''; orgSearchInput.focus(); }
+    }
+
+    if (orgSearchInput) {
+        orgSearchInput.addEventListener('input', function() {
+            fetchOrgs(this.value);
+        });
+        orgSearchInput.addEventListener('focus', function() {
+            fetchOrgs(this.value);
+        });
+    }
+
+    document.addEventListener('click', e => {
+        if (orgDropdown && !orgDropdown.contains(e.target) && e.target !== orgSearchInput) {
+            orgDropdown.style.display = 'none';
+        }
+    });
+
+    const orgClearBtn = document.getElementById('org-clear');
+    if (orgClearBtn) orgClearBtn.addEventListener('click', clearOrgSelected);
+
+    // ==================== OUTCOME (VAFOT) ====================
+    const outcomeField = document.getElementById('id_outcome');
+    const deathSection = document.getElementById('death-section');
+    const pathoSection = document.getElementById('patho-section');
+
+    function toggleDeathSection() {
+        if (!outcomeField || !deathSection || !pathoSection) return;
+        const isDeceased = outcomeField.value === 'deceased';
+        deathSection.style.display = isDeceased ? 'block' : 'none';
+        pathoSection.style.display = isDeceased ? 'block' : 'none';
+    }
+    if (outcomeField) {
+        outcomeField.addEventListener('change', toggleDeathSection);
+        toggleDeathSection();
+    }
+
+    // ==================== YO'LLANMA TURI ====================
+    const referralType = document.getElementById('id_referral_type');
+    const orgField = document.getElementById('org-field');
+
+    function toggleOrgField() {
+        if (!referralType || !orgField) return;
+        const show = ['referral', 'liniya'].includes(referralType.value);
+        orgField.style.display = show ? 'block' : 'none';
+    }
+    if (referralType) {
+        referralType.addEventListener('change', toggleOrgField);
+        toggleOrgField();
+    }
+
+    // ==================== AMALIYOT TURI AUTOCOMPLETE ====================
+    function initOperationSearch(surgeryForm) {
+        const searchInput = surgeryForm.querySelector('.op-search-input');
+        const hiddenSelect = surgeryForm.querySelector('select[name$="operation_type"]');
+        const suggest = surgeryForm.querySelector('.op-suggest');
+
+        if (!searchInput || !hiddenSelect || !suggest) return;
+
+        if (hiddenSelect.value) {
+            const selectedOption = hiddenSelect.options[hiddenSelect.selectedIndex];
+            if (selectedOption && selectedOption.text) searchInput.value = selectedOption.text;
+        }
+
+        searchInput.addEventListener('input', async () => {
+            const q = searchInput.value.trim();
+            try {
+                const res = await fetch(`/patients/operation-types/search/?q=${encodeURIComponent(q)}`);
+                const data = await res.json();
+                if (data.length === 0) { suggest.style.display = 'none'; return; }
+                suggest.innerHTML = data.map(item =>
+                    `<li class="list-group-item list-group-item-action py-1"
+                         style="cursor:pointer; font-size:13px"
+                         data-id="${item.id}" data-name="${item.name}">
+                         ${item.name}
+                     </li>`
+                ).join('');
+                suggest.style.display = 'block';
+                suggest.querySelectorAll('li').forEach(li => {
+                    li.addEventListener('mousedown', (e) => {
+                        e.preventDefault();
+                        searchInput.value = li.dataset.name;
+                        let opt = hiddenSelect.querySelector(`option[value="${li.dataset.id}"]`);
+                        if (!opt) {
+                            opt = new Option(li.dataset.name, li.dataset.id);
+                            hiddenSelect.add(opt);
+                        }
+                        hiddenSelect.value = li.dataset.id;
+                        suggest.style.display = 'none';
+                    });
+                });
+            } catch(e) {
+                console.error('Amaliyot qidirish xatosi:', e);
+            }
+        });
+
+        searchInput.addEventListener('focus', () => {
+            searchInput.dispatchEvent(new Event('input'));
+        });
+        searchInput.addEventListener('blur', () => {
+            setTimeout(() => { suggest.style.display = 'none'; }, 200);
+        });
+    }
+
+    document.querySelectorAll('.surgery-form').forEach(initOperationSearch);
+
+    // ==================== JARROHLIK AMALIYOTI QO'SHISH ====================
+    const addBtn = document.getElementById('add-surgery');
+    const surgeryFormsContainer = document.getElementById('surgery-forms');
+
+    if (addBtn && surgeryFormsContainer) {
+        addBtn.addEventListener('click', () => {
+            const totalForms = document.querySelector('[id$="TOTAL_FORMS"]');
+            if (!totalForms) return;
+
+            const formCount = parseInt(totalForms.value);
+            const firstForm = surgeryFormsContainer.querySelector('.surgery-form');
+            if (!firstForm) return;
+
+            const newForm = firstForm.cloneNode(true);
+
+            newForm.querySelectorAll('input, textarea, select').forEach(el => {
+                if (el.name) el.name = el.name.replace(/-\d+-/, `-${formCount}-`);
+                if (el.id) el.id = el.id.replace(/-\d+-/, `-${formCount}-`);
+                if (el.type !== 'hidden' && el.type !== 'checkbox') el.value = '';
+            });
+
+            const suggest = newForm.querySelector('.op-suggest');
+            if (suggest) { suggest.innerHTML = ''; suggest.style.display = 'none'; }
+            const searchInput = newForm.querySelector('.op-search-input');
+            if (searchInput) searchInput.value = '';
+
+            const deleteCheck = newForm.querySelector('.form-check');
+            if (deleteCheck) deleteCheck.style.display = 'none';
+
+            surgeryFormsContainer.appendChild(newForm);
+            totalForms.value = formCount + 1;
+
+            newForm.querySelectorAll('input:not(.form-check-input), textarea').forEach(el => {
+                el.classList.add('form-control');
+            });
+            newForm.querySelectorAll('select').forEach(el => {
+                el.classList.remove('form-control');
+                el.classList.add('form-select');
+            });
+
+            initOperationSearch(newForm);
+        });
+    }
+
+    // ==================== MKB-10 AUTOCOMPLETE ====================
+    const icdInput = document.getElementById('id_clinical_main_diagnosis');
+    if (icdInput) {
+        const icdSuggest = document.createElement('ul');
+        icdSuggest.className = 'list-group position-absolute';
+        icdSuggest.style.zIndex = '999';
+        icdInput.parentNode.style.position = 'relative';
+        icdInput.parentNode.appendChild(icdSuggest);
+
+        icdInput.addEventListener('input', async () => {
+            const q = icdInput.value;
+            if (q.length < 2) { icdSuggest.innerHTML = ''; return; }
+            const res = await fetch(`/patients/icd10/search/?q=${q}`);
+            const data = await res.json();
+            icdSuggest.innerHTML = data.map(item =>
+                `<li class="list-group-item list-group-item-action" style="cursor:pointer"
+                     data-code="${item.code}" data-title="${item.title}">
+                     <strong>${item.code}</strong> — ${item.title}
+                 </li>`
+            ).join('');
+            icdSuggest.querySelectorAll('li').forEach(li => {
+                li.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    icdInput.value = li.dataset.code;
+                    const diagText = document.getElementById('id_clinical_main_diagnosis_text');
+                    if (diagText) diagText.value = li.dataset.title;
+                    icdSuggest.innerHTML = '';
+                });
+            });
+        });
+        icdInput.addEventListener('blur', () => {
+            setTimeout(() => { icdSuggest.innerHTML = ''; }, 200);
+        });
+    }
+
+    // ==================== MANZIL CASCADE SELECT ====================
+    const countryEl = document.getElementById('id_country');
+    if (countryEl) {
+        countryEl.addEventListener('change', function () {
+            const regionSelect = document.getElementById('id_region');
+            const districtSelect = document.getElementById('id_district');
+            const citySelect = document.getElementById('id_city');
+            regionSelect.innerHTML = '<option value="">— Tanlang —</option>';
+            districtSelect.innerHTML = '<option value="">— Tanlang —</option>';
+            citySelect.innerHTML = '<option value="">— Tanlang —</option>';
+            if (!this.value) return;
+            fetch(`/patients/ajax/regions/?country_id=${this.value}`)
+                .then(r => r.json())
+                .then(data => data.forEach(item => {
+                    regionSelect.innerHTML += `<option value="${item.id}">${item.name}</option>`;
+                }));
+        });
+    }
+
+    const regionEl = document.getElementById('id_region');
+    if (regionEl) {
+        regionEl.addEventListener('change', function () {
+            const districtSelect = document.getElementById('id_district');
+            const citySelect = document.getElementById('id_city');
+            districtSelect.innerHTML = '<option value="">— Tanlang —</option>';
+            citySelect.innerHTML = '<option value="">— Tanlang —</option>';
+            if (!this.value) return;
+            fetch(`/patients/ajax/districts/?region_id=${this.value}`)
+                .then(r => r.json())
+                .then(data => data.forEach(item => {
+                    districtSelect.innerHTML += `<option value="${item.id}">${item.name}</option>`;
+                }));
+        });
+    }
+
+    const districtEl = document.getElementById('id_district');
+    if (districtEl) {
+        districtEl.addEventListener('change', function () {
+            const citySelect = document.getElementById('id_city');
+            citySelect.innerHTML = '<option value="">— Tanlang —</option>';
+            if (!this.value) return;
+            fetch(`/patients/ajax/cities/?district_id=${this.value}`)
+                .then(r => r.json())
+                .then(data => data.forEach(item => {
+                    citySelect.innerHTML += `<option value="${item.id}">${item.name}</option>`;
+                }));
+        });
+    }
+
+    // ==================== CHIQISH XULOSASI ====================
+    const clearBtn = document.getElementById('clear-conclusion');
+    const conclusionSelect = document.getElementById('id_discharge_conclusion');
+    if (clearBtn && conclusionSelect) {
+        clearBtn.addEventListener('click', () => { conclusionSelect.value = ''; });
+    }
+
+    const toggleBtn = document.getElementById('toggle-add-conclusion');
+    const newConclusionForm = document.getElementById('new-conclusion-form');
+    const cancelBtn = document.getElementById('cancel-conclusion');
+    const saveBtn = document.getElementById('save-conclusion');
+    const newInput = document.getElementById('new-conclusion-name');
+    const msgDiv = document.getElementById('conclusion-msg');
+
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            newConclusionForm.style.display = 'block';
+            toggleBtn.style.display = 'none';
+            newInput.focus();
+        });
+    }
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => {
+            newConclusionForm.style.display = 'none';
+            toggleBtn.style.display = 'block';
+            newInput.value = '';
+            msgDiv.textContent = '';
+        });
+    }
+    if (saveBtn) {
+        saveBtn.addEventListener('click', async () => {
+            const name = newInput.value.trim();
+            if (!name) {
+                msgDiv.textContent = 'Xulosa nomini kiriting!';
+                msgDiv.className = 'small mt-1 text-danger';
+                return;
+            }
+            const res = await fetch('/patients/conclusion/add/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+                body: JSON.stringify({ name })
+            });
+            const data = await res.json();
+            if (data.success) {
+                const option = new Option(data.name, data.id, true, true);
+                conclusionSelect.add(option);
+                conclusionSelect.value = data.id;
+                msgDiv.textContent = "✅ Qo'shildi!";
+                msgDiv.className = 'small mt-1 text-success';
+                newInput.value = '';
+                setTimeout(() => {
+                    newConclusionForm.style.display = 'none';
+                    toggleBtn.style.display = 'block';
+                    msgDiv.textContent = '';
+                }, 1000);
+            } else {
+                msgDiv.textContent = data.error || 'Xato yuz berdi.';
+                msgDiv.className = 'small mt-1 text-danger';
+            }
+        });
+    }
+
+
+    // ==================== QAYTA KELGAN BEMOR TEKSHIRUVI ====================
+    (function() {
+        const CHECK_URL = "/patients/ajax/check-patient/";
+        const jshshirInput  = document.getElementById('id_JSHSHIR');
+        const passportInput = document.getElementById('id_passport_serial');
+
+        let alertDiv = document.getElementById('repeat-patient-alert');
+        if (!alertDiv) {
+            alertDiv = document.createElement('div');
+            alertDiv.id = 'repeat-patient-alert';
+            alertDiv.className = 'alert alert-warning';
+            alertDiv.style.display = 'none';
+            const firstSection = document.querySelector('.form-section') || document.querySelector('form');
+            if (firstSection) firstSection.prepend(alertDiv);
+        }
+
+        function checkPatient(jshshir, passport) {
+            const params = new URLSearchParams();
+            if (jshshir)  params.set('jshshir', jshshir);
+            if (passport) params.set('passport', passport);
+            if (!jshshir && !passport) { alertDiv.style.display = 'none'; return; }
+
+            fetch(CHECK_URL + '?' + params.toString())
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.found) { alertDiv.style.display = 'none'; return; }
+
+                    let html = '<strong>⚠️ Bu bemor avval ham murojaat qilgan:</strong><ul class="mb-0 mt-2">';
+                    data.patients.forEach(p => {
+                        const statusIcon = p.status_code === 'admitted' ? '🔵' :
+                                          p.status_code === 'completed' ? '🟢' : '🟡';
+                        html += `<li>
+                            <a href="/patients/${p.pk}/" target="_blank" class="fw-semibold">
+                                ${p.medical_record_number}
+                            </a>
+                            — ${p.full_name} |
+                            📅 ${p.admission_date} |
+                            🏥 ${p.department} |
+                            ${statusIcon} ${p.status}
+                            <span class="text-muted small"> | ${p.diagnosis}</span>
+                        </li>`;
+                    });
+                    html += '</ul>';
+                    alertDiv.innerHTML = html;
+                    alertDiv.style.display = 'block';
+                })
+                .catch(() => {});
+        }
+
+        let debounce;
+        function onInput() {
+            clearTimeout(debounce);
+            const jshshir  = jshshirInput  ? jshshirInput.value.trim()  : '';
+            const passport = passportInput ? passportInput.value.trim() : '';
+            debounce = setTimeout(() => checkPatient(jshshir, passport), 600);
+        }
+
+        if (jshshirInput)  jshshirInput.addEventListener('input', onInput);
+        if (passportInput) passportInput.addEventListener('input', onInput);
+    })();
+
+}); // DOMContentLoaded tugadi
+</script>
+{% endblock %}

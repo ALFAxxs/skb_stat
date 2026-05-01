@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page {
+    size: A4;
+    margin: 20mm 20mm 25mm 25mm;
+  }
+  body {
+    font-family: "Times New Roman", serif;
+    font-size: 12pt;
+    line-height: 1.4;
+    color: #000;
+  }
+  .center { text-align: center; }
+  .right  { text-align: right; }
+  .left   { text-align: left; }
+  .bold   { font-weight: bold; }
+  .underline { text-decoration: underline; }
+  .title {
+    font-size: 14pt;
+    font-weight: bold;
+    text-align: center;
+    margin: 8px 0;
+  }
+  .subtitle {
+    font-size: 12pt;
+    text-align: center;
+    margin-bottom: 4px;
+  }
+  .section-title {
+    font-weight: bold;
+    margin-top: 12px;
+    margin-bottom: 4px;
+  }
+  p {
+    margin: 4px 0;
+    text-align: justify;
+  }
+  .parties-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+  }
+  .parties-table td {
+    width: 50%;
+    vertical-align: top;
+    padding: 4px 8px;
+  }
+  .sign-line {
+    border-top: 1px solid #000;
+    width: 80%;
+    margin-top: 2px;
+  }
+  /* QR kod bloki */
+  .qr-block {
+    margin-top: 20px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 12px;
+    text-align: center;
+    background: #f9f9f9;
+  }
+  .qr-block img {
+    width: 100px;
+    height: 100px;
+  }
+  .qr-text {
+    font-size: 9pt;
+    color: #555;
+    margin-top: 6px;
+  }
+  .qr-url {
+    font-size: 8pt;
+    color: #1a73e8;
+    word-break: break-all;
+  }
+  .divider {
+    border: none;
+    border-top: 1px solid #000;
+    margin: 8px 0;
+  }
+  .indent { margin-left: 20px; }
+</style>
+</head>
+<body>
+
+<!-- SARLAVHA -->
+<p class="center bold">{{ contract.contract_number }} sonli shartnoma</p>
+<p class="center">Pullik tibbiy yordam ko'rsatish bo'yicha</p>
+<p>
+  Toshkent sh. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <span class="underline">{{ contract.contract_date|date:"d.m.Y" }}</span>
+</p>
+
+<p style="text-align:justify; margin-top:8px;">
+  <span class="bold">"Temir yo`l ijtimoiy xizmatlar" MCHJ Markaziy klinik kasalxona filiali</span>
+  Nizomi asosida ish yurituvchi direktor I.K.Yangiboyev vakili sifatida bir tomondan, keyingi o`rinlarda
+  <span class="bold">"Ijrochi"</span> deb ataladi, va
+</p>
+<p style="text-align:center; margin: 4px 0;">
+  <span class="underline">{{ full_address }}</span>
+</p>
+<p style="text-align:center; font-size:10pt; color:#555;">(yashash joyi)</p>
+<p>
+  manzilida yashovchi, pasport/ID:
+  <span class="underline">&nbsp;{{ patient.passport_serial|default:"__________" }}&nbsp;</span>
+  {% if patient.JSHSHIR %}
+  , JSHSHIR: <span class="underline">&nbsp;{{ patient.JSHSHIR }}&nbsp;</span>
+  {% endif %}
+  ikkinchi tomondan, keyingi o`rinlarda <span class="bold">"Bemor"</span> deb ataladi,
+  mazkur shartnomani quyidagilar to'g'risida tuzdilar:
+</p>
+
+<hr class="divider">
+
+<!-- 1. MAVZU -->
+<p class="section-title">1. SHARTNOMA MAVZUSI.</p>
+<p class="indent">Tasdiqlangan preyskurantga muvofiq pullik tibbiy-diagnostika xizmatlarini ko'rsatish.</p>
+
+<!-- 2. BAHO -->
+<p class="section-title">2. SHARTNOMANING BAHOSI VA HISOB-KITOB TARTIBI.</p>
+<p class="indent">Joriy shartnoma narxi pullik tibbiy diagnostic xizmatlarni ko'rsatish iborat <span class="bold">QQS bilan</span>.</p>
+<p class="indent">To'lov "Bemor" tomonidan shartnoma narxining 100% miqdorida oldindan to'lov yo'li bilan 3 bank kuni ichida amalga oshiriladi.</p>
+<p class="indent">"Bemor" "Ijrochi"ning barcha pullik xizmatlari ko'rsatilgan preyskurant bilan tanishib chiqgandan so'ng, ko'rsatilgan tibbiy xizmatlarning miqdori va narxlari bilan kelishib, mazkur shartnomani imzolaydi.</p>
+
+<!-- 3. HUQUQ VA MAJBURIYATLAR -->
+<p class="section-title">3. TOMONLARNING HUQUQ VA MAJBURIYATLARI.</p>
+<p class="bold indent">"Ijrochi"ning majburiyatlari:</p>
+<p class="indent">— Shartnoma tuzilgan kundan qat'iy nazar, bo'sh joylar mavjud bo'lgan taqdirda va tibbiy amaliyotning yuqori saviyada, O'zbekiston Respublikasida amaldagi normativ hujjatlar talablariga muvofiq amalga oshirilishini ta'minlash.</p>
+<p class="indent">— Hisob-faktura bilan rasmiylashtirilgan xaqiqiy xarajatlar natijalari bo'yicha foydalanilmagan mablag'larni bemorga/homiyga qaytarish.</p>
+<p class="indent">— Bemorga taqdim etilgan tibbiy xizmatlar, dori-darmonlar va oziq-ovqat uchun hisob-fakturani bemorga/homiyga taqdim etish.</p>
+<p class="indent">— Xizmatlarni yetkazib berishni qabul qilish to`g'risidagi dalolatnomani o'z vaqtida tuzish va imzolash.</p>
+<p class="indent">— Bemorning sog'ligi haqidagi tibbiy sirlarni oshkor qilmaslik.</p>
+
+<p class="bold indent">"Ijrochi" quyidagi huquqlarga ega:</p>
+<p class="indent">— Bemor majburiyatlariga rioya qilmagan holda ushbu shartnomani bir tomonlama bekor qilish.</p>
+<p class="indent">— Bemordan moddiy zarar, bemorning aybi bilan yetkazilgan zararlarni to'liq hajmda qoplashni talab qilish va olish.</p>
+
+<p class="bold indent">"Bemor"ning majburiyatlari:</p>
+<p class="indent">— Ijrochining ichki tartib-qoidalariga, tibbiy xodimlarining davolash rejimiga va tayinlashlariga rioya qilish.</p>
+<p class="indent">— Ijrochiga xizmatlarning to'liq narxini ushbu Shartnomaning 2.2. bandlarida nazarda tutilgan shartlarda o'z vaqtida to'lash.</p>
+<p class="indent">— Ularga yetkazilgan zararlarni to'liq qoplash.</p>
+
+<p class="bold indent">"Bemor" quyidagi huquqlarga ega:</p>
+<p class="indent">— Tibbiy yordam ko'rsatish bo'yicha tasdiqlangan tartib-qoidalar, diagnostika va davolash standartlari hamda tariflar bilan tanishish.</p>
+<p class="indent">— Hisob-faktura bo'yicha berilgan xaqiqiy xarajatlar natijalari asosida qolgan foydalanilmagan mablag'larning qaytarilishi.</p>
+<p class="indent">— Ushbu shartnomani bir tomonlama bekor qilish.</p>
+
+<!-- 4. KORRUPSIYAGA QARSHI -->
+<p class="section-title">4. TOMONLARNING KORRUPSIYAGA QARSHI KURASHISH BO`YICHA MAJBURIYATLARI</p>
+<p class="indent">4.1. Shartnoma bo`yicha o`z majburiyatlarini bajarishda tomonlar korrupsiyaga qarshi kurashish bo`yicha qoidalarga, shu jumladan poraxo`rlikka yo`l qo`ymaslik talablariga rioya qilish majburiyatini oladilar.</p>
+<p class="indent">4.2. Yoki ishonch telefoni orqali bir-birini xabardor qilish majburiyatini oladi.</p>
+<p class="indent">4.3. Mazkur bobning talablari bajarilmaganda, shu jumladan belgilangan muddatda korrupsion xavf-xatar bartaraf etilmasa, shartnoma bir tomonlama bekor qilinishi mumkin.</p>
+
+<!-- 5. JAVOBGARLIK -->
+<p class="section-title">5. TOMONLARNING JAVOBGARLIGI.</p>
+<p class="indent">5.1. Tomonlar ushbu shartnoma bo'yicha o'z vazifalarini lozim darajada bajarmagan taqdirda ular O'zbekiston Respublikasi qonun hujjatlariga muvofiq javobgar bo'ladilar.</p>
+<p class="indent">Shartnoma imzolangandan so'ng favqulotda vaziyat yuz berganida: tabiy ofatlar, harbiy harakatlar, terroristik aktlar, ommaviy tartibsizliklar va shu kabi favqulotda holatlarning oqibatida tomonlar shartnoma bo'yicha majburiyatlarini bajara olmagan taqdirda, ular javobgarlikdan ozod etiladi.</p>
+
+<!-- 6. NIZOLAR -->
+<p class="section-title center">6. NIZOLARNI HAL ETISH TARTIBI.</p>
+<p class="indent">Ushbu shartnomani bajarishda yuzaga kelishi mumkin bo'lgan nizo va kelishmovchiliklar, iloji bo'lsa, tomonlar o'rtasidagi muzokaralar orqali hal qilinadi.</p>
+<p class="indent">Agar nizolarni muzokaralar yo'li bilan hal qilishning iloji bo'lmasa, ular O'zbekiston Respublikasi qonunchiligiga muvofiq sudda hal qilinadi.</p>
+
+<!-- 7. BOSHQA SHARTLAR -->
+<p class="section-title center">7. SHARTNOMANING BOSHQA SHARTLARI.</p>
+<p class="indent">7.1. Bemorga qo'shimcha diagnostik va terapevtik yordam, dori-darmonlar va oziq-ovqat bilan ta'minlash xarajatlari, agar ular ushbu Shartnomada ko'rsatilmagan bo'lsa, alohida haq to'lanadi.</p>
+<p class="indent">7.2. Ushbu shartnoma bilan tartibga solinmagan masalalarda tomonlar O'zbekiston Respublikasi qonunchiligiga amal qiladilar.</p>
+<p class="indent">7.3. Ushbu shartnomaga kiritilgan har qanday o'zgartirish va qo'shimchalar amal qiladi va shartnomaning ajralmas qismini faqat ikkala tomon imzolagan taqdirda tashkil etadi.</p>
+<p class="indent">7.4. Bu shartnoma barcha tomonlar tomonidan imzolangan paytdan boshlab kuchga kiradi va davolanish tugagunga qadar amal qiladi.</p>
+<p class="indent">7.5. Bu shartnoma tomonlarning har biri uchun bittadan ikki nusxada tuziladi.</p>
+<p class="indent">7.6. Xizmatlar Ijrochi va Bemor tomonidan xizmatga qabul qilish dalolatnomasi imzolanganidan keyin ko'rsatilgan hisoblanadi.</p>
+
+<!-- IMZOLAR -->
+<hr class="divider" style="margin-top:16px;">
+<p class="section-title">8. TOMONLARNING HUQUQIY MANZILLARI</p>
+
+<table class="parties-table">
+  <tr>
+    <td>
+      <p class="bold">IJROCHI</p>
+      <p class="bold">"Temir yo`l ijtimoiy xizmatlar" MCHJ<br>Markaziy klinik kasalxona filiali</p>
+      <p>O'zbekiston Respublikasi, 100047,<br>
+      Toshkent shahar, Yashnobod tumani,<br>
+      Taraqqiyot 2 tor, 12A uy.</p>
+      <p>X/R. 2020 8000 9041 5940 6010<br>
+      O'zbekiston Respublikasi Milliy banki<br>
+      Mirobod tumani filiali<br>
+      MFO 00450. STIR 203855194</p>
+      <p>Tel. (+99871) 299-63-02, 299-62-07</p>
+      <br>
+      <p>Direktor ____________ I.K.Yangiboyev</p>
+    </td>
+    <td>
+      <p class="bold">BEMOR</p>
+      <p>F.I.Sh: <span class="underline">&nbsp;{{ patient.full_name }}&nbsp;</span></p>
+      <p>Tug'ilgan sana: <span class="underline">&nbsp;{{ patient.birth_date|date:"d.m.Y"|default:"__________" }}&nbsp;</span></p>
+      <p>Pasport/ID: <span class="underline">&nbsp;{{ patient.passport_serial|default:"__________" }}&nbsp;</span></p>
+      {% if patient.JSHSHIR %}
+      <p>JSHSHIR: <span class="underline">&nbsp;{{ patient.JSHSHIR }}&nbsp;</span></p>
+      {% endif %}
+      <p>Manzil: <span class="underline">&nbsp;{{ full_address }}&nbsp;</span></p>
+      <p>Tel: <span class="underline">&nbsp;{{ patient.phone|default:"__________" }}&nbsp;</span></p>
+      <br><br>
+      <p>Imzo: _______________________</p>
+    </td>
+  </tr>
+</table>
+
+<!-- QR KOD -->
+<div class="qr-block">
+  <img src="data:image/png;base64,{{ qr_base64 }}" alt="QR kod">
+  <p class="qr-text"><strong>Shartnomani onlayn ko'rish yoki yuklab olish:</strong></p>
+  <p class="qr-url">{{ verify_url }}</p>
+  <p class="qr-text" style="font-size:8pt; color:#888;">
+    Shartnoma № {{ contract.contract_number }} |
+    Sana: {{ contract.contract_date|date:"d.m.Y" }}
+  </p>
+</div>
+
+</body>
+</html>

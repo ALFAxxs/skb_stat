@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Virtual Environment
+venv/
+env/
+.venv/
+.env/
+
+# Environment variables
+.env
+.env.local
+*.env
+
+# Django
+*.log
+*.pot
+*.pyc
+db.sqlite3
+db.sqlite3-journal
+media/
+
+# Static files (agar collect qilinsagan bo'lsa)
+staticfiles/
+static_root/
+
+# Migrations (ixtiyoriy - ko'p hollarda qo'shilmaydi)
+# */migrations/*.py
+# */migrations/*.pyc
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+.coverage
+htmlcov/
+
+# Pytest
+.pytest_cache/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+TY.xlsx
+db.sqlite3_org_archive
+skb_stat.zip
+*.zip
+*.xlsx
+template.zip
+*.sqlite

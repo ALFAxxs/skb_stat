@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">{{ title }}</h5>
+            </div>
+            <div class="card-body">
+
+                {% if form.errors %}
+                <div class="alert alert-danger">
+                    {% for field, errors in form.errors.items %}
+                        <div>• <b>{{ field }}</b>: {{ errors|join:", " }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label">Login</label>
+                        {{ form.username }}
+                        <div class="text-danger small">{{ form.username.errors }}</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Ism</label>
+                            {{ form.first_name }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Familiya</label>
+                            {{ form.last_name }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Rol</label>
+                        {{ form.role }}
+                        <div class="text-danger small">{{ form.role.errors }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Bo'lim</label>
+                        {{ form.department }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Telefon</label>
+                        {{ form.phone }}
+                    </div>
+                    {% if form.password1 %}
+                    <div class="mb-3">
+                        <label class="form-label">Parol</label>
+                        {{ form.password1 }}
+                        <div class="text-danger small">{{ form.password1.errors }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Parolni tasdiqlang</label>
+                        {{ form.password2 }}
+                        <div class="text-danger small">{{ form.password2.errors }}</div>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">💾 Saqlash</button>
+                        <a href="{% url 'user_list' %}" class="btn btn-secondary">Bekor qilish</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('input, select, textarea').forEach(el => {
+    if (!el.classList.contains('form-check-input')) {
+        el.classList.add('form-control');
+    }
+});
+document.querySelectorAll('select').forEach(el => {
+    el.classList.remove('form-control');
+    el.classList.add('form-select');
+});
+</script>
+{% endblock %}

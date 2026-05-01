@@ -1,0 +1,541 @@
+{% extends 'base.html' %}
+{% block title %}Statistika{% endblock %}
+
+{% block content %}
+<style>
+.stat-card { border-radius:8px; padding:14px 18px; border:none; }
+.border-l-blue   { border-left:4px solid #0d6efd !important; }
+.border-l-green  { border-left:4px solid #198754 !important; }
+.border-l-red    { border-left:4px solid #dc3545 !important; }
+.border-l-yellow { border-left:4px solid #856404 !important; }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>📊 Xizmatlar statistikasi</h4>
+    <div class="d-flex gap-2">
+        {% if active_tab == 'services' %}
+        <a href="{% url 'export_services_excel' %}?{{ current_filters }}" class="btn btn-success btn-sm">📥 Excel</a>
+        <a href="{% url 'export_services_pdf' %}?{{ current_filters }}" class="btn btn-danger btn-sm">📄 PDF</a>
+        {% elif active_tab == 'medicines' %}
+        <a href="{% url 'export_medicine_excel' %}?{{ current_filters }}" class="btn btn-success btn-sm">📥 Excel</a>
+        {% elif active_tab == 'operations' %}
+        <a href="{% url 'export_operation_excel' %}?{{ current_filters }}" class="btn btn-success btn-sm">📥 Excel</a>
+        {% elif active_tab == 'opservices' %}
+        <a href="{% url 'export_operation_service_excel' %}?{{ current_filters }}" class="btn btn-success btn-sm">📥 Excel</a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- TABLAR -->
+<ul class="nav nav-tabs mb-0" id="statTabs">
+    <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'services' %}active{% endif %}"
+           href="?tab=services&date_from={{ date_from }}&date_to={{ date_to }}&patient_category={{ patient_cat }}&period={{ period }}">
+            🏥 Xizmatlar
+            <span class="badge bg-secondary ms-1">{{ svc_totals.count|default:0 }}</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'medicines' %}active{% endif %}"
+           href="?tab=medicines&date_from={{ date_from }}&date_to={{ date_to }}&patient_category={{ patient_cat }}&period={{ period }}">
+            💊 Dorilar
+            <span class="badge bg-secondary ms-1">{{ med_totals.total_records|default:0 }}</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'operations' %}active{% endif %}"
+           href="?tab=operations&date_from={{ date_from }}&date_to={{ date_to }}&patient_category={{ patient_cat }}&period={{ period }}">
+            🔪 Operatsiyalar
+            <span class="badge bg-secondary ms-1">{{ op_totals.total|default:0 }}</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'opservices' %}active{% endif %}"
+           href="?tab=opservices&date_from={{ date_from }}&date_to={{ date_to }}&patient_category={{ patient_cat }}&period={{ period }}">
+            🏥 Op. xizmatlari
+            <span class="badge bg-secondary ms-1">{{ opx_totals.total_count|default:0 }}</span>
+        </a>
+    </li>
+</ul>
+
+<!-- FILTER PANELI — har tab uchun o'z filtrlari -->
+<div class="card border-0 shadow-sm border-top-0 rounded-top-0 mb-4">
+    <div class="card-body py-2">
+        <form method="get">
+        <input type="hidden" name="tab" value="{{ active_tab }}">
+        <div class="row g-2 align-items-end">
+
+            <!-- Umumiy filterlar (barcha tablarda) -->
+            <div class="col-md-2">
+                <label class="form-label small fw-bold mb-1">Boshlanish</label>
+                <input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold mb-1">Tugash</label>
+                <input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold mb-1">Bemor turi</label>
+                <select name="patient_category" class="form-select form-select-sm">
+                    <option value="">Barchasi</option>
+                    <option value="railway"      {% if patient_cat == 'railway'      %}selected{% endif %}>🚂 Temir yo'lchi</option>
+                    <option value="paid"         {% if patient_cat == 'paid'         %}selected{% endif %}>💳 Pullik</option>
+                    <option value="non_resident" {% if patient_cat == 'non_resident' %}selected{% endif %}>🌍 Norezident</option>
+                </select>
+            </div>
+
+            <!-- Tab ga xos filterlar -->
+            {% if active_tab == 'services' %}
+            <div class="col-md-2">
+                <label class="form-label small fw-bold mb-1">Kategoriya</label>
+                <select name="svc_category" class="form-select form-select-sm">
+                    <option value="">Barchasi</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if selected_svc_category == cat.id|stringformat:"s" %}selected{% endif %}>
+                        {{ cat.icon }} {{ cat.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label small fw-bold mb-1">Davr</label>
+                <select name="period" class="form-select form-select-sm">
+                    <option value="day"   {% if period == 'day'   %}selected{% endif %}>Kun</option>
+                    <option value="month" {% if period == 'month' %}selected{% endif %}>Oy</option>
+                    <option value="year"  {% if period == 'year'  %}selected{% endif %}>Yil</option>
+                </select>
+            </div>
+
+            {% elif active_tab == 'medicines' %}
+            <div class="col-md-3">
+                <label class="form-label small fw-bold mb-1">Dori nomi</label>
+                <select name="medicine" class="form-select form-select-sm">
+                    <option value="">Barchasi</option>
+                    {% for med in medicines_list %}
+                    <option value="{{ med.pk }}" {% if selected_medicine == med.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ med.name }} ({{ med.unit }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {% elif active_tab == 'operations' %}
+            <div class="col-md-3">
+                <label class="form-label small fw-bold mb-1">Operatsiya turi</label>
+                <select name="op_type" class="form-select form-select-sm">
+                    <option value="">Barchasi</option>
+                    {% for op in op_types_list %}
+                    <option value="{{ op.pk }}" {% if selected_op_type == op.pk|stringformat:"s" %}selected{% endif %}>
+                        {% if op.code %}[{{ op.code }}] {% endif %}{{ op.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {% elif active_tab == 'opservices' %}
+            <div class="col-md-2">
+                <label class="form-label small fw-bold mb-1">Kategoriya</label>
+                <select name="opx_category" class="form-select form-select-sm">
+                    <option value="">Barchasi</option>
+                    {% for cat in op_categories %}
+                    <option value="{{ cat.id }}" {% if selected_opx_category == cat.id|stringformat:"s" %}selected{% endif %}>
+                        {{ cat.icon }} {{ cat.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
+            <div class="col-md-2 d-flex gap-1 align-items-end">
+                <button type="submit" class="btn btn-primary btn-sm flex-fill">🔍 Filter</button>
+                <a href="?tab={{ active_tab }}" class="btn btn-outline-secondary btn-sm">✕</a>
+            </div>
+        </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==================== TAB 1: XIZMATLAR ==================== -->
+{% if active_tab == 'services' %}
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="card border-0 shadow-sm stat-card text-center">
+        <div class="h3 fw-bold text-primary mb-1">{{ svc_totals.count|default:0 }}</div>
+        <div class="small text-muted">Jami xizmatlar</div>
+    </div></div>
+    <div class="col-md-3"><div class="card border-0 shadow-sm stat-card text-center">
+        <div class="h5 fw-bold text-success mb-1">{{ svc_totals.total_sum|floatformat:0|default:0 }}</div>
+        <div class="small text-muted">Umumiy summa (so'm)</div>
+    </div></div>
+    <div class="col-md-2"><div class="card border-0 shadow-sm stat-card text-center border-l-blue">
+        <div class="fw-bold text-primary">{{ svc_totals.railway_count|default:0 }} ta</div>
+        <div class="small text-muted">🚂 TY</div>
+        <div class="small fw-semibold text-primary">{{ svc_totals.railway_sum|floatformat:0|default:0 }}</div>
+    </div></div>
+    <div class="col-md-2"><div class="card border-0 shadow-sm stat-card text-center border-l-green">
+        <div class="fw-bold text-success">{{ svc_totals.paid_count|default:0 }} ta</div>
+        <div class="small text-muted">💳 Pullik</div>
+        <div class="small fw-semibold text-success">{{ svc_totals.paid_sum|floatformat:0|default:0 }}</div>
+    </div></div>
+    <div class="col-md-2"><div class="card border-0 shadow-sm stat-card text-center border-l-red">
+        <div class="fw-bold text-danger">{{ svc_totals.nonresident_count|default:0 }} ta</div>
+        <div class="small text-muted">🌍 Norezident</div>
+        <div class="small fw-semibold text-danger">{{ svc_totals.nonresident_sum|floatformat:0|default:0 }}</div>
+    </div></div>
+</div>
+{% if svc_cat_stats %}
+<div class="d-flex flex-wrap gap-2 mb-3">
+    {% for cat in svc_cat_stats %}
+    <span class="badge bg-light text-dark border px-3 py-2">
+        {{ cat.service__category__icon|default:"🏥" }} {{ cat.service__category__name }}:
+        <strong>{{ cat.count }} ta</strong> — {{ cat.total|floatformat:0 }} so'm
+    </span>
+    {% endfor %}
+</div>
+{% endif %}
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white"><strong>🏆 Top 15 xizmat</strong></div>
+    <div class="card-body p-0">
+        <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr><th class="ps-3">№</th><th>Xizmat nomi</th><th>Kategoriya</th><th class="text-center">Soni</th><th class="text-end pe-3">Summa</th></tr>
+            </thead>
+            <tbody>
+            {% for s in top_services %}
+            <tr>
+                <td class="ps-3 text-muted">{{ forloop.counter }}</td>
+                <td class="fw-semibold small">{{ s.service__name }}</td>
+                <td class="small text-muted">{{ s.service__category__name }}</td>
+                <td class="text-center"><span class="badge bg-primary rounded-pill">{{ s.count }}</span></td>
+                <td class="text-end pe-3 small">{{ s.total|floatformat:0 }} so'm</td>
+            </tr>
+            {% empty %}<tr><td colspan="5" class="text-center text-muted py-3">Ma'lumot yo'q</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white"><strong>📈 Dinamika</strong></div>
+    <div class="card-body"><canvas id="svcChart" height="70"></canvas></div>
+</div>
+
+<!-- ==================== TAB 2: DORILAR ==================== -->
+{% elif active_tab == 'medicines' %}
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="card border-0 shadow-sm stat-card text-center">
+        <div class="h3 fw-bold text-warning mb-1">{{ med_totals.total_records|default:0 }}</div>
+        <div class="small text-muted">Jami yozuvlar</div>
+    </div></div>
+    <div class="col-md-3"><div class="card border-0 shadow-sm stat-card text-center">
+        <div class="h3 fw-bold text-info mb-1">{{ med_totals.patients|default:0 }}</div>
+        <div class="small text-muted">Bemorlar soni</div>
+    </div></div>
+    <div class="col-md-3"><div class="card border-0 shadow-sm stat-card text-center">
+        <div class="h5 fw-bold mb-1">{{ med_totals.total_qty|floatformat:0|default:0 }}</div>
+        <div class="small text-muted">Jami miqdor</div>
+    </div></div>
+    <div class="col-md-3"><div class="card border-0 shadow-sm stat-card text-center" style="background:#856404;color:#fff">
+        <div class="h5 fw-bold mb-1">{{ med_totals.total_sum|floatformat:0|default:0 }}</div>
+        <div class="small opacity-75">Jami summa (so'm)</div>
+    </div></div>
+</div>
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <strong>💊 Top 15 dori</strong>
+        <span class="text-muted small">{{ med_totals.total_records|default:0 }} ta yozuv</span>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">№</th><th>Dori nomi</th>
+                    <th class="text-center">Birlik</th>
+                    <th class="text-center">Miqdor</th>
+                    <th class="text-center">Bemorlar</th>
+                    <th class="text-end pe-3">Summa</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for m in top_medicines %}
+            <tr>
+                <td class="ps-3 text-muted">{{ forloop.counter }}</td>
+                <td class="fw-semibold small">{{ m.medicine__name }}</td>
+                <td class="text-center"><span class="badge bg-light text-dark border">{{ m.medicine__unit }}</span></td>
+                <td class="text-center">{{ m.total_qty|floatformat:0 }}</td>
+                <td class="text-center"><span class="badge bg-info rounded-pill">{{ m.patient_count }}</span></td>
+                <td class="text-end pe-3 fw-semibold small text-warning">{{ m.total_sum|floatformat:0 }} so'm</td>
+            </tr>
+            {% empty %}<tr><td colspan="6" class="text-center text-muted py-4">Ma'lumot yo'q</td></tr>
+            {% endfor %}
+            </tbody>
+            {% if med_totals.total_sum %}
+            <tfoot class="table-light">
+                <tr>
+                    <td colspan="5" class="text-end fw-bold">Jami:</td>
+                    <td class="text-end pe-3 fw-bold" style="color:#856404">{{ med_totals.total_sum|floatformat:0 }} so'm</td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+</div>
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white"><strong>📈 Dinamika</strong></div>
+    <div class="card-body"><canvas id="medChart" height="70"></canvas></div>
+</div>
+
+<!-- ==================== TAB 3: OPERATSIYALAR ==================== -->
+{% elif active_tab == 'operations' %}
+<div class="row g-3 mb-4">
+    <div class="col-md-2"><div class="card border-0 shadow-sm stat-card text-center">
+        <div class="h3 fw-bold text-primary mb-1">{{ op_totals.total|default:0 }}</div>
+        <div class="small text-muted">Jami</div>
+    </div></div>
+    <div class="col-md-2"><div class="card border-0 shadow-sm stat-card text-center border-l-blue">
+        <div class="h4 fw-bold text-primary mb-0">{{ op_totals.railway|default:0 }}</div>
+        <div class="small text-muted">🚂 TY</div>
+    </div></div>
+    <div class="col-md-2"><div class="card border-0 shadow-sm stat-card text-center border-l-green">
+        <div class="h4 fw-bold text-success mb-0">{{ op_totals.paid|default:0 }}</div>
+        <div class="small text-muted">💳 Pullik</div>
+    </div></div>
+    <div class="col-md-2"><div class="card border-0 shadow-sm stat-card text-center border-l-red">
+        <div class="h4 fw-bold text-danger mb-0">{{ op_totals.nonresident|default:0 }}</div>
+        <div class="small text-muted">🌍 Norezident</div>
+    </div></div>
+    <div class="col-md-2"><div class="card border-0 shadow-sm stat-card text-center">
+        <div class="h4 fw-bold text-warning mb-0">{{ op_totals.with_anesthesia|default:0 }}</div>
+        <div class="small text-muted">💉 Narkoz</div>
+    </div></div>
+    <div class="col-md-2"><div class="card border-0 shadow-sm stat-card text-center">
+        <div class="h4 fw-bold text-secondary mb-0">{{ op_totals.local_anesthesia|default:0 }}</div>
+        <div class="small text-muted">🩺 Mahalliy</div>
+    </div></div>
+</div>
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white"><strong>🔪 Operatsiya turlari</strong></div>
+    <div class="card-body p-0"><div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">№</th><th>Operatsiya nomi</th>
+                    <th class="text-center">Jami</th>
+                    <th class="text-center text-primary">🚂 TY</th>
+                    <th class="text-center text-success">💳 Pullik</th>
+                    <th class="text-center text-danger">🌍 Nores.</th>
+                    <th class="text-center">💉 Narkoz</th>
+                    <th class="text-center">🩺 Mahalliy</th>
+                    <th class="text-center pe-3">Narkozsiz</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for op in op_stats %}
+            <tr>
+                <td class="ps-3 text-muted">{{ forloop.counter }}</td>
+                <td class="fw-semibold small">{{ op.operation_type__name }}
+                    {% if op.operation_type__code %}<br><span class="badge bg-light text-dark border small">{{ op.operation_type__code }}</span>{% endif %}
+                </td>
+                <td class="text-center"><span class="badge bg-primary rounded-pill">{{ op.total_count }}</span></td>
+                <td class="text-center">{% if op.railway_count %}<span class="badge bg-primary bg-opacity-25 text-primary">{{ op.railway_count }}</span>{% else %}—{% endif %}</td>
+                <td class="text-center">{% if op.paid_count %}<span class="badge bg-success bg-opacity-25 text-success">{{ op.paid_count }}</span>{% else %}—{% endif %}</td>
+                <td class="text-center">{% if op.nonresident_count %}<span class="badge bg-danger bg-opacity-25 text-danger">{{ op.nonresident_count }}</span>{% else %}—{% endif %}</td>
+                <td class="text-center">{% if op.anesthesia_yes %}<span class="badge bg-warning text-dark">{{ op.anesthesia_yes }}</span>{% else %}—{% endif %}</td>
+                <td class="text-center">{% if op.anesthesia_local %}<span class="badge bg-secondary">{{ op.anesthesia_local }}</span>{% else %}—{% endif %}</td>
+                <td class="text-center pe-3">{% if op.anesthesia_no %}<span class="badge bg-light text-dark border">{{ op.anesthesia_no }}</span>{% else %}—{% endif %}</td>
+            </tr>
+            {% empty %}<tr><td colspan="9" class="text-center text-muted py-4">Ma'lumot yo'q</td></tr>
+            {% endfor %}
+            </tbody>
+            {% if op_totals.total %}
+            <tfoot class="table-light fw-bold">
+                <tr>
+                    <td colspan="2" class="ps-3">JAMI:</td>
+                    <td class="text-center">{{ op_totals.total }}</td>
+                    <td class="text-center text-primary">{{ op_totals.railway }}</td>
+                    <td class="text-center text-success">{{ op_totals.paid }}</td>
+                    <td class="text-center text-danger">{{ op_totals.nonresident }}</td>
+                    <td class="text-center">{{ op_totals.with_anesthesia }}</td>
+                    <td class="text-center">{{ op_totals.local_anesthesia }}</td>
+                    <td class="text-center pe-3">{{ op_totals.no_anesthesia }}</td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div></div>
+</div>
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white"><strong>📈 Dinamika</strong></div>
+    <div class="card-body"><canvas id="opChart" height="70"></canvas></div>
+</div>
+
+<!-- ==================== TAB 4: OPERATSIYA XIZMATLARI ==================== -->
+{% elif active_tab == 'opservices' %}
+<div class="row g-3 mb-4">
+    <div class="col-md-2"><div class="card border-0 shadow-sm stat-card text-center">
+        <div class="h3 fw-bold text-primary mb-1">{{ opx_totals.total_count|default:0 }}</div>
+        <div class="small text-muted">Jami</div>
+    </div></div>
+    <div class="col-md-2"><div class="card border-0 shadow-sm stat-card text-center">
+        <div class="h3 fw-bold text-info mb-1">{{ opx_totals.patients|default:0 }}</div>
+        <div class="small text-muted">Bemorlar</div>
+    </div></div>
+    <div class="col-md-2"><div class="card border-0 shadow-sm stat-card text-center border-l-blue">
+        <div class="fw-bold text-primary">{{ opx_totals.railway_count|default:0 }} ta</div>
+        <div class="small text-muted">🚂 TY</div>
+        <div class="small text-primary">{{ opx_totals.railway_sum|floatformat:0|default:0 }}</div>
+    </div></div>
+    <div class="col-md-2"><div class="card border-0 shadow-sm stat-card text-center border-l-green">
+        <div class="fw-bold text-success">{{ opx_totals.paid_count|default:0 }} ta</div>
+        <div class="small text-muted">💳 Pullik</div>
+        <div class="small text-success">{{ opx_totals.paid_sum|floatformat:0|default:0 }}</div>
+    </div></div>
+    <div class="col-md-2"><div class="card border-0 shadow-sm stat-card text-center border-l-red">
+        <div class="fw-bold text-danger">{{ opx_totals.nonresident_count|default:0 }} ta</div>
+        <div class="small text-muted">🌍 Nores.</div>
+        <div class="small text-danger">{{ opx_totals.nonresident_sum|floatformat:0|default:0 }}</div>
+    </div></div>
+    <div class="col-md-2"><div class="card border-0 shadow-sm stat-card text-center" style="background:#145a32;color:#fff">
+        <div class="h5 fw-bold mb-0">{{ opx_totals.total_sum|floatformat:0|default:0 }}</div>
+        <div class="small opacity-75">Umumiy daromad</div>
+    </div></div>
+</div>
+{% if opx_cat_stats %}
+<div class="d-flex flex-wrap gap-2 mb-3">
+{% for cat in opx_cat_stats %}
+<div class="card border-0 shadow-sm px-3 py-2 d-flex flex-row align-items-center gap-2">
+    <span>{{ cat.service__category__icon|default:"🔪" }}</span>
+    <div>
+        <div class="small fw-semibold">{{ cat.service__category__name }}</div>
+        <div class="small text-muted">{{ cat.count }} ta — {{ cat.total|floatformat:0 }} so'm</div>
+    </div>
+</div>
+{% endfor %}
+</div>{% endif %}
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white d-flex justify-content-between">
+        <strong>🔪 Har bir operatsiya</strong>
+        <span class="badge bg-primary">{{ opx_stats|length }} tur</span>
+    </div>
+    <div class="card-body p-0"><div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">№</th><th>Operatsiya nomi</th><th>Kategoriya</th>
+                    <th class="text-center">Jami</th><th class="text-center">Bemorlar</th>
+                    <th class="text-center text-primary">🚂 TY<br><small>soni</small></th>
+                    <th class="text-end text-primary">TY<br><small>summa</small></th>
+                    <th class="text-center text-success">💳 Pullik<br><small>soni</small></th>
+                    <th class="text-end text-success">Pullik<br><small>summa</small></th>
+                    <th class="text-center text-danger">🌍 Nores.<br><small>soni</small></th>
+                    <th class="text-end pe-3 text-danger">Nores.<br><small>summa</small></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for op in opx_stats %}
+            <tr>
+                <td class="ps-3 text-muted">{{ forloop.counter }}</td>
+                <td class="fw-semibold small">{{ op.service__name }}</td>
+                <td class="small text-muted">{{ op.service__category__icon|default:"🔪" }} {{ op.service__category__name }}</td>
+                <td class="text-center"><span class="badge bg-primary rounded-pill">{{ op.total_count }}</span></td>
+                <td class="text-center"><span class="badge bg-secondary rounded-pill">{{ op.patients }}</span></td>
+                <td class="text-center">{% if op.railway_count %}<span class="badge bg-primary bg-opacity-25 text-primary">{{ op.railway_count }}</span>{% else %}—{% endif %}</td>
+                <td class="text-end small">{% if op.railway_sum %}{{ op.railway_sum|floatformat:0 }}{% else %}—{% endif %}</td>
+                <td class="text-center">{% if op.paid_count %}<span class="badge bg-success bg-opacity-25 text-success">{{ op.paid_count }}</span>{% else %}—{% endif %}</td>
+                <td class="text-end small">{% if op.paid_sum %}{{ op.paid_sum|floatformat:0 }}{% else %}—{% endif %}</td>
+                <td class="text-center">{% if op.nonresident_count %}<span class="badge bg-danger bg-opacity-25 text-danger">{{ op.nonresident_count }}</span>{% else %}—{% endif %}</td>
+                <td class="text-end pe-3 small">{% if op.nonresident_sum %}{{ op.nonresident_sum|floatformat:0 }}{% else %}—{% endif %}</td>
+            </tr>
+            {% empty %}<tr><td colspan="11" class="text-center text-muted py-4">
+                Ma'lumot yo'q.<br><small>Admin da xizmatlarga <strong>is_operation=True</strong> belgilang.</small>
+            </td></tr>
+            {% endfor %}
+            </tbody>
+            {% if opx_totals.total_count %}
+            <tfoot class="table-light fw-bold">
+                <tr>
+                    <td colspan="3" class="ps-3">JAMI:</td>
+                    <td class="text-center">{{ opx_totals.total_count }}</td>
+                    <td class="text-center">{{ opx_totals.patients }}</td>
+                    <td class="text-center text-primary">{{ opx_totals.railway_count }}</td>
+                    <td class="text-end text-primary">{{ opx_totals.railway_sum|floatformat:0|default:0 }}</td>
+                    <td class="text-center text-success">{{ opx_totals.paid_count }}</td>
+                    <td class="text-end text-success">{{ opx_totals.paid_sum|floatformat:0|default:0 }}</td>
+                    <td class="text-center text-danger">{{ opx_totals.nonresident_count }}</td>
+                    <td class="text-end pe-3 text-danger">{{ opx_totals.nonresident_sum|floatformat:0|default:0 }}</td>
+                </tr>
+                <tr style="background:#145a32;color:#fff;">
+                    <td colspan="10" class="ps-3 py-2">UMUMIY DAROMAD:</td>
+                    <td class="text-end pe-3 py-2 fs-6">{{ opx_totals.total_sum|floatformat:0|default:0 }} so'm</td>
+                </tr>
+            </tfoot>{% endif %}
+        </table>
+    </div></div>
+</div>
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white"><strong>📈 Dinamika</strong></div>
+    <div class="card-body"><canvas id="opxChart" height="70"></canvas></div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+{% if active_tab == 'services' %}
+new Chart(document.getElementById('svcChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ svc_trend_labels|safe }},
+        datasets: [{ label: "Summa (so'm)", data: {{ svc_trend_values|safe }},
+            backgroundColor: 'rgba(13,110,253,0.7)', borderRadius: 4 }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } },
+        scales: { y: { ticks: { callback: v => v.toLocaleString() } } } }
+});
+{% elif active_tab == 'medicines' %}
+new Chart(document.getElementById('medChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ med_trend_labels|safe }},
+        datasets: [{ label: "Summa (so'm)", data: {{ med_trend_values|safe }},
+            backgroundColor: 'rgba(133,100,4,0.7)', borderRadius: 4 }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } },
+        scales: { y: { ticks: { callback: v => v.toLocaleString() } } } }
+});
+{% elif active_tab == 'operations' %}
+new Chart(document.getElementById('opChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ op_trend_labels|safe }},
+        datasets: [{ label: 'Soni', data: {{ op_trend_values|safe }},
+            backgroundColor: 'rgba(13,110,253,0.7)', borderRadius: 4 }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+});
+{% elif active_tab == 'opservices' %}
+new Chart(document.getElementById('opxChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ opx_trend_labels|safe }},
+        datasets: [
+            { label: 'Soni', data: {{ opx_trend_counts|safe }},
+              backgroundColor: 'rgba(13,110,253,0.7)', borderRadius: 4, yAxisID: 'y1' },
+            { label: "Daromad", data: {{ opx_trend_sums|safe }}, type: 'line',
+              borderColor: '#198754', tension: 0.3, yAxisID: 'y2' }
+        ]
+    },
+    options: { responsive: true,
+        scales: {
+            y1: { beginAtZero: true, position: 'left' },
+            y2: { beginAtZero: true, position: 'right',
+                  grid: { drawOnChartArea: false },
+                  ticks: { callback: v => v.toLocaleString() } }
+        }
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

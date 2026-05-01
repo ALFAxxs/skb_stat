@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+{% block title %}Operatsiyalar statistikasi{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3>🔪 Operatsiyalar statistikasi</h3>
+    <div class="d-flex gap-2">
+        <a href="{% url 'export_operation_excel' %}?{{ current_filters }}"
+           class="btn btn-success btn-sm">📥 Excel yuklab olish</a>
+        <a href="{% url 'medicine_statistics' %}" class="btn btn-outline-warning btn-sm">💊 Dorilar</a>
+        <a href="{% url 'service_statistics' %}" class="btn btn-outline-info btn-sm">🏥 Xizmatlar</a>
+    </div>
+</div>
+
+<!-- Filterlar -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">Boshlanish sanasi</label>
+                    <input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">Tugash sanasi</label>
+                    <input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">Operatsiya turi</label>
+                    <select name="op_type" class="form-select form-select-sm">
+                        <option value="">Barchasi</option>
+                        {% for op in op_types_list %}
+                        <option value="{{ op.pk }}"
+                            {% if selected_op_type == op.pk|stringformat:"s" %}selected{% endif %}>
+                            {% if op.code %}[{{ op.code }}] {% endif %}{{ op.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">Narkoz turi</label>
+                    <select name="anesthesia" class="form-select form-select-sm">
+                        <option value="">Barchasi</option>
+                        <option value="yes"   {% if selected_anesthesia == 'yes'   %}selected{% endif %}>Narkoz bilan</option>
+                        <option value="local" {% if selected_anesthesia == 'local' %}selected{% endif %}>Mahalliy</option>
+                        <option value="no"    {% if selected_anesthesia == 'no'    %}selected{% endif %}>Narkozsiz</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm flex-fill">🔍 Filtrlash</button>
+                    <a href="{% url 'operation_statistics' %}" class="btn btn-outline-secondary btn-sm">✕</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Umumiy ko'rsatkichlar -->
+<div class="row g-3 mb-4">
+    <div class="col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="h3 fw-bold text-primary mb-1">{{ totals.total|default:0 }}</div>
+            <div class="small text-muted">Jami operatsiyalar</div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3" style="border-left:4px solid #0d6efd !important;">
+            <div class="h4 fw-bold text-primary mb-1">{{ totals.railway|default:0 }}</div>
+            <div class="small text-muted">🚂 Temir yo'lchi</div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3" style="border-left:4px solid #198754 !important;">
+            <div class="h4 fw-bold text-success mb-1">{{ totals.paid|default:0 }}</div>
+            <div class="small text-muted">💳 Pullik</div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3" style="border-left:4px solid #dc3545 !important;">
+            <div class="h4 fw-bold text-danger mb-1">{{ totals.nonresident|default:0 }}</div>
+            <div class="small text-muted">🌍 Norezident</div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="h4 fw-bold text-warning mb-1">{{ totals.with_anesthesia|default:0 }}</div>
+            <div class="small text-muted">💉 Narkoz bilan</div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="h4 fw-bold text-secondary mb-1">{{ totals.local_anesthesia|default:0 }}</div>
+            <div class="small text-muted">🩺 Mahalliy narkoz</div>
+        </div>
+    </div>
+</div>
+
+<!-- Trend grafigi -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white"><strong>📈 Oylik dinamika</strong></div>
+    <div class="card-body">
+        <canvas id="trendChart" height="70"></canvas>
+    </div>
+</div>
+
+<!-- Operatsiya turlari jadvali -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white d-flex justify-content-between">
+        <strong>🔪 Operatsiya turlari bo'yicha</strong>
+        <span class="badge bg-primary">{{ op_stats|length }} tur</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3" style="width:40px">№</th>
+                    <th style="width:80px">Kod</th>
+                    <th>Operatsiya nomi</th>
+                    <th class="text-center" style="width:80px">
+                        <span class="d-block">Jami</span>
+                        <small class="text-muted">soni</small>
+                    </th>
+                    <th class="text-center" style="width:90px">
+                        <span class="d-block text-primary">🚂 TY</span>
+                        <small class="text-muted">soni</small>
+                    </th>
+                    <th class="text-center" style="width:90px">
+                        <span class="d-block text-success">💳 Pullik</span>
+                        <small class="text-muted">soni</small>
+                    </th>
+                    <th class="text-center" style="width:90px">
+                        <span class="d-block text-danger">🌍 Nores.</span>
+                        <small class="text-muted">soni</small>
+                    </th>
+                    <th class="text-center" style="width:90px">
+                        <span class="d-block">💉 Narkoz</span>
+                        <small class="text-muted">bilan</small>
+                    </th>
+                    <th class="text-center" style="width:90px">
+                        <span class="d-block">🩺 Mahalliy</span>
+                        <small class="text-muted">narkoz</small>
+                    </th>
+                    <th class="text-center" style="width:90px">
+                        <span class="d-block">Narkozsiz</span>
+                        <small class="text-muted">soni</small>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for op in op_stats %}
+                <tr>
+                    <td class="ps-3 text-muted">{{ forloop.counter }}</td>
+                    <td>
+                        {% if op.operation_type__code %}
+                        <span class="badge bg-light text-dark border small">{{ op.operation_type__code }}</span>
+                        {% else %}—{% endif %}
+                    </td>
+                    <td class="fw-semibold small">{{ op.operation_type__name }}</td>
+                    <td class="text-center">
+                        <span class="badge bg-primary rounded-pill">{{ op.total_count }}</span>
+                    </td>
+                    <td class="text-center">
+                        {% if op.railway_count %}
+                        <span class="badge bg-primary bg-opacity-25 text-primary">{{ op.railway_count }}</span>
+                        {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if op.paid_count %}
+                        <span class="badge bg-success bg-opacity-25 text-success">{{ op.paid_count }}</span>
+                        {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if op.nonresident_count %}
+                        <span class="badge bg-danger bg-opacity-25 text-danger">{{ op.nonresident_count }}</span>
+                        {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if op.anesthesia_yes %}
+                        <span class="badge bg-warning text-dark">{{ op.anesthesia_yes }}</span>
+                        {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if op.anesthesia_local %}
+                        <span class="badge bg-secondary">{{ op.anesthesia_local }}</span>
+                        {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if op.anesthesia_no %}
+                        <span class="badge bg-light text-dark border">{{ op.anesthesia_no }}</span>
+                        {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="10" class="text-center text-muted py-4">Ma'lumot topilmadi</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if totals.total %}
+            <tfoot class="table-light fw-bold">
+                <tr>
+                    <td colspan="3" class="ps-3">JAMI:</td>
+                    <td class="text-center">{{ totals.total }}</td>
+                    <td class="text-center text-primary">{{ totals.railway }}</td>
+                    <td class="text-center text-success">{{ totals.paid }}</td>
+                    <td class="text-center text-danger">{{ totals.nonresident }}</td>
+                    <td class="text-center">{{ totals.with_anesthesia }}</td>
+                    <td class="text-center">{{ totals.local_anesthesia }}</td>
+                    <td class="text-center">{{ totals.no_anesthesia }}</td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+var labels = {{ trend_labels|safe }};
+var values = {{ trend_values|safe }};
+
+new Chart(document.getElementById('trendChart'), {
+    type: 'bar',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'Operatsiyalar soni',
+            data: values,
+            backgroundColor: 'rgba(13,110,253,0.7)',
+            borderColor: '#0d6efd',
+            borderWidth: 1,
+            borderRadius: 4,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: function(c) { return c.parsed.y + ' ta operatsiya'; }
+                }
+            }
+        },
+        scales: {
+            y: { beginAtZero: true, ticks: { stepSize: 1 } }
+        }
+    }
+});
+</script>
+{% endblock %}

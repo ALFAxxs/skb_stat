@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% block title %}Ambulator bemor qabuli{% endblock %}
+
+{% block content %}
+<style>
+    .form-section {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 16px;
+    }
+    .form-section h5 {
+        color: #0d6efd;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 8px;
+        margin-bottom: 16px;
+    }
+    .toggle-group { display: flex; gap: 8px; }
+    .toggle-btn {
+        padding: 6px 20px; border-radius: 20px;
+        border: 2px solid #dee2e6; background: #f8f9fa;
+        color: #6c757d; cursor: pointer; font-size: 14px;
+        font-weight: 500; transition: all 0.2s ease; user-select: none;
+    }
+    .toggle-btn:hover { border-color: #adb5bd; background: #e9ecef; }
+    .toggle-btn.active-yes { border-color: #198754; background: #198754; color: #fff; }
+    .toggle-btn.active-no  { border-color: #dc3545; background: #dc3545; color: #fff; }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>🚶 Ambulator bemor qabuli</h3>
+    <span class="badge bg-info fs-6">Kunlik tashrif</span>
+</div>
+
+<div id="repeat-patient-alert" class="alert alert-warning" style="display:none;"></div>
+
+{% if form.errors %}
+<div class="alert alert-danger">
+    <strong>Xatoliklar:</strong>
+    {% for field, errors in form.errors.items %}
+    <div>• <b>{{ field }}</b>: {{ errors|join:", " }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="status" value="registered">
+    <input type="hidden" name="visit_type" value="ambulatory">
+    <input type="hidden" name="registered_by" value="{{ request.user.pk }}">
+    <input type="hidden" name="medical_record_number" id="auto_record_number" value="{{ auto_record_number }}">
+    <input type="hidden" name="admission_date" value="{{ now }}">
+    <input type="hidden" name="patient_category" id="patient_category_hidden" value="paid">
+
+    <!-- Bemor ma'lumotlari -->
+    <div class="form-section">
+        <h5>👤 Bemor ma'lumotlari</h5>
+
+        <div class="alert alert-info py-2 mb-3">
+            <small>📋 Bayonnoma raqami: <strong>{{ auto_record_number }}</strong> (avtomatik)</small>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8 mb-3">
+                <label class="form-label fw-bold">To'liq ism-familiya <span class="text-danger">*</span></label>
+                {{ form.full_name }}
+                <div class="text-danger small">{{ form.full_name.errors }}</div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">Jinsi <span class="text-danger">*</span></label>
+                {{ form.gender }}
+                <div class="text-danger small">{{ form.gender.errors }}</div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Tug'ilgan sana</label>
+                {{ form.birth_date }}
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">JSHSHIR</label>
+                {{ form.JSHSHIR }}
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Telefon</label>
+                {{ form.phone }}
+            </div>
+
+            <!-- Kategoriya: faqat Rezident / Norezident -->
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold d-block">Rezidentlik</label>
+                <div class="toggle-group mt-2">
+                    <button type="button" class="toggle-btn active-yes" id="res-yes">🏠 Rezident</button>
+                    <button type="button" class="toggle-btn" id="res-no">🌍 Norezident</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 mb-5">
+        <button type="submit" class="btn btn-primary btn-lg">💾 Saqlash</button>
+        <a href="{% url 'patient_list' %}" class="btn btn-secondary btn-lg">Bekor qilish</a>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    // Bootstrap stillari
+    document.querySelectorAll('input:not(.form-check-input), textarea').forEach(el => {
+        if (el.type !== 'hidden') el.classList.add('form-control');
+    });
+    document.querySelectorAll('select').forEach(el => {
+        el.classList.remove('form-control');
+        el.classList.add('form-select');
+    });
+
+    // Rezident / Norezident toggle
+    const resYes = document.getElementById('res-yes');
+    const resNo  = document.getElementById('res-no');
+    const catHid = document.getElementById('patient_category_hidden');
+
+    resYes.addEventListener('click', function() {
+        resYes.classList.add('active-yes');
+        resNo.classList.remove('active-no');
+        catHid.value = 'paid';
+    });
+    resNo.addEventListener('click', function() {
+        resNo.classList.add('active-no');
+        resYes.classList.remove('active-yes');
+        catHid.value = 'non_resident';
+    });
+
+    // Qayta kelgan bemor tekshiruvi
+    const jshshirInput = document.getElementById('id_JSHSHIR');
+    const alertDiv = document.getElementById('repeat-patient-alert');
+    let checkTimer;
+
+    function checkPatient() {
+        var jshshir = jshshirInput ? jshshirInput.value.trim() : '';
+        if (jshshir.length < 5) { alertDiv.style.display = 'none'; return; }
+        fetch('/patients/ajax/check-patient/?jshshir=' + encodeURIComponent(jshshir))
+            .then(r => r.json())
+            .then(data => {
+                if (!data.found) { alertDiv.style.display = 'none'; return; }
+                var html = '<strong>⚠️ Bu bemor avval ham kelgan:</strong><ul class="mb-0 mt-2">';
+                data.patients.forEach(p => {
+                    html += '<li><a href="/patients/' + p.pk + '/" target="_blank" class="fw-semibold">'
+                          + p.medical_record_number + '</a> — ' + p.full_name
+                          + ' | 📅 ' + p.admission_date + ' | ' + p.status + '</li>';
+                });
+                alertDiv.innerHTML = html + '</ul>';
+                alertDiv.style.display = 'block';
+            });
+    }
+
+    if (jshshirInput) {
+        jshshirInput.addEventListener('input', function() {
+            clearTimeout(checkTimer);
+            checkTimer = setTimeout(checkPatient, 600);
+        });
+    }
+});
+</script>
+{% endblock %}
