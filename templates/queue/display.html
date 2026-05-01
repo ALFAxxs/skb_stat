@@ -1,0 +1,308 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MRT Navbat Ekrani</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #0a1628;
+  color: #fff;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* HEADER */
+.header {
+  background: #0d2044;
+  padding: 16px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #185FA5;
+}
+.header-logo { font-size: 20px; font-weight: 700; color: #fff; }
+.header-sub  { font-size: 14px; color: #B5D4F4; margin-top: 2px; }
+.header-time { font-size: 32px; font-weight: 700; color: #4fc3f7; font-variant-numeric: tabular-nums; }
+
+/* MAIN */
+.main { flex: 1; display: grid; grid-template-columns: 1fr 380px; gap: 0; }
+
+/* CHAP: Hozirgi navbat */
+.current-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  border-right: 1px solid #1e3a5f;
+}
+.current-label {
+  font-size: 22px;
+  color: #B5D4F4;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  margin-bottom: 16px;
+}
+.current-number {
+  font-size: 160px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1;
+  text-shadow: 0 0 60px rgba(79, 195, 247, 0.5);
+  transition: all 0.5s ease;
+}
+.current-number.animate {
+  animation: pulse 0.6s ease;
+}
+@keyframes pulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.08); color: #4fc3f7; }
+  100% { transform: scale(1); }
+}
+.current-room {
+  font-size: 28px;
+  color: #4fc3f7;
+  margin-top: 16px;
+  font-weight: 600;
+}
+.current-name {
+  font-size: 20px;
+  color: #90caf9;
+  margin-top: 8px;
+}
+.no-current {
+  font-size: 32px;
+  color: #37474f;
+  text-align: center;
+}
+
+/* O'NG: Kutayotganlar */
+.waiting-section {
+  background: #0d2044;
+  display: flex;
+  flex-direction: column;
+}
+.waiting-header {
+  padding: 20px 24px 12px;
+  border-bottom: 1px solid #1e3a5f;
+}
+.waiting-title {
+  font-size: 16px;
+  color: #B5D4F4;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+.waiting-count {
+  font-size: 13px;
+  color: #546e7a;
+  margin-top: 4px;
+}
+.waiting-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+.waiting-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  background: #112236;
+  border: 1px solid #1e3a5f;
+  transition: all 0.3s;
+}
+.waiting-item.next {
+  background: #0d3254;
+  border-color: #185FA5;
+}
+.waiting-num {
+  font-size: 28px;
+  font-weight: 700;
+  color: #4fc3f7;
+  width: 60px;
+  text-align: center;
+}
+.waiting-room {
+  font-size: 13px;
+  color: #78909c;
+}
+
+/* TICKER pastki qism */
+.ticker {
+  background: #185FA5;
+  padding: 10px 40px;
+  font-size: 16px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.ticker-inner {
+  display: inline-block;
+  animation: ticker 20s linear infinite;
+}
+@keyframes ticker {
+  0%   { transform: translateX(100vw); }
+  100% { transform: translateX(-100%); }
+}
+</style>
+</head>
+<body>
+
+<!-- Audio ruxsat overlay -->
+<div id="audio-overlay" style="
+  position:fixed; inset:0; z-index:9999;
+  background:rgba(10,22,40,0.95);
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  cursor:pointer;">
+  <div style="font-size:64px; margin-bottom:20px;">🔊</div>
+  <div style="font-size:28px; font-weight:700; color:#fff; margin-bottom:12px;">Navbat tizimi</div>
+  <div style="font-size:18px; color:#B5D4F4; margin-bottom:32px;">Ishga tushirish uchun ekranga bosing</div>
+  <div style="background:#185FA5; color:#fff; padding:16px 48px; border-radius:12px; font-size:20px; font-weight:600;">
+    ▶ Boshlash
+  </div>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <div>
+    <div class="header-logo">🏥 Markaziy klinik kasalxona</div>
+    <div class="header-sub">MRT bo'limi — Elektron navbat tizimi</div>
+  </div>
+  <div class="header-time" id="clock">--:--:--</div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <!-- Hozirgi navbat -->
+  <div class="current-section">
+    <div class="current-label">Hozirgi navbat</div>
+    <div class="current-number" id="current-number">—</div>
+    <div class="current-room"   id="current-room"></div>
+    <div class="current-name"   id="current-name"></div>
+  </div>
+
+  <!-- Kutayotganlar -->
+  <div class="waiting-section">
+    <div class="waiting-header">
+      <div class="waiting-title">Navbat kutmoqda</div>
+      <div class="waiting-count" id="waiting-count">0 kishi</div>
+    </div>
+    <div class="waiting-list" id="waiting-list">
+      <div style="text-align:center; color:#37474f; padding:40px 20px;">
+        Navbat bo'sh
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Ticker -->
+<div class="ticker">
+  <span class="ticker-inner">
+    🏥 Markaziy klinik kasalxona MRT bo'limi — Xizmat soatlari: 08:00 — 18:00 &nbsp;&nbsp;&nbsp;
+    📞 Qo'shimcha ma'lumot uchun qabulxonaga murojaat qiling &nbsp;&nbsp;&nbsp;
+    ✅ Navbatingizni kuting, ism-familiyangiz e'lon qilinadi
+  </span>
+</div>
+
+<script>
+// Soat
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ===== DING SIGNAL =====
+// Bir xil audio ob'ekt — qayta ishlatiladi
+const dingAudio = new Audio('/static/queue/ding.mp3');
+dingAudio.preload = 'auto';
+let audioReady = false;
+
+function announceNumber(num) {
+  if (!audioReady) return;
+  dingAudio.currentTime = 0;
+  dingAudio.play().catch(e => console.log('Audio xato:', e));
+}
+
+// Overlay bosilganda audio ruxsatini olish
+document.getElementById('audio-overlay').addEventListener('click', function() {
+  // Shu bosish eventida audio ishga tushiriladi — brauzer ruxsat beradi
+  dingAudio.volume = 1.0;
+  dingAudio.play().then(() => {
+    dingAudio.pause();
+    dingAudio.currentTime = 0;
+    audioReady = true;
+  }).catch(e => {
+    console.log('Dastlabki audio xato:', e);
+  });
+  this.style.display = 'none';
+});
+
+// // Polling
+let lastNumber = null;
+
+function fetchData() {
+  fetch('/queue/display/data/')
+    .then(r => r.json())
+    .then(data => {
+      const numEl   = document.getElementById('current-number');
+      const roomEl  = document.getElementById('current-room');
+      const nameEl  = document.getElementById('current-name');
+      const countEl = document.getElementById('waiting-count');
+      const listEl  = document.getElementById('waiting-list');
+
+      if (data.current.number) {
+        // Yangi raqam keldi
+        if (data.current.number !== lastNumber) {
+          lastNumber = data.current.number;
+          numEl.textContent = data.current.number;
+          numEl.classList.add('animate');
+          setTimeout(() => numEl.classList.remove('animate'), 700);
+
+          roomEl.textContent = '🚪 ' + (data.current.room || 'MRT xonasi');
+          nameEl.textContent = data.current.name || '';
+
+          // Ovozli e'lon
+          const num = data.current.number;
+          const room = data.current.room || 'MRT xonasi';
+          announceNumber(num);
+        }
+      } else {
+        numEl.textContent = '—';
+        roomEl.textContent = '';
+        nameEl.textContent = '';
+        lastNumber = null;
+      }
+
+      // Kutayotganlar
+      countEl.textContent = data.total_waiting + ' kishi kutmoqda';
+      if (data.waiting.length > 0) {
+        listEl.innerHTML = data.waiting.map((w, i) =>
+          `<div class="waiting-item ${i === 0 ? 'next' : ''}">
+            <div class="waiting-num">${w.ticket_number}</div>
+            <div class="waiting-room">${w.room || 'MRT xonasi'}</div>
+          </div>`
+        ).join('');
+      } else {
+        listEl.innerHTML = '<div style="text-align:center;color:#37474f;padding:40px 20px;">Navbat bo\'sh</div>';
+      }
+    })
+    .catch(err => console.error('Polling xato:', err));
+}
+
+fetchData();
+setInterval(fetchData, 3000);
+</script>
+</body>
+</html>

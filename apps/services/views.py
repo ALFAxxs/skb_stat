@@ -155,6 +155,22 @@ def add_service(request, patient_pk):
                 notes=notes,
             )
 
+            # MRT xizmati bo'lsa navbat yaratish/olish
+            queue_info = {}
+            try:
+                from apps.queue_app.views import create_queue_ticket
+                ticket = create_queue_ticket(ps)
+                if ticket:
+                    queue_info = {
+                        'queue_ticket': ticket.pk,
+                        'queue_number': ticket.ticket_number,
+                        'queue_is_new': ticket.service_id == ps.id,
+                        'patient_name': ps.patient_card.full_name,
+                    }
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(f"Queue ticket error: {e}", exc_info=True)
+
             return JsonResponse({
                 'success': True,
                 'id': ps.id,
@@ -165,6 +181,7 @@ def add_service(request, patient_pk):
                 'total': float(ps.total_price),
                 'status': ps.get_status_display(),
                 'ordered_at': ps.ordered_at.strftime('%d.%m.%Y %H:%M'),
+                **queue_info,
             })
 
         except Exception as e:

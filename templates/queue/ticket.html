@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Navbat chipta #{{ ticket.ticket_number }}</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f1f5f9; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.ticket {
+  background: #fff; border-radius: 16px; padding: 40px 32px;
+  max-width: 380px; width: 100%;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.1);
+  text-align: center;
+}
+.hospital { font-size: 13px; color: #64748b; margin-bottom: 20px; }
+.label { font-size: 13px; color: #64748b; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
+.number { font-size: 100px; font-weight: 900; color: #185FA5; line-height: 1; margin-bottom: 12px; }
+.room { font-size: 20px; color: #185FA5; font-weight: 600; margin-bottom: 16px; }
+hr { border: none; border-top: 1px dashed #e2e8f0; margin: 20px 0; }
+.info-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+.info-label { color: #64748b; }
+.info-value { font-weight: 500; }
+.ahead-badge { display: inline-block; background: #fef3c7; color: #b45309; border-radius: 20px; padding: 4px 14px; font-size: 13px; margin-top: 16px; }
+.status-badge { display: inline-block; border-radius: 20px; padding: 5px 16px; font-size: 13px; font-weight: 600; margin-top: 12px; }
+.status-waiting  { background: #e0f2fe; color: #0369a1; }
+.status-calling  { background: #d1fae5; color: #065f46; animation: blink 1s infinite; }
+.status-done     { background: #f0fdf4; color: #16a34a; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
+.refresh-note { font-size: 11px; color: #94a3b8; margin-top: 16px; }
+</style>
+</head>
+<body>
+<div class="ticket">
+  <div class="hospital">🏥 Markaziy klinik kasalxona<br>MRT bo'limi</div>
+
+  <div class="label">Sizning navbat raqamingiz</div>
+  <div class="number">{{ ticket.ticket_number }}</div>
+  <div class="room">{{ ticket.room }}</div>
+
+  <hr>
+
+  <div class="info-row">
+    <span class="info-label">Bemor</span>
+    <span class="info-value">{{ ticket.patient_card.full_name }}</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">Sana</span>
+    <span class="info-value">{{ ticket.created_at|date:"d.m.Y H:i" }}</span>
+  </div>
+  {% if ticket.service %}
+  <div class="info-row">
+    <span class="info-label">Xizmat</span>
+    <span class="info-value">{{ ticket.service.service.name }}</span>
+  </div>
+  {% endif %}
+
+  <div id="status-block">
+    {% if ticket.status == 'waiting' %}
+    <span class="status-badge status-waiting">⏳ Kutmoqda</span>
+    {% if ahead > 0 %}
+    <div class="ahead-badge">Sizdan oldin: {{ ahead }} kishi</div>
+    {% else %}
+    <div class="ahead-badge" style="background:#d1fae5;color:#065f46;">Siz keyingisiz!</div>
+    {% endif %}
+    {% elif ticket.status == 'calling' %}
+    <span class="status-badge status-calling">📢 SIZI CHAQIRISHYAPTI!</span>
+    {% else %}
+    <span class="status-badge status-done">✅ Yakunlandi</span>
+    {% endif %}
+  </div>
+
+  <div class="refresh-note">Sahifa avtomatik yangilanadi</div>
+</div>
+
+<script>
+// Har 5 soniyada sahifani yangilash
+setTimeout(() => location.reload(), 5000);
+</script>
+</body>
+</html>

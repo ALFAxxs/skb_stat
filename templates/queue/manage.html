@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+{% block title %}MRT Navbat Boshqaruvi{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="mb-0">🏥 MRT Navbat Boshqaruvi</h4>
+    <small class="text-muted">{{ today|date:"d.m.Y" }}</small>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'queue_display' %}" target="_blank" class="btn btn-outline-primary btn-sm">
+      📺 Ekran ko'rinishi
+    </a>
+    <span class="badge bg-success fs-6" id="waiting-badge">{{ waiting.count }} kutmoqda</span>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  <!-- Chap: Hozirgi navbat -->
+  <div class="col-md-5">
+
+    <!-- Hozirgi -->
+    <div class="card border-0 shadow-sm mb-3" id="calling-card">
+      <div class="card-header bg-primary text-white">
+        <strong>📢 Hozir chaqirilmoqda</strong>
+      </div>
+      <div class="card-body text-center py-4">
+        {% if calling %}
+        <div style="font-size:80px; font-weight:900; color:#185FA5; line-height:1;">
+          {{ calling.ticket_number }}
+        </div>
+        <div class="text-muted mt-2">{{ calling.patient_card.full_name }}</div>
+        <div class="text-primary">{{ calling.room }}</div>
+        <div class="d-flex gap-2 mt-3 justify-content-center">
+          <button class="btn btn-success" onclick="markDone({{ calling.pk }})">
+            ✅ Yakunlandi
+          </button>
+          <button class="btn btn-warning" onclick="skipTicket({{ calling.pk }})">
+            ⏭ O'tkazib yuborish
+          </button>
+        </div>
+        {% else %}
+        <div class="text-muted py-3">
+          <div style="font-size:48px;">🔇</div>
+          Hech kim chaqirilmayapti
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Keyingi chaqirish tugmasi -->
+    <button class="btn btn-primary btn-lg w-100 py-3" id="btn-call-next" onclick="callNext()">
+      ▶ Keyingini chaqirish
+    </button>
+
+    <!-- Statistika -->
+    <div class="card border-0 shadow-sm mt-3">
+      <div class="card-body">
+        <div class="row text-center g-0">
+          <div class="col-4 border-end">
+            <div class="h3 mb-0 text-primary" id="stat-waiting">{{ waiting.count }}</div>
+            <small class="text-muted">Kutmoqda</small>
+          </div>
+          <div class="col-4 border-end">
+            <div class="h3 mb-0 text-success">{{ done_count }}</div>
+            <small class="text-muted">Yakunlandi</small>
+          </div>
+          <div class="col-4">
+            <div class="h3 mb-0 text-info" id="stat-total">{{ waiting.count|add:done_count }}</div>
+            <small class="text-muted">Jami</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- O'ng: Navbat ro'yxati -->
+  <div class="col-md-7">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white d-flex justify-content-between">
+        <strong>🕐 Navbat ro'yxati</strong>
+        <span class="badge bg-primary" id="list-count">{{ waiting.count }}</span>
+      </div>
+      <div class="card-body p-0" style="max-height:600px; overflow-y:auto;">
+        <table class="table table-hover mb-0" id="waiting-table">
+          <thead class="table-light sticky-top">
+            <tr>
+              <th style="width:70px">Raqam</th>
+              <th>Bemor</th>
+              <th>Xona</th>
+              <th>Vaqt</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="waiting-tbody">
+            {% for ticket in waiting %}
+            <tr id="row-{{ ticket.pk }}">
+              <td class="fw-bold text-primary fs-5">{{ ticket.ticket_number }}</td>
+              <td>{{ ticket.patient_card.full_name }}</td>
+              <td><span class="badge bg-info text-dark">{{ ticket.room }}</span></td>
+              <td class="text-muted small">{{ ticket.created_at|date:"H:i" }}</td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary"
+                        onclick="callSpecific({{ ticket.pk }}, {{ ticket.ticket_number }})">
+                  📢 Chaqirish
+                </button>
+              </td>
+            </tr>
+            {% empty %}
+            <tr id="empty-row">
+              <td colspan="5" class="text-center text-muted py-5">
+                Navbatda hech kim yo'q
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const CALL_NEXT_URL    = "{% url 'queue_call_next' %}";
+const STATUS_URL       = "{% url 'queue_status' %}";
+const CSRF             = "{{ csrf_token }}";
+
+function post(url) {
+  return fetch(url, {
+    method: 'POST',
+    headers: {'X-CSRFToken': CSRF, 'Content-Type': 'application/json'}
+  }).then(r => r.json());
+}
+
+function callNext() {
+  const btn = document.getElementById('btn-call-next');
+  btn.disabled = true;
+  btn.textContent = 'Chaqirilmoqda...';
+
+  post(CALL_NEXT_URL).then(data => {
+    btn.disabled = false;
+    btn.textContent = '▶ Keyingini chaqirish';
+    if (data.success) {
+      refreshStatus();
+    } else {
+      alert(data.message || 'Xato yuz berdi');
+    }
+  });
+}
+
+function callSpecific(pk, num) {
+  post(`/queue/manage/call/${pk}/`).then(data => {
+    if (data.success) refreshStatus();
+  });
+}
+
+function markDone(pk) {
+  post(`/queue/manage/done/${pk}/`).then(data => {
+    if (data.success) refreshStatus();
+  });
+}
+
+function skipTicket(pk) {
+  post(`/queue/manage/skip/${pk}/`).then(data => {
+    if (data.success) refreshStatus();
+  });
+}
+
+function refreshStatus() {
+  fetch(STATUS_URL).then(r => r.json()).then(data => {
+    // Calling card yangilash
+    const card = document.getElementById('calling-card').querySelector('.card-body');
+    if (data.calling.number) {
+      card.innerHTML = `
+        <div style="font-size:80px;font-weight:900;color:#185FA5;line-height:1;">${data.calling.number}</div>
+        <div class="text-muted mt-2">${data.calling.name || ''}</div>
+        <div class="text-primary">MRT xonasi</div>
+        <div class="d-flex gap-2 mt-3 justify-content-center">
+          <button class="btn btn-success" onclick="markDone(${data.calling.id})">✅ Yakunlandi</button>
+          <button class="btn btn-warning" onclick="skipTicket(${data.calling.id})">⏭ O'tkazib yuborish</button>
+        </div>`;
+    } else {
+      card.innerHTML = `<div class="text-muted py-3"><div style="font-size:48px;">🔇</div>Hech kim chaqirilmayapti</div>`;
+    }
+
+    // Ro'yxat yangilash
+    const tbody = document.getElementById('waiting-tbody');
+    const count = data.waiting.length;
+    document.getElementById('list-count').textContent = count;
+    document.getElementById('stat-waiting').textContent = count;
+    document.getElementById('waiting-badge').textContent = count + ' kutmoqda';
+
+    if (count > 0) {
+      tbody.innerHTML = data.waiting.map(t => `
+        <tr id="row-${t.id}">
+          <td class="fw-bold text-primary fs-5">${t.ticket_number}</td>
+          <td>${t.patient_card__full_name}</td>
+          <td><span class="badge bg-info text-dark">MRT xonasi</span></td>
+          <td></td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary"
+                    onclick="callSpecific(${t.id}, ${t.ticket_number})">
+              📢 Chaqirish
+            </button>
+          </td>
+        </tr>`).join('');
+    } else {
+      tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-5">Navbatda hech kim yo'q</td></tr>`;
+    }
+  });
+}
+
+// Har 5 soniyada yangilanadi
+setInterval(refreshStatus, 5000);
+</script>
+{% endblock %}

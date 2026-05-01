@@ -363,6 +363,66 @@
     </div>
 </div>
 
+<!-- MRT NAVBAT MODAL -->
+<div class="modal fade" id="queueModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">🏥 MRT Navbat Yaratildi</h5>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div style="font-size:90px; font-weight:900; color:#185FA5; line-height:1;" id="modal-queue-number">—</div>
+                <div class="text-muted mt-2 mb-3">Navbat raqami</div>
+                <div class="fw-semibold fs-5" id="modal-patient-name"></div>
+                <div class="alert alert-info py-2">
+                    📢 Bemorga navbat raqamini ayting — u MRT zalida ekrandan o'z navbatini kuzatishi mumkin
+                </div>
+                <div class="text-muted small">MRT xonasi • Bugun</div>
+            </div>
+            <div class="modal-footer justify-content-center gap-2">
+                <button type="button" class="btn btn-outline-secondary px-4" id="btn-print-ticket">
+                    🖨 Chop etish
+                </button>
+                <button type="button" class="btn btn-primary px-5" id="queue-modal-ok">
+                    ✅ Tushunarli
+                </button>
+            </div>
+
+            <!-- Termoprinter uchun chop etish stili -->
+            <div id="print-ticket" style="display:none; position:absolute; left:-9999px;">
+                <style>
+                @media print {
+                    body * { visibility: hidden !important; }
+                    #print-ticket, #print-ticket * { visibility: visible !important; }
+                    #print-ticket {
+                        position: fixed !important;
+                        top: 0 !important; left: 0 !important;
+                        width: 76mm !important;
+                        padding: 4mm !important;
+                        font-family: 'Courier New', monospace !important;
+                        font-size: 12pt !important;
+                    }
+                }
+                </style>
+                <div style="text-align:center; font-family:'Courier New',monospace; width:76mm; padding:4mm;">
+                    <div style="font-size:10pt; border-bottom:1px dashed #000; padding-bottom:3mm; margin-bottom:3mm;">
+                        Markaziy klinik kasalxona<br>MRT bo'limi
+                    </div>
+                    <div style="font-size:11pt; margin-bottom:2mm;">Navbat raqami</div>
+                    <div id="print-num" style="font-size:48pt; font-weight:900; line-height:1;">—</div>
+                    <div style="font-size:9pt; margin-top:3mm; border-top:1px dashed #000; padding-top:3mm;">
+                        MRT xonasi
+                    </div>
+                    <div id="print-date" style="font-size:8pt; color:#333;"></div>
+                    <div style="font-size:7pt; margin-top:3mm; border-top:1px dashed #000; padding-top:2mm;">
+                        Navbat kelguncha kuting.<br>Ekrandan raqamingizni kuzating.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- TAHRIRLASH MODAL -->
 <div class="modal fade" id="editModal" tabindex="-1">
     <div class="modal-dialog">
@@ -660,6 +720,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!cart.length) return;
         this.disabled = true;
         let saved = 0, failed = 0;
+        const queueNumbers = [];
+        let patientNameFromResponse = '';
         for (let i = 0; i < cart.length; i++) {
             const item = cart[i];
             try {
@@ -669,13 +731,97 @@ document.addEventListener('DOMContentLoaded', function () {
                     body: JSON.stringify({ service_id: item.id, quantity: item.qty, ordered_by_id: item.doctor_id || null, notes: item.notes || '' })
                 });
                 const data = await res.json();
-                if (data.success) saved++; else failed++;
+                if (data.success) {
+                    saved++;
+                    // MRT navbat bo'lsa (yangi yoki mavjud)
+                    if (data.queue_number && !queueNumbers.includes(data.queue_number)) {
+                        queueNumbers.push(data.queue_number);
+                        if (data.patient_name) patientNameFromResponse = data.patient_name;
+                    }
+                } else failed++;
             } catch { failed++; }
             this.innerHTML = `⏳ Saqlanmoqda... (${saved + failed}/${cart.length})`;
         }
-        if (failed === 0) { window.location.reload(); }
+        if (failed === 0) {
+            // MRT navbat bo'lsa modal ko'rsatish
+            if (queueNumbers.length > 0) {
+                // Bemor ismini olish
+                const patientNameEl = document.querySelector('.patient-full-name') ||
+                                      document.querySelector('h4, h5, .card-title');
+                const patientName = patientNameEl ? patientNameEl.textContent.trim() : '';
+                showQueueModal(queueNumbers, patientNameFromResponse || patientName);
+            } else {
+                window.location.reload();
+            }
+        }
         else { errDiv.textContent = `${saved} ta saqlandi, ${failed} ta xato.`; errDiv.style.display = 'block'; this.disabled = false; this.innerHTML = `✅ Barchasini saqlash (<span id="save-count">${cart.length}</span> ta)`; }
     });
+
+    function printQueueTicket() {
+        const ticket = document.getElementById('print-ticket');
+        const orig = document.body.innerHTML;
+        document.body.innerHTML = ticket.innerHTML;
+        window.print();
+        document.body.innerHTML = orig;
+        window.location.reload();
+    }
+
+    function showQueueModal(numbers, patientName) {
+        const num = numbers.join(', ');
+        document.getElementById('modal-queue-number').textContent = num;
+        if (patientName) document.getElementById('modal-patient-name').textContent = patientName;
+        // Print ticket yangilash
+        document.getElementById('print-num').textContent = num;
+        document.getElementById('print-date').textContent =
+            new Date().toLocaleDateString('uz-UZ') + ' ' +
+            new Date().toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'});
+        // print-ticket faqat chop etishda ko'rinadi
+
+        const modal = new bootstrap.Modal(document.getElementById('queueModal'));
+        modal.show();
+        document.getElementById('btn-print-ticket').onclick = function() {
+            const num  = document.getElementById('modal-queue-number').textContent;
+            const name = document.getElementById('modal-patient-name').textContent;
+            const date = document.getElementById('print-date').textContent;
+
+            // Inline iframe orqali chop etish
+            const iframe = document.createElement('iframe');
+            iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:80mm;';
+            document.body.appendChild(iframe);
+            const doc = iframe.contentWindow.document;
+            doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+            <style>
+                * { margin:0; padding:0; box-sizing:border-box; }
+                @page { margin:0; size:80mm auto; }
+                body { font-family:'Courier New',monospace; width:76mm; padding:4mm; text-align:center; }
+                .title { font-size:9pt; border-bottom:1px dashed #000; padding-bottom:3mm; margin-bottom:3mm; }
+                .name  { font-size:10pt; font-weight:bold; margin-bottom:2mm; }
+                .label { font-size:9pt; margin-bottom:1mm; }
+                .number{ font-size:52pt; font-weight:900; line-height:1; margin:2mm 0; }
+                .divider{ border-top:1px dashed #000; margin:3mm 0; padding-top:3mm; font-size:8pt; }
+                .note  { font-size:7pt; margin-top:2mm; }
+            </style>
+            </head><body>
+                <div class="title">Markaziy klinik kasalxona<br>MRT bo'limi</div>
+                <div class="name">${name}</div>
+                <div class="label">Navbat raqami</div>
+                <div class="number">${num}</div>
+                <div class="divider">MRT xonasi<br>${date}</div>
+                <div class="note">Navbat kelguncha kuting.<br>Ekrandan raqamingizni kuzating.</div>
+            </body></html>`);
+            doc.close();
+            setTimeout(() => {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+                setTimeout(() => document.body.removeChild(iframe), 1000);
+            }, 300);
+        };
+        document.getElementById('queue-modal-ok').onclick = function() {
+            // print-ticket yashirin qoladi
+            modal.hide();
+            window.location.reload();
+        };
+    }
 
     document.getElementById('addServiceModal').addEventListener('shown.bs.modal', function () {
         cart = []; renderCart();

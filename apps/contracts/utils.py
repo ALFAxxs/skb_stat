@@ -11,7 +11,7 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table,
-    TableStyle, HRFlowable, Image
+    TableStyle, HRFlowable, Image, KeepTogether, PageBreak
 )
 from reportlab.lib import colors
 from reportlab.pdfbase import pdfmetrics
@@ -234,17 +234,14 @@ def generate_contract_pdf(contract) -> bytes:
         ('LEFTPADDING', (0,0), (-1,-1), 4),
         ('RIGHTPADDING', (0,0), (-1,-1), 4),
     ]))
-    story.append(sign_table)
-    story.append(sp(6))
-
-    # QR kod
+    # Imzo + QR blokni bitta sahifada saqlash
     qr_buf = generate_qr_code_image(verify_url)
     qr_img = Image(qr_buf, width=25*mm, height=25*mm)
     qr_table = Table([[
         qr_img,
         Paragraph(
             f"<b>Shartnomani onlayn tekshirish uchun QR kodni skaner qiling</b><br/><br/>"
-            f'Shartnoma No. {contract.contract_number} | Sana: {cd}',
+            f"Shartnoma No. {contract.contract_number} | Sana: {cd}",
             sQ
         ),
     ]], colWidths=[30*mm, W-30*mm])
@@ -257,7 +254,13 @@ def generate_contract_pdf(contract) -> bytes:
         ('TOPPADDING', (0,0), (-1,-1), 6),
         ('BOTTOMPADDING', (0,0), (-1,-1), 6),
     ]))
-    story.append(qr_table)
+
+    # Imzo jadvali va QR kodni bitta blokda saqlash — ajralmasin
+    story.append(KeepTogether([
+        sign_table,
+        sp(6),
+        qr_table,
+    ]))
 
     doc.build(story)
     return buf.getvalue()
