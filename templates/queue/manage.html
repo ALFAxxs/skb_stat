@@ -2,16 +2,24 @@
 {% block title %}MRT Navbat Boshqaruvi{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-3">
   <div>
     <h4 class="mb-0">🏥 MRT Navbat Boshqaruvi</h4>
     <small class="text-muted">{{ today|date:"d.m.Y" }}</small>
   </div>
-  <div class="d-flex gap-2">
-    <a href="{% url 'queue_display' %}" target="_blank" class="btn btn-outline-primary btn-sm">
-      📺 Ekran ko'rinishi
-    </a>
+  <div class="d-flex gap-2 align-items-center">
+    <a href="{% url 'queue_display_voice' %}" target="_blank" class="btn btn-outline-success btn-sm">🔊 Ovozli ekran</a>
     <span class="badge bg-success fs-6" id="waiting-badge">{{ waiting.count }} kutmoqda</span>
+  </div>
+</div>
+
+<div class="d-flex align-items-center gap-2 mb-3 p-2 bg-light rounded">
+  <small class="text-muted me-1">🎵 Audio:</small>
+  <div class="btn-group btn-group-sm">
+    <button onclick="setAudioMode('beep')" class="btn {% if audio_mode == 'beep' %}btn-primary{% else %}btn-outline-secondary{% endif %}">🔔 Signal</button>
+    <button onclick="setAudioMode('voice')" class="btn {% if audio_mode == 'voice' %}btn-primary{% else %}btn-outline-secondary{% endif %}">🔊 Ovozli</button>
+    <button onclick="setAudioMode('both')" class="btn {% if audio_mode == 'both' %}btn-primary{% else %}btn-outline-secondary{% endif %}">🔔🔊 Ikkalasi</button>
+    <button onclick="setAudioMode('off')" class="btn {% if audio_mode == 'off' %}btn-danger{% else %}btn-outline-secondary{% endif %}">🔇 Off</button>
   </div>
 </div>
 
@@ -77,12 +85,12 @@
 
   <!-- O'ng: Navbat ro'yxati -->
   <div class="col-md-7">
-    <div class="card border-0 shadow-sm">
+    <div class="card border-0 shadow-sm" style="overflow:visible;">
       <div class="card-header bg-white d-flex justify-content-between">
         <strong>🕐 Navbat ro'yxati</strong>
         <span class="badge bg-primary" id="list-count">{{ waiting.count }}</span>
       </div>
-      <div class="card-body p-0" style="max-height:600px; overflow-y:auto;">
+      <div class="card-body p-0" style="max-height:600px; overflow-y:auto; overflow-x:visible;">
         <table class="table table-hover mb-0" id="waiting-table">
           <thead class="table-light sticky-top">
             <tr>
@@ -124,8 +132,18 @@
 
 <script>
 const CALL_NEXT_URL    = "{% url 'queue_call_next' %}";
+const AUDIO_MODE_URL   = "{% url 'queue_set_audio_mode' %}";
 const STATUS_URL       = "{% url 'queue_status' %}";
 const CSRF             = "{{ csrf_token }}";
+
+function setAudioMode(mode) {
+  const fd = new FormData();
+  fd.append('mode', mode);
+  fd.append('csrfmiddlewaretoken', CSRF);
+  fetch(AUDIO_MODE_URL, { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(d => { if (d.success) location.reload(); });
+}
 
 function post(url) {
   return fetch(url, {

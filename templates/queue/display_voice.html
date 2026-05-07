@@ -1,8 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{% load static %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="uz">
 <head>
@@ -324,8 +320,16 @@ function fetchData() {
           const num = data.current.number;
           const room = data.current.room || 'MRT xonasi';
           const mode = data.audio_mode || 'beep';
-          if (mode === 'beep' || mode === 'both') playBeepSignal();
-          if (mode === 'voice' || mode === 'both') announceVoice(num);
+          if (mode === 'beep') {
+            playBeepSignal();
+          } else if (mode === 'voice') {
+            announceVoice(num);
+          } else if (mode === 'both') {
+            // Avval ding, keyin ovozli chaqiruv
+            playBeepSignal();
+            const dingDur = dingAudio.duration ? (dingAudio.duration * 1000 + 300) : 1500;
+            setTimeout(() => announceVoice(num), dingDur);
+          }
         }
       } else {
         numEl.textContent = '—';
@@ -353,10 +357,5 @@ function fetchData() {
 fetchData();
 setInterval(fetchData, 3000);
 </script>
-</body>
-</html></title>
-</head>
-<body>
-
 </body>
 </html>

@@ -4,3 +4,7 @@ class QueueConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'apps.queue_app'
     verbose_name = 'Navbat tizimi'
+
+
+def queue_app():
+    return None

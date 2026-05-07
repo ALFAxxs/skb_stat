@@ -87,6 +87,13 @@ def generate_queue_audio(request, number):
     return FileResponse(open(fpath, 'rb'), content_type='audio/mpeg')
 
 
+# ===== 0.5. OVOZLI EKRAN =====
+
+def queue_display_voice(request):
+    """Ovozli navbat ekrani"""
+    return render(request, 'queue/display_voice.html')
+
+
 # ===== 1. NAVBAT EKRANI (TV/Monitor) =====
 
 def queue_display(request):
@@ -110,15 +117,19 @@ def queue_display_data(request):
         status='done'
     ).order_by('-done_at').values('ticket_number')[:5])
 
+    from apps.queue_app.models import QueueSettings
+    settings = QueueSettings.get()
+
     return JsonResponse({
         'current': {
             'number': current.ticket_number if current else None,
             'room':   current.room if current else None,
             'name':   current.patient_card.full_name if current else None,
         },
-        'waiting':     waiting,
-        'recent_done': recent_done,
+        'waiting':       waiting,
+        'recent_done':   recent_done,
         'total_waiting': len(waiting),
+        'audio_mode':    settings.audio_mode,
     })
 
 
@@ -143,11 +154,16 @@ def queue_manage(request):
         status='done'
     ).count()
 
+    from apps.queue_app.models import QueueSettings
+    audio_settings = QueueSettings.get()
+
     return render(request, 'queue/manage.html', {
-        'waiting':    waiting,
-        'calling':    calling,
-        'done_count': done_count,
-        'today':      today,
+        'waiting':      waiting,
+        'calling':      calling,
+        'done_count':   done_count,
+        'today':        today,
+        'audio_mode':   audio_settings.audio_mode,
+        'audio_choices': QueueSettings.AUDIO_CHOICES,
     })
 
 
@@ -287,6 +303,22 @@ def create_queue_ticket(patient_service):
         room='MRT xonasi',
     )
     return ticket
+
+
+# ===== 4.5. AUDIO REJIM O'ZGARTIRISH =====
+
+@login_required
+@require_POST
+def set_audio_mode(request):
+    from apps.queue_app.models import QueueSettings
+    mode = request.POST.get('mode', 'beep')
+    valid = ['beep', 'voice', 'both', 'off']
+    if mode not in valid:
+        return JsonResponse({'success': False})
+    s = QueueSettings.get()
+    s.audio_mode = mode
+    s.save()
+    return JsonResponse({'success': True, 'mode': mode, 'label': s.get_audio_mode_display()})
 
 
 # ===== 5. CHIPTA KO'RISH =====
