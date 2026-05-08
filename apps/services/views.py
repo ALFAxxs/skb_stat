@@ -38,7 +38,7 @@ def service_search(request):
 
     qs = Service.objects.filter(is_active=True).select_related('category').order_by('name')
     if q:
-        qs = qs.filter(Q(name__icontains=q) | Q(code__icontains=q))
+        qs = qs.filter(Q(name__icontains=q) | Q(name_ru__icontains=q) | Q(code__icontains=q))
     if category_id:
         qs = qs.filter(category_id=category_id)
     # Bo'sh qidiruv — faqat 20 ta ko'rsatish
@@ -60,6 +60,7 @@ def service_search(request):
         data.append({
             'id': s.id,
             'name': str(s),
+            'name_ru': s.name_ru or '',
             'category': s.category.name,
             'category_id': s.category_id,
             'price': float(price),

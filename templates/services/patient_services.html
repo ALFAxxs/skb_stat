@@ -47,7 +47,10 @@
         </p>
     </div>
     <div class="d-flex gap-2">
-        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addServiceModal">➕ Xizmat qo'shish</button>
+        <button class="btn btn-success"
+                data-bs-toggle="modal" data-bs-target="#addServiceModal"
+                onclick="openServiceModal()"
+                ontouchend="openServiceModal()">➕ Xizmat qo'shish</button>
         <a href="{% url 'patient_detail' patient.pk %}" class="btn btn-outline-secondary">← Bemor kartasi</a>
     </div>
 </div>
@@ -148,7 +151,10 @@
                 <tr>
                     <td colspan="8" class="text-center text-muted py-5">
                         Xizmatlar qo'shilmagan.<br>
-                        <button class="btn btn-success btn-sm mt-2" data-bs-toggle="modal" data-bs-target="#addServiceModal">➕ Xizmat qo'shish</button>
+                        <button class="btn btn-success btn-sm mt-2"
+                data-bs-toggle="modal" data-bs-target="#addServiceModal"
+                onclick="openServiceModal()"
+                ontouchend="openServiceModal()">➕ Xizmat qo'shish</button>
                     </td>
                 </tr>
                 {% endfor %}
@@ -474,6 +480,17 @@ const ADD_URL    = "{% url 'add_service' patient.pk %}";
 const SEARCH_URL = "{% url 'service_search' %}";
 const CSRF       = "{{ csrf_token }}";
 
+function openServiceModal() {
+  try {
+    var modal = new bootstrap.Modal(document.getElementById('addServiceModal'));
+    modal.show();
+  } catch(e) {
+    document.getElementById('addServiceModal').style.display = 'block';
+    document.getElementById('addServiceModal').classList.add('show');
+    document.body.classList.add('modal-open');
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
 
     // ===== JADVAL FILTRI =====
@@ -566,7 +583,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div class="svc-item-row">
                             <input type="checkbox" class="svc-cb" data-id="${s.id}" ${checked ? 'checked' : ''}>
                             <div class="svc-item-info">
-                                <div class="name">${s.name}</div>
+                                <div class="name">${s.name}${s.name_ru ? '<span style="color:#888;font-size:11px;font-weight:400"> / ' + s.name_ru + '</span>' : ''}</div>
                                 <div class="cat">${s.category}</div>
                             </div>
                             <input type="number" class="svc-qty-inline" value="${qty}" min="1" max="99" data-id="${s.id}">

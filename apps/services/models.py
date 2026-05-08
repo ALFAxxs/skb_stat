@@ -15,8 +15,9 @@ class ServiceCategory(models.Model):
         ('consultation', 'Konsultatsiya'),
         ('other', 'Boshqa'),
     ]
-    name = models.CharField(max_length=100, verbose_name="Nomi")
-    code = models.CharField(max_length=20, blank=True, verbose_name="Kodi")
+    name    = models.CharField(max_length=100, verbose_name="Nomi")
+    name_ru = models.CharField(max_length=100, blank=True, verbose_name="Nomi (ruscha)")
+    code    = models.CharField(max_length=20, blank=True, verbose_name="Kodi")
     category_type = models.CharField(
         max_length=20,
         choices=CATEGORY_TYPE_CHOICES,
@@ -46,8 +47,9 @@ class Service(models.Model):
         related_name='services',
         verbose_name="Kategoriya"
     )
-    name = models.CharField(max_length=255, verbose_name="Xizmat nomi")
-    code = models.CharField(max_length=20, blank=True, verbose_name="Kodi")
+    name    = models.CharField(max_length=255, verbose_name="Xizmat nomi")
+    name_ru = models.CharField(max_length=255, blank=True, verbose_name="Nomi (ruscha)")
+    code    = models.CharField(max_length=20, blank=True, verbose_name="Kodi")
     description = models.TextField(blank=True, verbose_name="Tavsifi")
 
     # 3 xil narx
@@ -67,11 +69,8 @@ class Service(models.Model):
         null=True, blank=True,
         verbose_name="Mas'ul bo'lim"
     )
-    is_active = models.BooleanField(default=True)
-    is_operation = models.BooleanField(
-        default=False,
-        verbose_name="Operatsiyami?"
-    )
+    is_active    = models.BooleanField(default=True)
+    is_operation = models.BooleanField(default=False, verbose_name="Operatsiyami?")
 
     def price_for_patient(self, patient_category):
         """Bemor kategoriyasiga qarab narx hisoblash"""
@@ -95,10 +94,10 @@ class Service(models.Model):
 class PatientService(models.Model):
     """Bemorga biriktirilgan xizmat"""
     STATUS_CHOICES = [
-        ('ordered', 'Buyurtma berildi'),
+        ('ordered',     'Buyurtma berildi'),
         ('in_progress', 'Bajarilmoqda'),
-        ('completed', 'Bajarildi'),
-        ('cancelled', 'Bekor qilindi'),
+        ('completed',   'Bajarildi'),
+        ('cancelled',   'Bekor qilindi'),
     ]
 
     patient_card = models.ForeignKey(
@@ -112,15 +111,10 @@ class PatientService(models.Model):
         on_delete=models.PROTECT,
         verbose_name="Xizmat"
     )
-    quantity = models.PositiveIntegerField(
-        default=1,
-        verbose_name="Miqdori"
-    )
-    status = models.CharField(
-        max_length=15,
-        choices=STATUS_CHOICES,
-        default='ordered',
-        verbose_name="Holati"
+    quantity = models.PositiveIntegerField(default=1, verbose_name="Miqdori")
+    status   = models.CharField(
+        max_length=15, choices=STATUS_CHOICES,
+        default='ordered', verbose_name="Holati"
     )
 
     # Buyurtma beruvchi
@@ -131,10 +125,7 @@ class PatientService(models.Model):
         related_name='ordered_services',
         verbose_name="Buyurtma bergan shifokor"
     )
-    ordered_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="Buyurtma sanasi"
-    )
+    ordered_at = models.DateTimeField(auto_now_add=True, verbose_name="Buyurtma sanasi")
 
     # Bajargchi
     performed_by = models.ForeignKey(
@@ -144,10 +135,7 @@ class PatientService(models.Model):
         related_name='performed_services',
         verbose_name="Bajargan shifokor"
     )
-    performed_at = models.DateTimeField(
-        null=True, blank=True,
-        verbose_name="Bajarilgan sana"
-    )
+    performed_at = models.DateTimeField(null=True, blank=True, verbose_name="Bajarilgan sana")
 
     # Natija
     result = models.TextField(blank=True, verbose_name="Natija / Xulosa")
@@ -155,24 +143,21 @@ class PatientService(models.Model):
     # Narx
     price = models.DecimalField(
         max_digits=12, decimal_places=2,
-        default=0,
-        verbose_name="Birlik narxi (so'm)"
+        default=0, verbose_name="Birlik narxi (so'm)"
     )
-    # Bemor kategoriyasi saqlash
     patient_category_at_order = models.CharField(
         max_length=15, blank=True,
         verbose_name="Buyurtma paytidagi bemor kategoriyasi"
     )
 
     is_paid = models.BooleanField(default=False, verbose_name="To'langan")
-    notes = models.TextField(blank=True, verbose_name="Izoh")
+    notes   = models.TextField(blank=True, verbose_name="Izoh")
 
     @property
     def total_price(self):
         return self.price * self.quantity
 
     def save(self, *args, **kwargs):
-        # Narxni avtomatik hisoblash
         if not self.pk and self.service_id and self.patient_card_id:
             category = self.patient_card.patient_category
             self.patient_category_at_order = category
@@ -187,25 +172,26 @@ class PatientService(models.Model):
         verbose_name_plural = "Bemor xizmatlari"
         ordering = ['-ordered_at']
 
+
 # ==================== DORI-DARMON ====================
 
 class Medicine(models.Model):
     """Dori-darmon katalogi"""
     UNIT_CHOICES = [
-        ('dona', 'dona'),
-        ('ml', 'ml'),
-        ('mg', 'mg'),
-        ('g', 'g'),
-        ('l', 'l'),
-        ('ampula', 'ampula'),
-        ('kapsula', 'kapsula'),
+        ('dona',     'dona'),
+        ('ml',       'ml'),
+        ('mg',       'mg'),
+        ('g',        'g'),
+        ('l',        'l'),
+        ('ampula',   'ampula'),
+        ('kapsula',  'kapsula'),
         ('tabletka', 'tabletka'),
-        ('paket', 'paket'),
-        ('shisha', 'shisha'),
-        ('tuba', 'tuba'),
+        ('paket',    'paket'),
+        ('shisha',   'shisha'),
+        ('tuba',     'tuba'),
     ]
-    name = models.CharField(max_length=255, verbose_name="Nomi")
-    unit = models.CharField(
+    name      = models.CharField(max_length=255, verbose_name="Nomi")
+    unit      = models.CharField(
         max_length=20, choices=UNIT_CHOICES,
         default='dona', verbose_name="Birlik"
     )
@@ -249,7 +235,7 @@ class PatientMedicine(models.Model):
         verbose_name="Buyurtma bergan shifokor"
     )
     ordered_at = models.DateTimeField(auto_now_add=True)
-    notes = models.TextField(blank=True, verbose_name="Izoh")
+    notes      = models.TextField(blank=True, verbose_name="Izoh")
 
     @property
     def total_price(self):
