@@ -1,8 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{% load static %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="uz">
 <head>
@@ -138,6 +134,23 @@ body {
   font-size: 13px;
   color: #78909c;
 }
+.waiting-name {
+  font-size: 12px;
+  color: #90a4ae;
+  margin-top: 2px;
+}
+.btn-reprint {
+  background: rgba(24,95,165,0.3);
+  border: 1px solid #185FA5;
+  color: #4fc3f7;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.btn-reprint:hover { background: rgba(24,95,165,0.5); }
 
 /* TICKER pastki qism */
 .ticker {
@@ -262,12 +275,12 @@ function getVoiceFiles(num) {
   const B = '/static/queue/audio/';
   const ns = getNumFiles(num);
   return [
-    B+'ru/talon_nomer.mp3',
-    ...ns.map(f => B+'ru/'+f+'.mp3'),
-    B+'ru/pozhaluysta.mp3',
     B+'uz/navbat_raqami.mp3',
     ...ns.map(f => B+'uz/'+f+'.mp3'),
     B+'uz/marhamat.mp3',
+    B+'ru/talon_nomer.mp3',
+    ...ns.map(f => B+'ru/'+f+'.mp3'),
+    B+'ru/pozhaluysta.mp3',
   ];
 }
 
@@ -324,8 +337,16 @@ function fetchData() {
           const num = data.current.number;
           const room = data.current.room || 'MRT xonasi';
           const mode = data.audio_mode || 'beep';
-          if (mode === 'beep' || mode === 'both') playBeepSignal();
-          if (mode === 'voice' || mode === 'both') announceVoice(num);
+          if (mode === 'beep') {
+            playBeepSignal();
+          } else if (mode === 'voice') {
+            announceVoice(num);
+          } else if (mode === 'both') {
+            // Avval ding, keyin ovozli chaqiruv
+            playBeepSignal();
+            const dingDur = dingAudio.duration ? (dingAudio.duration * 1000 + 300) : 1500;
+            setTimeout(() => announceVoice(num), dingDur);
+          }
         }
       } else {
         numEl.textContent = '—';
@@ -340,7 +361,11 @@ function fetchData() {
         listEl.innerHTML = data.waiting.map((w, i) =>
           `<div class="waiting-item ${i === 0 ? 'next' : ''}">
             <div class="waiting-num">${w.ticket_number}</div>
-            <div class="waiting-room">${w.room || 'MRT xonasi'}</div>
+            <div style="flex:1;">
+              <div class="waiting-room">${w.room || 'MRT xonasi'}</div>
+              <div class="waiting-name">${w.name || ''}</div>
+            </div>
+            <button class="btn-reprint" onclick="reprintTicket(${w.ticket_number}, '${(w.name||'').replace(/'/g,'')}', '${w.room||'MRT xonasi'}')">🖨</button>
           </div>`
         ).join('');
       } else {
@@ -350,13 +375,46 @@ function fetchData() {
     .catch(err => console.error('Polling xato:', err));
 }
 
+// ===== CHIPTANI QAYTA CHOP ETISH =====
+function reprintTicket(num, name, room) {
+  const now = new Date();
+  const date = now.toLocaleDateString('uz-UZ') + ' ' +
+               now.toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'});
+
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:80mm;';
+  document.body.appendChild(iframe);
+  const doc = iframe.contentWindow.document;
+  doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    @page { margin:0; size:80mm auto; }
+    body { font-family:'Courier New',monospace; width:76mm; padding:4mm; text-align:center; }
+    .title { font-size:9pt; border-bottom:1px dashed #000; padding-bottom:3mm; margin-bottom:3mm; }
+    .name  { font-size:10pt; font-weight:bold; margin-bottom:2mm; }
+    .label { font-size:9pt; margin-bottom:1mm; }
+    .number{ font-size:52pt; font-weight:900; line-height:1; margin:2mm 0; }
+    .divider{ border-top:1px dashed #000; margin:3mm 0; padding-top:3mm; font-size:8pt; }
+    .note  { font-size:7pt; margin-top:2mm; }
+  </style>
+  </head><body>
+    <div class="title">Markaziy klinik kasalxona<br>MRT bo'limi</div>
+    <div class="name">${name}</div>
+    <div class="label">Navbat raqami</div>
+    <div class="number">${num}</div>
+    <div class="divider">${room}<br>${date}</div>
+    <div class="note">Navbat kelguncha kuting.<br>Ekrandan raqamingizni kuzating.</div>
+  </body></html>`);
+  doc.close();
+  setTimeout(() => {
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+    setTimeout(() => document.body.removeChild(iframe), 1000);
+  }, 300);
+}
+
 fetchData();
 setInterval(fetchData, 3000);
 </script>
-</body>
-</html></title>
-</head>
-<body>
-
 </body>
 </html>

@@ -109,7 +109,14 @@ def queue_display_data(request):
     waiting = list(QueueTicket.objects.filter(
         created_at__date=today,
         status='waiting'
-    ).order_by('ticket_number').values('ticket_number', 'room')[:10])
+    ).order_by('ticket_number').values(
+        'ticket_number', 'room',
+        'patient_card__full_name'
+    )[:10])
+
+    # name ni sodda ko'rinishga keltirish
+    for w in waiting:
+        w['name'] = w.pop('patient_card__full_name', '') or ''
 
     # Oxirgi 5 ta yakunlangan
     recent_done = list(QueueTicket.objects.filter(
