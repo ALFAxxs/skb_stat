@@ -104,7 +104,7 @@ def queue_display(request):
 def queue_display_data(request):
     """Polling uchun JSON — har 3 soniyada yangilanadi"""
     current = QueueTicket.current_calling()
-    today   = timezone.now().date()
+    today   = timezone.localdate()
 
     waiting = list(QueueTicket.objects.filter(
         created_at__date=today,
@@ -145,7 +145,7 @@ def queue_display_data(request):
 @login_required
 def queue_manage(request):
     """Shifokor navbatni boshqaradi"""
-    today   = timezone.now().date()
+    today   = timezone.localdate()
     waiting = QueueTicket.objects.filter(
         created_at__date=today,
         status='waiting'
@@ -178,7 +178,7 @@ def queue_manage(request):
 @require_POST
 def queue_call_next(request):
     """Keyingi bemorni chaqirish"""
-    today = timezone.now().date()
+    today = timezone.localdate()
 
     # Hozirgi chaqirilayotganni 'serving' ga o'tkazish
     QueueTicket.objects.filter(status='calling').update(
@@ -254,7 +254,7 @@ def queue_skip(request, pk):
 @login_required
 def queue_status(request):
     """Shifokor paneli uchun polling"""
-    today = timezone.now().date()
+    today = timezone.localdate()
 
     calling = QueueTicket.objects.filter(status='calling').first()
     waiting = list(QueueTicket.objects.filter(
@@ -288,7 +288,7 @@ def create_queue_ticket(patient_service):
     if patient_service.service.category_id not in mrt_ids:
         return None
 
-    today = timezone.now().date()
+    today = timezone.localdate()
 
     # Bemorda bugun AKTIV navbat bormi?
     # done yoki skipped bo'lmagan navbat mavjud bo'lsa — yangisini yaratmaymiz
@@ -333,7 +333,7 @@ def set_audio_mode(request):
 def queue_ticket_view(request, pk):
     """Bemor o'z chiptasini ko'radi"""
     ticket = get_object_or_404(QueueTicket, pk=pk)
-    today  = timezone.now().date()
+    today  = timezone.localdate()
 
     # Oldindagi navbat soni
     ahead = QueueTicket.objects.filter(
