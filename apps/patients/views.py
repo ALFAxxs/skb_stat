@@ -8,7 +8,6 @@ from django.db.models import Q
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required
 from apps.users.decorators import role_required, department_filter
-from apps.patients.models import PatientCard, Department, Doctor  # Doctor qo'shilgan
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.units import cm
@@ -631,6 +630,7 @@ def patient_detail(request, pk):
         'prev_visits': prev_visits,
         'departments': Department.objects.filter(is_active=True).order_by('name'),
         'doctors':     Doctor.objects.filter(is_active=True).select_related('department').order_by('full_name'),
+        'dept_heads':  Doctor.objects.filter(is_active=True, is_head=True).order_by('full_name'),
         'transfers':   patient.patient_transfers.all().select_related(
                            'from_department', 'to_department',
                            'to_doctor', 'transferred_by'

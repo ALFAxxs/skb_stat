@@ -95,7 +95,7 @@
             <label class="form-label fw-bold">Yangi bo'lim mudiri</label>
             <select name="to_dept_head" class="form-select">
               <option value="">— Avvalgisi qolsin —</option>
-              {% for doc in doctors %}
+              {% for doc in dept_heads %}
               <option value="{{ doc.pk }}" {% if doc == patient.department_head %}selected{% endif %}>{{ doc }}</option>
               {% endfor %}
             </select>
