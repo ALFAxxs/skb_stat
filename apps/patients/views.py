@@ -23,7 +23,7 @@ from .forms import PatientCardForm, DeathCauseForm, SurgicalOperationFormSet, Re
 from .models import (
     PatientCard, ICD10Code, DischargeConclusion,
     Region, District, City, Village, Country, OperationType,
-    Department
+    Department, Doctor
 )
 
 
