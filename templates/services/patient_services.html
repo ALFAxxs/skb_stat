@@ -583,8 +583,11 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div class="svc-item-row">
                             <input type="checkbox" class="svc-cb" data-id="${s.id}" ${checked ? 'checked' : ''}>
                             <div class="svc-item-info">
-                                <div class="name">${s.name}${s.name_ru ? '<span style="color:#888;font-size:11px;font-weight:400"> / ' + s.name_ru + '</span>' : ''}</div>
-                                <div class="cat">${s.category}</div>
+                            <div class="svc-name">
+                                ${s.name}
+                                ${s.name_ru ? `<div class="text-muted" style="font-size: 13px; font-weight: 500;">${s.name_ru}</div>` : ''}
+                            </div>
+                            <div class="cat">${s.category}</div>
                             </div>
                             <input type="number" class="svc-qty-inline" value="${qty}" min="1" max="99" data-id="${s.id}">
                             <span class="price-pill">${Number(s.price).toLocaleString()} so'm</span>
