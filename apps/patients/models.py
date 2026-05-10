@@ -515,3 +515,59 @@ class DepartmentTransfer(models.Model):
 
     def __str__(self):
         return f"{self.patient_card} → {self.to_department}"
+
+# apps/patients/models.py ga qo'shish — oxiriga
+
+# apps/patients/models.py ga qo'shish — oxiriga
+
+class PatientTransfer(models.Model):
+    """Bemor ko'chirish tarixi"""
+
+    patient_card = models.ForeignKey(
+        'PatientCard', on_delete=models.CASCADE,
+        related_name='patient_transfers', verbose_name="Bemor"
+    )
+    from_department = models.ForeignKey(
+        'Department', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='patient_transfers_from',
+        verbose_name="Avvalgi bo'lim"
+    )
+    from_doctor = models.ForeignKey(
+        'Doctor', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='patient_transfers_from_doctor',
+        verbose_name="Avvalgi shifokor"
+    )
+    from_dept_head = models.ForeignKey(
+        'Doctor', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='patient_transfers_from_head',
+        verbose_name="Avvalgi bo'lim mudiri"
+    )
+    to_department = models.ForeignKey(
+        'Department', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='patient_transfers_to',
+        verbose_name="Yangi bo'lim"
+    )
+    to_doctor = models.ForeignKey(
+        'Doctor', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='patient_transfers_to_doctor',
+        verbose_name="Yangi shifokor"
+    )
+    to_dept_head = models.ForeignKey(
+        'Doctor', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='patient_transfers_to_head',
+        verbose_name="Yangi bo'lim mudiri"
+    )
+    reason = models.TextField(blank=True, verbose_name="Sabab / izoh")
+    transferred_by = models.ForeignKey(
+        'users.CustomUser', on_delete=models.SET_NULL,
+        null=True, blank=True, verbose_name="Kim ko'chirdi"
+    )
+    transferred_at = models.DateTimeField(auto_now_add=True, verbose_name="Ko'chirilgan vaqt")
+
+    class Meta:
+        verbose_name        = "Ko'chirish tarixi"
+        verbose_name_plural = "Ko'chirish tarixi"
+        ordering            = ['transferred_at']
+
+    def __str__(self):
+        return f"{self.patient_card} → {self.to_department} ({self.transferred_at.strftime('%d.%m.%Y')})"

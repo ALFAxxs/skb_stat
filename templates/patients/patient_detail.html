@@ -1,16 +1,46 @@
 <!-- templates/patients/patient_detail.html -->
 {% extends 'base.html' %}
-{% block title %}{{ patient.full_name }}{% endblock %}
+{% block title %}{{ patient.full_name }}<!-- KO'CHIRISH TARIXI -->
+{% if patient.patient_transfers.exists %}
+<div class="card mb-3">
+  <div class="card-header bg-info text-white">
+    <strong>🔄 Ko'chirish tarixi</strong>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Sana</th>
+          <th>Avvalgi bo'lim</th>
+          <th>Yangi bo'lim</th>
+          <th>Yangi shifokor</th>
+          <th>Kim ko'chirdi</th>
+          <th>Sabab</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in patient.patient_transfers.all %}
+        <tr>
+          <td class="text-nowrap">{{ t.transferred_at|date:"d.m.Y H:i" }}</td>
+          <td>{{ t.from_department|default:"—" }}</td>
+          <td><strong>{{ t.to_department|default:"—" }}</strong></td>
+          <td>{{ t.to_doctor|default:"—" }}</td>
+          <td class="text-muted small">{{ t.transferred_by|default:"—" }}</td>
+          <td class="text-muted small">{{ t.reason|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h3>📋 Bemor kartasi</h3>
     <div class="d-flex gap-2">
-        {% if patient.contract %}
-              <a href="{% url 'download_contract' patient.contract.pk %}" target="_blank">
-                 📄 Shartnoma (PDF)
-              </a>
-            {% endif %}
         <a href="{% url 'patient_services' patient.pk %}" class="btn btn-info">
             🏥 Xizmatlar
             {% with cnt=patient.patient_services.count %}
@@ -18,11 +48,71 @@
             {% endwith %}
         </a>
         <a href="{% url 'patient_edit' patient.pk %}" class="btn btn-warning">✏️ Tahrirlash</a>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#transferModal">🔄 Ko'chirish</button>
         <a href="{% url 'patient_list' %}" class="btn btn-secondary">← Ro'yxatga</a>
         <a href="{% url 'patient_card_pdf' patient.pk %}" class="btn btn-danger">📄 PDF</a>
         <a href="{% url 'patient_card_excel' patient.pk %}" class="btn btn-success">📥 Excel</a>
         <a href="{% url 'patient_invoice' patient.pk %}" class="btn btn-outline-primary">🧾 Hisob-faktura</a>
     </div>
+</div>
+
+<!-- KO'CHIRISH MODALI -->
+<div class="modal fade" id="transferModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">🔄 Bemorni ko'chirish</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{% url 'patient_transfer' patient.pk %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="alert alert-info py-2 small">
+            <strong>Hozirgi:</strong>
+            {{ patient.department }} |
+            {{ patient.attending_doctor }} |
+            {{ patient.department_head }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Yangi bo'lim *</label>
+            <select name="to_department" class="form-select" required id="transfer-dept">
+              <option value="">— Tanlang —</option>
+              {% for dept in departments %}
+              <option value="{{ dept.pk }}" {% if dept == patient.department %}selected{% endif %}>{{ dept }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Yangi shifokor</label>
+            <select name="to_doctor" class="form-select" id="transfer-doctor">
+              <option value="">— Avvalgisi qolsin —</option>
+              {% for doc in doctors %}
+              <option value="{{ doc.pk }}" {% if doc == patient.attending_doctor %}selected{% endif %}>{{ doc }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Yangi bo'lim mudiri</label>
+            <select name="to_dept_head" class="form-select">
+              <option value="">— Avvalgisi qolsin —</option>
+              {% for doc in doctors %}
+              <option value="{{ doc.pk }}" {% if doc == patient.department_head %}selected{% endif %}>{{ doc }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Sabab / izoh *</label>
+            <textarea name="reason" class="form-control" rows="3"
+                      placeholder="Ko'chirish sababi..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor</button>
+          <button type="submit" class="btn btn-primary">✅ Ko'chirish</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <!-- 1. Bemor ma'lumotlari -->
@@ -51,13 +141,6 @@
             <div class="col-md-2">
                 <strong>Ijtimoiy holat:</strong><br>
                 {{ patient.get_social_status_display }}
-                {% if patient.social_status == 'dependent' and patient.parent_name %}
-                <div class="mt-1 p-2 bg-light rounded border small">
-                    👨‍👩‍👦 <strong>Ota-ona:</strong> {{ patient.parent_name }}
-                    {% if patient.parent_jshshir %}<br>JSHSHIR: {{ patient.parent_jshshir }}{% endif %}
-                    {% if patient.parent_workplace_org %}<br>Ish joyi: {{ patient.parent_workplace_org }}{% endif %}
-                </div>
-                {% endif %}
             </div>
             {% if patient.resident_status == 'resident' %}
             <div class="col-md-3">
@@ -108,14 +191,6 @@
             <div class="col-md-2">
                 <strong>Bo'lim:</strong><br>
                 {{ patient.department|default:"—" }}
-            </div>
-            <div class="col-md-2">
-                <strong>Tashrif turi:</strong><br>
-                {% if patient.visit_type == 'ambulatory' %}
-                <span class="badge" style="background:#6f42c1;font-size:13px;">🚶 Ambulator</span>
-                {% else %}
-                <span class="badge bg-info text-dark" style="font-size:13px;">🏥 Statsionar</span>
-                {% endif %}
             </div>
 
             <div class="col-md-4 mt-2">
@@ -355,53 +430,6 @@
     </div>
 </div>
 
-<!-- OLDINGI TASHRIFLAR -->
-{% if prev_visits %}
-<div class="card mb-3 border-warning">
-    <div class="card-header bg-warning bg-opacity-10 d-flex align-items-center gap-2">
-        <span style="font-size:18px;">⚠️</span>
-        <strong>Bu bemor avval ham kelgan — {{ prev_visits|length }} ta tashrif</strong>
-    </div>
-    <div class="card-body p-0">
-        <table class="table table-sm table-hover align-middle mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th class="ps-3">Bayonnoma</th>
-                    <th>Qabul sanasi</th>
-                    <th>Bo'lim</th>
-                    <th>Tashxis</th>
-                    <th>Holat</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for visit in prev_visits %}
-                <tr>
-                    <td class="ps-3 fw-semibold">{{ visit.medical_record_number }}</td>
-                    <td>{{ visit.admission_date|date:"d.m.Y" }}</td>
-                    <td>{{ visit.department|default:"—" }}</td>
-                    <td><small class="text-muted">{{ visit.admission_diagnosis|truncatechars:50|default:"—" }}</small></td>
-                    <td>
-                        {% if visit.status == 'registered' %}
-                            <span class="badge bg-warning text-dark">Registratsiya</span>
-                        {% elif visit.status == 'admitted' %}
-                            <span class="badge bg-primary">Yotqizilgan</span>
-                        {% else %}
-                            <span class="badge bg-success">Yakunlangan</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <a href="{% url 'patient_detail' visit.pk %}"
-                           class="btn btn-sm btn-outline-secondary">Ko'rish</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-{% endif %}
-
 <!-- 9. Xizmatlar -->
 <div class="card mb-4">
     <div class="card-header bg-info bg-opacity-10 d-flex justify-content-between align-items-center">
@@ -446,8 +474,8 @@
             </tbody>
             <tfoot class="table-light">
                 <tr>
-                    <td colspan="5" class="text-end fw-bold">Xizmatlar jami:</td>
-                    <td class="text-end pe-3 fw-bold text-info">
+                    <td colspan="5" class="text-end fw-bold">Jami summa:</td>
+                    <td class="text-end pe-3 fw-bold text-success fs-6">
                         {{ services_total|floatformat:0 }} so'm
                     </td>
                 </tr>
@@ -461,154 +489,6 @@
         {% endif %}
     </div>
 </div>
-
-<!-- 9b. Dori-darmonlar -->
-{% if patient.status == 'statsionar' %}
-<div class="card mb-4">
-    <div class="card-header bg-warning bg-opacity-10 d-flex justify-content-between align-items-center">
-        <strong>💊 Dori-darmonlar
-            {% if patient_medicines %}
-                <span class="badge bg-warning text-dark ms-1">{{ patient_medicines.count }} ta</span>
-            {% endif %}
-        </strong>
-        <a href="{% url 'patient_services' patient.pk %}" class="btn btn-sm btn-warning text-dark">
-            + Boshqarish
-        </a>
-    </div>
-    <div class="card-body p-0">
-        {% if patient_medicines %}
-        <table class="table table-sm table-hover align-middle mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th class="ps-3">Dori nomi</th>
-                    <th>Birlik</th>
-                    <th>Shifokor</th>
-                    <th class="text-center">Miqdori</th>
-                    <th class="text-end">Narxi</th>
-                    <th class="text-end pe-3">Jami</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for med in patient_medicines %}
-                <tr>
-                    <td class="ps-3 fw-semibold">{{ med.medicine.name }}</td>
-                    <td><small class="text-muted">{{ med.medicine.unit }}</small></td>
-                    <td><small>{{ med.ordered_by|default:"—" }}</small></td>
-                    <td class="text-center">{{ med.quantity }}</td>
-                    <td class="text-end">{{ med.price|floatformat:0 }} so'm</td>
-                    <td class="text-end pe-3 fw-semibold">{{ med.total_price|floatformat:0 }} so'm</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-            <tfoot class="table-light">
-                <tr>
-                    <td colspan="5" class="text-end fw-bold">Dorilar jami:</td>
-                    <td class="text-end pe-3 fw-bold text-warning">
-                        {{ medicines_total|floatformat:0 }} so'm
-                    </td>
-                </tr>
-            </tfoot>
-        </table>
-        {% else %}
-        <div class="text-center text-muted py-4">
-            Hali dori qo'shilmagan.
-            <a href="{% url 'patient_services' patient.pk %}">+ Qo'shish</a>
-        </div>
-        {% endif %}
-    </div>
-</div>
-{% endif %}
-
-<!-- Umumiy jami -->
-{% if services_total or medicines_total %}
-<div class="card mb-4 border-success">
-    <div class="card-body py-3 d-flex justify-content-between align-items-center">
-        <div class="d-flex gap-4">
-            <span class="text-muted small">Xizmatlar: <strong class="text-info">{{ services_total|floatformat:0 }} so'm</strong></span>
-         {% if patient.status == 'statsionar' %}
-            <span class="text-muted small">Dorilar: <strong class="text-warning">{{ medicines_total|floatformat:0 }} so'm</strong></span>
-        {% endif %}
-        </div>
-        <div>
-            <strong class="text-muted me-2">Umumiy jami:</strong>
-            <strong class="text-success fs-5">{{ grand_total|floatformat:0 }} so'm</strong>
-        </div>
-    </div>
-</div>
-{% endif %}
-
-<!-- 10. Bo'lim ko'chirish tarixi -->
-{% if patient.transfers.all %}
-<div class="card mb-4">
-    <div class="card-header bg-light d-flex justify-content-between align-items-center">
-        <strong>🔄 Bo'lim ko'chirish tarixi</strong>
-        <span class="badge bg-secondary">{{ patient.transfers.count }} ta</span>
-    </div>
-    <div class="card-body p-0">
-        <table class="table table-sm table-hover align-middle mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th class="ps-3">Sana</th>
-                    <th>Qayerdan</th>
-                    <th>Qayerga</th>
-                    <th>Kim</th>
-                    <th>Sabab</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for t in patient.transfers.all %}
-                <tr>
-                    <td class="ps-3">{{ t.transferred_at|date:"d.m.Y H:i" }}</td>
-                    <td class="text-muted">{{ t.from_department|default:"—" }}</td>
-                    <td class="fw-semibold">{{ t.to_department|default:"—" }}</td>
-                    <td><small>{{ t.transferred_by|default:"—" }}</small></td>
-                    <td><small class="text-muted">{{ t.reason|default:"—"|truncatechars:40 }}</small></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-{% endif %}
-
-<!-- Bo'lim ko'chirish formasi -->
-{% if request.user.role in 'admin,doctor,statistician' or request.user.is_superuser %}
-{% if patient.status == 'statsionar' %}
-{% if patient.status != 'completed' %}
-<div class="card mb-4">
-    <div class="card-header bg-light">
-        <strong>🔄 Bo'limga ko'chirish</strong>
-    </div>
-    <div class="card-body">
-        <form method="post" action="{% url 'transfer_department' patient.pk %}" class="row g-2 align-items-end">
-            {% csrf_token %}
-            <div class="col-md-5">
-                <label class="form-label small">Yangi bo'lim</label>
-                <select name="department" class="form-select form-select-sm" required>
-                    <option value="">— Tanlang —</option>
-                    {% for dept in departments %}
-                    <option value="{{ dept.pk }}"
-                        {% if dept.pk == patient.department_id %}disabled{% endif %}>
-                        {{ dept.name }}
-                        {% if dept.pk == patient.department_id %}(hozirgi){% endif %}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-5">
-                <label class="form-label small">Sabab (ixtiyoriy)</label>
-                <input type="text" name="reason" class="form-control form-control-sm"
-                       placeholder="Ko'chirish sababi...">
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-warning btn-sm w-100">Ko'chirish</button>
-            </div>
-        </form>
-    </div>
-</div>
-{% endif %}
-{% endif %}
-{% endif %}
 
 <!-- Meta -->
 <div class="text-muted small mb-5">

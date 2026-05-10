@@ -1,3 +1,4 @@
+from django.views.decorators.http import require_POST
 # apps/patients/views.py
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -7,6 +8,7 @@ from django.db.models import Q
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required
 from apps.users.decorators import role_required, department_filter
+from apps.patients.models import PatientCard, Department, Doctor  # Doctor qo'shilgan
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.units import cm
@@ -466,10 +468,12 @@ def patient_list(request):
             Q(passport_serial__icontains=query)
         )
 
-    # Status filteri
+    # Status filteri — yakunlangan faqat aniq filter qilinganda chiqadi
     status = request.GET.get('status', '')
     if status:
         qs = qs.filter(status=status)
+    else:
+        qs = qs.exclude(status='discharged')
 
     # Yakun filteri
     outcome = request.GET.get('outcome', '')
@@ -625,7 +629,12 @@ def patient_detail(request, pk):
         'medicines_total': medicines_total,
         'grand_total': grand_total,
         'prev_visits': prev_visits,
-        'departments': Department.objects.filter(is_active=True),
+        'departments': Department.objects.filter(is_active=True).order_by('name'),
+        'doctors':     Doctor.objects.filter(is_active=True).select_related('department').order_by('full_name'),
+        'transfers':   patient.patient_transfers.all().select_related(
+                           'from_department', 'to_department',
+                           'to_doctor', 'transferred_by'
+                       ),
     })
 
 
@@ -1440,3 +1449,44 @@ def ambulatory_create(request):
         'auto_record_number': auto_number,
         'now': now.strftime('%Y-%m-%dT%H:%M'),
     })
+
+@login_required
+@require_POST
+def patient_transfer(request, pk):
+    """Bemorni boshqa bo'limga ko'chirish"""
+    from apps.patients.models import PatientTransfer, Department, Doctor
+
+    patient      = get_object_or_404(PatientCard, pk=pk)
+    to_dept_id   = request.POST.get('to_department')
+    to_doc_id    = request.POST.get('to_doctor')
+    to_head_id   = request.POST.get('to_dept_head')
+    reason       = request.POST.get('reason', '').strip()
+
+    if not to_dept_id:
+        messages.error(request, "Bo'lim tanlanmagan.")
+        return redirect('patient_detail', pk=pk)
+
+    PatientTransfer.objects.create(
+        patient_card    = patient,
+        from_department = patient.department,
+        from_doctor     = patient.attending_doctor,
+        from_dept_head  = patient.department_head,
+        to_department   = Department.objects.filter(pk=to_dept_id).first(),
+        to_doctor       = Doctor.objects.filter(pk=to_doc_id).first() if to_doc_id else None,
+        to_dept_head    = Doctor.objects.filter(pk=to_head_id).first() if to_head_id else None,
+        reason          = reason,
+        transferred_by  = request.user,
+    )
+
+    update_fields = ['department']
+    patient.department = Department.objects.filter(pk=to_dept_id).first()
+    if to_doc_id:
+        patient.attending_doctor = Doctor.objects.filter(pk=to_doc_id).first()
+        update_fields.append('attending_doctor')
+    if to_head_id:
+        patient.department_head = Doctor.objects.filter(pk=to_head_id).first()
+        update_fields.append('department_head')
+    patient.save(update_fields=update_fields)
+
+    messages.success(request, f"✅ Bemor {patient.department} bo'limiga ko'chirildi.")
+    return redirect('patient_detail', pk=pk)
