@@ -88,13 +88,7 @@
 </div>
 {% endif %}
 
-<!-- Jadval filtri -->
-<div class="d-flex gap-2 mb-3 flex-wrap">
-    <button class="btn btn-sm btn-primary cat-filter" data-cat="">Barchasi</button>
-    {% for cat in categories %}
-    <button class="btn btn-sm btn-outline-primary cat-filter" data-cat="{{ cat.id }}">{{ cat.icon }} {{ cat.name }}</button>
-    {% endfor %}
-</div>
+
 
 <!-- Xizmatlar jadvali -->
 <div class="card border-0 shadow-sm mb-4">
@@ -118,7 +112,7 @@
                     <td>
                         <div class="fw-semibold">{{ item.service.name }}</div>
                         {% if item.ordered_by %}<small class="text-muted">👨‍⚕️ {{ item.ordered_by.full_name }}</small>{% endif %}
-                        {% if item.result %}<div class="text-muted small mt-1">📋 {{ item.result|truncatechars:50 }}</div>{% endif %}
+                        {% if item.service_result %}<div class="text-muted small mt-1">📋 {{ item.result|truncatechars:50 }}</div>{% endif %}
                     </td>
                     <td>
                         <span style="display:inline-block;background:#e9ecef;color:#495057;border-radius:6px;padding:2px 8px;font-size:0.75rem;font-weight:500;">
@@ -145,6 +139,21 @@
                         {% if item.status == 'ordered' %}
                         <button class="btn btn-sm btn-outline-danger btn-delete" data-id="{{ item.pk }}">🗑</button>
                         {% endif %}
+<!--                        {% if item.medical_result %}-->
+<!--                          <a href="{% url 'result_view' item.medical_result.pk %}"-->
+<!--                             class="btn btn-sm-->
+<!--                             {% if item.medical_result.status == 'verified' %}btn-primary-->
+<!--                             {% elif item.medical_result.status == 'completed' %}btn-success-->
+<!--                             {% else %}btn-outline-success{% endif %}"-->
+<!--                             target="_blank">-->
+<!--                            {% if item.medical_result.status == 'verified' %}🔒-->
+<!--                            {% elif item.medical_result.status == 'completed' %}✅-->
+<!--                            {% else %}✏️{% endif %} Natija-->
+<!--                          </a>-->
+<!--                        {% else %}-->
+<!--                          <a href="{% url 'result_create' item.pk %}"-->
+<!--                             class="btn btn-sm btn-outline-primary">📝 Javob</a>-->
+<!--                        {% endif %}-->
                     </td>
                 </tr>
                 {% empty %}

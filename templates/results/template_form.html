@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{% if action == 'create' %}Yangi shablon{% else %}Shablonni tahrirlash{% endif %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5>{% if action == 'create' %}➕ Yangi shablon{% else %}✏️ Shablonni tahrirlash{% endif %}</h5>
+  <a href="{% url 'result_template_list' %}" class="btn btn-secondary btn-sm">← Ro'yxatga</a>
+</div>
+
+<form method="POST">
+{% csrf_token %}
+<div class="row g-3">
+  <div class="col-md-4">
+    <label class="form-label fw-bold">Shablon nomi *</label>
+    <input type="text" name="name" class="form-control"
+           value="{% if template %}{{ template.name }}{% endif %}" required>
+  </div>
+  <div class="col-md-4">
+    <label class="form-label fw-bold">Kategoriya</label>
+    <select name="category" class="form-select">
+      {% for cat_key, cat_name in categories %}
+      <option value="{{ cat_key }}" {% if template and template.category == cat_key %}selected{% endif %}>{{ cat_name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-4">
+    <label class="form-label fw-bold">Tavsif (ixtiyoriy)</label>
+    <input type="text" name="description" class="form-control"
+           value="{% if template %}{{ template.description }}{% endif %}">
+  </div>
+  <div class="col-12">
+    <label class="form-label fw-bold">Shablon kontent *</label>
+    <textarea name="content" id="template-content" style="width:100%;min-height:400px;">{% if template %}{{ template.content }}{% endif %}</textarea>
+  </div>
+</div>
+<div class="mt-3 d-flex gap-2">
+  <button type="submit" class="btn btn-primary">💾 Saqlash</button>
+  <a href="{% url 'result_template_list' %}" class="btn btn-secondary">Bekor qilish</a>
+</div>
+</form>
+
+<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<script>
+tinymce.init({
+  selector: '#template-content',
+  language: 'ru',
+  height: 450,
+  menubar: true,
+  plugins: [
+    'advlist','autolink','lists','link','charmap','searchreplace',
+    'visualblocks','code','fullscreen','insertdatetime','table','wordcount'
+  ],
+  toolbar:
+    'undo redo | styles fontsize | bold italic underline | ' +
+    'alignleft aligncenter alignright | bullist numlist | ' +
+    'table | removeformat | code fullscreen',
+  table_default_attributes: { border: '1', cellpadding: '5', cellspacing: '0', width: '100%' },
+  table_default_styles: { 'border-collapse': 'collapse', width: '100%' },
+  setup: function(e){ e.on('change', function(){ e.save(); }); }
+});
+</script>
+{% endblock %}
