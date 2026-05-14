@@ -1,122 +1,260 @@
 {% extends "base.html" %}
-{% block title %}
-  {% if action == 'create' %}Natija kiritish{% else %}Natijani tahrirlash{% endif %}
+{% block title %}{% if action == 'create' %}Natija kiritish{% else %}Tahrirlash{% endif %}<!-- CKEditor 5 -->
+<script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/super-build/ckeditor.js"></script>
+<style>
+.ck-editor__editable_inline { min-height: 350px; font-family: "Times New Roman", serif; font-size: 13px; }
+.ck.ck-editor { height: 100%; }
+.ck-editor__editable table { border-collapse: collapse; width: 100%; }
+.ck-editor__editable td, .ck-editor__editable th { border: 1px solid #999 !important; padding: 5px 8px; }
+</style>
+<script>
+let ckEditor;
+CKEDITOR.ClassicEditor.create(document.querySelector('#quill-editor'), {
+  toolbar: {
+    items: [
+      'undo', 'redo', '|',
+      'heading', '|',
+      'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor', '|',
+      'bold', 'italic', 'underline', 'strikethrough', '|',
+      'alignment', '|',
+      'bulletedList', 'numberedList', '|',
+      'outdent', 'indent', '|',
+      'insertTable', '|',
+      'removeFormat'
+    ],
+    shouldNotGroupWhenFull: false
+  },
+  fontSize: { options: [9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 28, 32] },
+  fontFamily: {
+    options: [
+      'default',
+      'Times New Roman, Times, serif',
+      'Arial, Helvetica, sans-serif',
+      'Courier New, Courier, monospace',
+    ]
+  },
+  table: {
+    contentToolbar: [
+      'tableColumn', 'tableRow', 'mergeTableCells',
+      'tableProperties', 'tableCellProperties'
+    ],
+    tableProperties: { borderColors: [{color:'#000000',label:'Qora'},{color:'#cccccc',label:'Kulrang'}] },
+    tableCellProperties: { borderColors: [{color:'#000000',label:'Qora'},{color:'#cccccc',label:'Kulrang'}] }
+  },
+  language: 'ru',
+  licenseKey: '',
+}).then(editor => {
+  ckEditor = editor;
+  // Mavjud content yuklash
+  const existing = document.getElementById('result-content').value.trim();
+  if (existing) editor.setData(existing);
+}).catch(err => console.error(err));
+
+// Submit da content ni saqlash
+document.getElementById('result-form').addEventListener('submit', function() {
+  if (ckEditor) document.getElementById('result-content').value = ckEditor.getData();
+});
+
+// Shablon yuklash
+function loadTemplate(id, name) {
+  if (ckEditor && ckEditor.getData().trim() && !confirm('Shablon yuklansami? Mavjud matn o\'zgartiriladi.')) return;
+  fetch('/results/templates/' + id + '/get/')
+    .then(r => r.json())
+    .then(d => {
+      if (ckEditor) ckEditor.setData(d.content);
+      document.getElementById('editor-title').textContent = d.name;
+      document.getElementById('hidden-template-id').value = id;
+      document.querySelectorAll('.tpl-btn').forEach(b => b.classList.remove('active', 'btn-secondary'));
+      const btn = document.querySelector('.tpl-btn[data-id="'+id+'"]');
+      if (btn) btn.classList.add('active', 'btn-secondary');
+    });
+}
+
+// Shablon qidirish
+document.getElementById('tpl-search').addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.tpl-btn').forEach(btn => {
+    btn.style.display = btn.dataset.name.toLowerCase().includes(q) ? '' : 'none';
+  });
+});
+
+// Ko'rib chiqish
+function previewResult() {
+  const html = ckEditor ? ckEditor.getData() : '';
+  const w = window.open('', '_blank', 'width=850,height=700');
+  w.document.write('<html><body style="font-family:serif;padding:24px;max-width:800px;margin:0 auto;">' + html + '</body></html>');
+  w.document.close();
+}
+</script>
 {% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-2">
   <div>
     <h5 class="mb-0">
       {% if action == 'create' %}📝 Natija kiritish{% else %}✏️ Natijani tahrirlash{% endif %}
     </h5>
     <small class="text-muted">
-      {{ patient.full_name }} — {{ patient_service.service.name }}
+      <a href="{% url 'patient_detail' patient.pk %}">{{ patient.full_name }}</a>
+      → {{ patient_service.service.name }}
     </small>
   </div>
-  <a href="{% url 'patient_detail' patient.pk %}" class="btn btn-secondary btn-sm">← Bemorga qaytish</a>
+  <div class="d-flex gap-2">
+    {% if action == 'edit' and can_verify and result.status == 'completed' %}
+    <form method="POST" action="{% url 'result_verify' result.pk %}">
+      {% csrf_token %}
+      <button class="btn btn-success btn-sm">🔒 Tasdiqlash</button>
+    </form>
+    {% endif %}
+    <a href="{% url 'patient_detail' patient.pk %}" class="btn btn-secondary btn-sm">← Orqaga</a>
+  </div>
 </div>
 
 <form method="POST" id="result-form">
 {% csrf_token %}
-{% if result %}<input type="hidden" name="template_id" id="hidden-template-id" value="{{ result.template_id|default:'' }}">
-{% else %}<input type="hidden" name="template_id" id="hidden-template-id" value="">{% endif %}
+<input type="hidden" name="template_id" id="hidden-template-id"
+       value="{% if result %}{{ result.template_id|default:'' }}{% endif %}">
 
-<div class="row g-3">
-  <!-- Chap: shablon tanlash -->
-  <div class="col-md-3">
-    <div class="card h-100">
-      <div class="card-header bg-light"><strong>📋 Shablonlar</strong></div>
-      <div class="card-body p-2" style="overflow-y:auto; max-height:600px;">
-        {% for cat_key, cat_name in templates|dictsort:"category" %}
-        {% endfor %}
-        {% regroup templates by get_category_display as cat_groups %}
-        {% for group in cat_groups %}
-        <div class="mb-2">
-          <small class="text-muted fw-bold">{{ group.grouper }}</small>
-          {% for t in group.list %}
+<div class="row g-0" style="height: calc(100vh - 160px);">
+
+  <!-- CHAP: Shablonlar paneli -->
+  <div class="col-md-3 border-end bg-light" style="overflow-y:auto; height:100%;">
+    <div class="p-2 border-bottom bg-white sticky-top">
+      <input type="text" id="tpl-search" class="form-control form-control-sm"
+             placeholder="Shablon qidirish...">
+    </div>
+    <div class="p-2">
+      {% if templates %}
+        {% for t in templates %}
+          {% ifchanged t.category %}
+          <div class="text-muted small fw-bold px-1 mb-1 mt-2">{{ t.get_category_display }}</div>
+          {% endifchanged %}
           <button type="button"
-                  class="btn btn-outline-secondary btn-sm w-100 text-start mb-1 template-btn"
+                  class="btn btn-outline-secondary btn-sm w-100 text-start mb-1 tpl-btn"
                   data-id="{{ t.pk }}"
+                  data-name="{{ t.name }}"
                   onclick="loadTemplate({{ t.pk }}, '{{ t.name|escapejs }}')">
             {{ t.name }}
           </button>
-          {% endfor %}
-        </div>
-        {% empty %}
-        <p class="text-muted small">Shablon yo'q. <a href="{% url 'result_template_create' %}">Yaratish</a></p>
-        {% endregroup %}
-      </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-muted small p-2">
+          Shablon yo'q.
+          <a href="{% url 'result_template_create' %}">Yaratish</a>
+        </p>
+      {% endif %}
     </div>
   </div>
 
-  <!-- O'ng: redaktor -->
-  <div class="col-md-9">
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <strong id="editor-title">
-          {% if result %}{{ result.template.name|default:"Natija" }}{% else %}Natija matni{% endif %}
-        </strong>
-        <div class="d-flex gap-2">
-          <select name="status" class="form-select form-select-sm" style="width:auto;">
-            <option value="draft" {% if not result or result.status == 'draft' %}selected{% endif %}>✏️ Qoralama</option>
-            <option value="completed" {% if result and result.status == 'completed' %}selected{% endif %}>✅ Yakunlangan</option>
-          </select>
-        </div>
-      </div>
-      <div class="card-body p-0">
-        <!-- TinyMCE yoki oddiy textarea fallback -->
-        <textarea name="content" id="result-content" style="width:100%;min-height:450px;">{% if result %}{{ result.content }}{% endif %}</textarea>
-      </div>
-      <div class="card-footer d-flex gap-2 justify-content-end">
-        <button type="button" class="btn btn-outline-secondary" onclick="previewResult()">👁 Ko'rib chiqish</button>
-        <button type="submit" class="btn btn-primary">💾 Saqlash</button>
+  <!-- O'NG: Redaktor -->
+  <div class="col-md-9 d-flex flex-column" style="height:100%;">
+
+    <!-- Toolbar -->
+    <div class="p-2 border-bottom bg-white d-flex align-items-center gap-2">
+      <span class="fw-semibold" id="editor-title">
+        {% if result and result.template %}{{ result.template.name }}{% else %}Natija{% endif %}
+      </span>
+      <div class="ms-auto d-flex gap-2 align-items-center">
+        <select name="status" class="form-select form-select-sm" style="width:auto;">
+          <option value="draft" {% if not result or result.status == 'draft' %}selected{% endif %}>✏️ Qoralama</option>
+          <option value="completed" {% if result and result.status == 'completed' %}selected{% endif %}>✅ Yakunlangan</option>
+        </select>
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="previewResult()">👁 Ko'rib chiqish</button>
+        <button type="submit" class="btn btn-primary btn-sm">💾 Saqlash</button>
       </div>
     </div>
+
+    <!-- Qisqa xulosa -->
+    <div class="px-3 pt-2">
+      <input type="text" name="short_conclusion" class="form-control form-control-sm"
+             placeholder="Qisqa xulosa (ixtiyoriy)..."
+             value="{% if result %}{{ result.short_conclusion }}{% endif %}">
+    </div>
+
+    <!-- Quill editor -->
+    <div class="flex-grow-1 px-3 pt-2 pb-2" style="min-height:0;">
+      <div id="quill-editor" style="height:100%; min-height:350px;">
+        {% if result %}{{ result.content|safe }}{% endif %}
+      </div>
+      <textarea name="content" id="result-content" style="display:none;">
+        {% if result %}{{ result.content }}{% endif %}
+      </textarea>
+    </div>
+
   </div>
 </div>
 </form>
 
-<!-- TinyMCE CDN -->
-<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+{% if action == 'edit' and edit_logs %}
+<div class="card mt-3 border-0 bg-light">
+  <div class="card-body py-2">
+    <small class="text-muted fw-bold">Tahrirlash tarixi:</small>
+    {% for log in edit_logs %}
+    <small class="text-muted ms-2">
+      {{ log.edited_at|date:"d.m.Y H:i" }} — {{ log.edited_by|default:"?" }}: {{ log.note }}
+    </small>
+    {% if not forloop.last %} | {% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Quill.js -->
+
+
 <script>
-tinymce.init({
-  selector: '#result-content',
-  language: 'ru',
-  height: 450,
-  menubar: false,
-  plugins: [
-    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
-    'searchreplace', 'visualblocks', 'code', 'fullscreen',
-    'insertdatetime', 'media', 'table', 'wordcount'
-  ],
-  toolbar:
-    'undo redo | styles | bold italic underline | ' +
-    'alignleft aligncenter alignright alignjustify | ' +
-    'bullist numlist | table | removeformat | code fullscreen',
-  table_default_attributes: { border: '1', cellpadding: '5', cellspacing: '0', width: '100%' },
-  table_default_styles: { 'border-collapse': 'collapse', width: '100%' },
-  content_css: 'default',
-  setup: function(editor) {
-    editor.on('change', function() { editor.save(); });
+const quill = new Quill('#quill-editor', {
+  theme: 'snow',
+  modules: {
+    toolbar: [
+      [{ header: [1,2,3,false] }],
+      ['bold','italic','underline','strike'],
+      [{ color:[] }, { background:[] }],
+      [{ list:'ordered' }, { list:'bullet' }],
+      [{ align:[] }],
+      ['clean']
+    ]
   }
 });
 
+// Mavjud content yuklash
+const existing = document.getElementById('result-content').value.trim();
+if (existing) quill.clipboard.dangerouslyPasteHTML(existing);
+
+// Submit da textarea ni to'ldirish
+document.getElementById('result-form').addEventListener('submit', function() {
+  document.getElementById('result-content').value = quill.root.innerHTML;
+});
+
+// Shablon yuklash
 function loadTemplate(id, name) {
-  if (!confirm('Shablon yuklansami? Mavjud matn o\'zgartiriladi.')) return;
+  if (quill.getText().trim() && !confirm('Shablon yuklansami? Mavjud matn o\'zgartiriladi.')) return;
   fetch('/results/templates/' + id + '/get/')
     .then(r => r.json())
     .then(d => {
-      tinymce.get('result-content').setContent(d.content);
+      quill.clipboard.dangerouslyPasteHTML(d.content);
       document.getElementById('editor-title').textContent = d.name;
       document.getElementById('hidden-template-id').value = id;
+      document.querySelectorAll('.tpl-btn').forEach(b => b.classList.remove('active','btn-secondary'));
+      document.querySelector('.tpl-btn[data-id="'+id+'"]').classList.add('active','btn-secondary');
     });
 }
 
+// Shablon qidirish
+document.getElementById('tpl-search').addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.tpl-btn').forEach(btn => {
+    const visible = btn.dataset.name.toLowerCase().includes(q);
+    btn.style.display = visible ? '' : 'none';
+  });
+});
+
+// Ko'rib chiqish
 function previewResult() {
-  const content = tinymce.get('result-content').getContent();
-  const win = window.open('', '_blank', 'width=800,height=600');
-  win.document.write('<html><body style="font-family:serif;padding:20px;">' + content + '</body></html>');
-  win.document.close();
+  const html = quill.root.innerHTML;
+  const w = window.open('', '_blank', 'width=800,height=600');
+  w.document.write('<html><body style="font-family:serif;padding:24px;">' + html + '</body></html>');
+  w.document.close();
 }
 </script>
 {% endblock %}

@@ -1,7 +1,49 @@
 {% extends "base.html" %}
-{% block title %}{% if action == 'create' %}Yangi shablon{% else %}Shablonni tahrirlash{% endif %}{% endblock %}
+{% block title %}{% if action == 'create' %}Yangi shablon{% else %}Shablonni tahrirlash{% endif %}<script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/super-build/ckeditor.js"></script>
+<style>
+.ck-editor__editable_inline { min-height: 420px; font-family: "Times New Roman", serif; font-size: 13px; }
+.ck-editor__editable table { border-collapse: collapse; width: 100%; }
+.ck-editor__editable td, .ck-editor__editable th { border: 1px solid #999 !important; padding: 5px 8px; }
+</style>
+<script>
+let ckTpl;
+CKEDITOR.ClassicEditor.create(document.querySelector('#quill-tpl'), {
+  toolbar: {
+    items: [
+      'undo','redo','|','heading','|',
+      'fontSize','fontFamily','fontColor','fontBackgroundColor','|',
+      'bold','italic','underline','strikethrough','|',
+      'alignment','|','bulletedList','numberedList','|',
+      'outdent','indent','|','insertTable','|','removeFormat'
+    ]
+  },
+  fontSize: { options: [9,10,11,12,14,16,18,20,22,24,28,32] },
+  fontFamily: {
+    options: [
+      'default',
+      'Times New Roman, Times, serif',
+      'Arial, Helvetica, sans-serif',
+      'Courier New, Courier, monospace',
+    ]
+  },
+  table: {
+    contentToolbar: ['tableColumn','tableRow','mergeTableCells','tableProperties','tableCellProperties']
+  },
+  language: 'ru',
+  licenseKey: '',
+}).then(editor => {
+  ckTpl = editor;
+  const existing = document.getElementById('tpl-content').value.trim();
+  if (existing) editor.setData(existing);
+}).catch(err => console.error(err));
 
+document.querySelector('form').addEventListener('submit', function() {
+  if (ckTpl) document.getElementById('tpl-content').value = ckTpl.getData();
+});
+</script>
+{% endblock %}
 {% block content %}
+
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h5>{% if action == 'create' %}➕ Yangi shablon{% else %}✏️ Shablonni tahrirlash{% endif %}</h5>
   <a href="{% url 'result_template_list' %}" class="btn btn-secondary btn-sm">← Ro'yxatga</a>
@@ -10,16 +52,19 @@
 <form method="POST">
 {% csrf_token %}
 <div class="row g-3">
-  <div class="col-md-4">
+  <div class="col-md-5">
     <label class="form-label fw-bold">Shablon nomi *</label>
     <input type="text" name="name" class="form-control"
            value="{% if template %}{{ template.name }}{% endif %}" required>
   </div>
-  <div class="col-md-4">
+  <div class="col-md-3">
     <label class="form-label fw-bold">Kategoriya</label>
     <select name="category" class="form-select">
       {% for cat_key, cat_name in categories %}
-      <option value="{{ cat_key }}" {% if template and template.category == cat_key %}selected{% endif %}>{{ cat_name }}</option>
+      <option value="{{ cat_key }}"
+              {% if template and template.category == cat_key %}selected{% endif %}>
+        {{ cat_name }}
+      </option>
       {% endfor %}
     </select>
   </div>
@@ -30,7 +75,12 @@
   </div>
   <div class="col-12">
     <label class="form-label fw-bold">Shablon kontent *</label>
-    <textarea name="content" id="template-content" style="width:100%;min-height:400px;">{% if template %}{{ template.content }}{% endif %}</textarea>
+    <div id="quill-tpl" style="min-height:400px;">
+      {% if template %}{{ template.content|safe }}{% endif %}
+    </div>
+    <textarea name="content" id="tpl-content" style="display:none;">
+      {% if template %}{{ template.content }}{% endif %}
+    </textarea>
   </div>
 </div>
 <div class="mt-3 d-flex gap-2">
@@ -39,24 +89,31 @@
 </div>
 </form>
 
-<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<style>
+.ql-editor table { border-collapse:collapse; width:100%; margin:6px 0; }
+.ql-editor td, .ql-editor th { border:1px solid #999; padding:5px 8px; }
+.ql-editor th { background:#f5f5f5; font-weight:bold; text-align:center; }
+</style>
 <script>
-tinymce.init({
-  selector: '#template-content',
-  language: 'ru',
-  height: 450,
-  menubar: true,
-  plugins: [
-    'advlist','autolink','lists','link','charmap','searchreplace',
-    'visualblocks','code','fullscreen','insertdatetime','table','wordcount'
-  ],
-  toolbar:
-    'undo redo | styles fontsize | bold italic underline | ' +
-    'alignleft aligncenter alignright | bullist numlist | ' +
-    'table | removeformat | code fullscreen',
-  table_default_attributes: { border: '1', cellpadding: '5', cellspacing: '0', width: '100%' },
-  table_default_styles: { 'border-collapse': 'collapse', width: '100%' },
-  setup: function(e){ e.on('change', function(){ e.save(); }); }
+const quillTpl = new Quill('#quill-tpl', {
+  theme: 'snow',
+  modules: {
+    toolbar: [
+      [{ header:[1,2,3,false] }],
+      ['bold','italic','underline','strike'],
+      [{ color:[] }, { background:[] }],
+      [{ list:'ordered' }, { list:'bullet' }],
+      [{ align:[] }],
+      ['clean']
+    ]
+  }
+});
+const existingTpl = document.getElementById('tpl-content').value.trim();
+if (existingTpl) quillTpl.clipboard.dangerouslyPasteHTML(existingTpl);
+document.querySelector('form').addEventListener('submit', function() {
+  document.getElementById('tpl-content').value = quillTpl.root.innerHTML;
 });
 </script>
 {% endblock %}

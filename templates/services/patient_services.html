@@ -139,21 +139,6 @@
                         {% if item.status == 'ordered' %}
                         <button class="btn btn-sm btn-outline-danger btn-delete" data-id="{{ item.pk }}">🗑</button>
                         {% endif %}
-<!--                        {% if item.medical_result %}-->
-<!--                          <a href="{% url 'result_view' item.medical_result.pk %}"-->
-<!--                             class="btn btn-sm-->
-<!--                             {% if item.medical_result.status == 'verified' %}btn-primary-->
-<!--                             {% elif item.medical_result.status == 'completed' %}btn-success-->
-<!--                             {% else %}btn-outline-success{% endif %}"-->
-<!--                             target="_blank">-->
-<!--                            {% if item.medical_result.status == 'verified' %}🔒-->
-<!--                            {% elif item.medical_result.status == 'completed' %}✅-->
-<!--                            {% else %}✏️{% endif %} Natija-->
-<!--                          </a>-->
-<!--                        {% else %}-->
-<!--                          <a href="{% url 'result_create' item.pk %}"-->
-<!--                             class="btn btn-sm btn-outline-primary">📝 Javob</a>-->
-<!--                        {% endif %}-->
                     </td>
                 </tr>
                 {% empty %}
