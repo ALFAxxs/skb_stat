@@ -88,8 +88,6 @@
 </div>
 {% endif %}
 
-
-
 <!-- Xizmatlar jadvali -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body p-0">
@@ -112,7 +110,6 @@
                     <td>
                         <div class="fw-semibold">{{ item.service.name }}</div>
                         {% if item.ordered_by %}<small class="text-muted">👨‍⚕️ {{ item.ordered_by.full_name }}</small>{% endif %}
-                        {% if item.service_result %}<div class="text-muted small mt-1">📋 {{ item.result|truncatechars:50 }}</div>{% endif %}
                     </td>
                     <td>
                         <span style="display:inline-block;background:#e9ecef;color:#495057;border-radius:6px;padding:2px 8px;font-size:0.75rem;font-weight:500;">
@@ -146,9 +143,9 @@
                     <td colspan="8" class="text-center text-muted py-5">
                         Xizmatlar qo'shilmagan.<br>
                         <button class="btn btn-success btn-sm mt-2"
-                data-bs-toggle="modal" data-bs-target="#addServiceModal"
-                onclick="openServiceModal()"
-                ontouchend="openServiceModal()">➕ Xizmat qo'shish</button>
+                                data-bs-toggle="modal" data-bs-target="#addServiceModal"
+                                onclick="openServiceModal()"
+                                ontouchend="openServiceModal()">➕ Xizmat qo'shish</button>
                     </td>
                 </tr>
                 {% endfor %}
@@ -157,7 +154,7 @@
     </div>
 </div>
 
-<!-- ===== DORI-DARMONLAR ===== -->
+<!-- DORI-DARMONLAR -->
 {% if patient.visit_type != 'ambulatory' %}
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white d-flex justify-content-between align-items-center">
@@ -197,9 +194,6 @@
                 <label class="form-label small fw-bold">Shifokor</label>
                 <select id="med-doctor" class="form-select form-select-sm">
                     <option value="">— Tanlang —</option>
-                    {% for doc in doctors %}
-                    <option value="{{ doc.pk }}">{{ doc.full_name }}{% if doc.is_head %} ★{% endif %}</option>
-                    {% endfor %}
                 </select>
             </div>
             <div class="col-md-9">
@@ -297,14 +291,11 @@
                                         <div class="form-control form-control-sm bg-light text-success fw-bold" id="svc-price">— so'm</div>
                                     </div>
                                 </div>
-                                <!-- FIX 1: div yopildi -->
-                                <div class="mb-2">
+                                <!-- ✅ TO'G'RI ID: svc-doctor -->
+                                <div class="mb-3">
                                     <label class="form-label small fw-bold mb-1">Shifokor</label>
                                     <select id="svc-doctor" class="form-select form-select-sm">
                                         <option value="">— Tanlang —</option>
-                                        {% for doc in doctors %}
-                                        <option value="{{ doc.pk }}">{{ doc.full_name }}{% if doc.is_head %} ★{% endif %}</option>
-                                        {% endfor %}
                                     </select>
                                 </div>
                                 <div class="mb-3">
@@ -375,48 +366,29 @@
                 <div class="text-muted mt-2 mb-3">Navbat raqami</div>
                 <div class="fw-semibold fs-5" id="modal-patient-name"></div>
                 <div class="alert alert-info py-2">
-                    📢 Bemorga navbat raqamini ayting — u MRT zalida ekrandan o'z navbatini kuzatishi mumkin
+                    📢 Bemorga navbat raqamini ayting
                 </div>
                 <div class="text-muted small">MRT xonasi • Bugun</div>
             </div>
             <div class="modal-footer justify-content-center gap-2">
-                <button type="button" class="btn btn-outline-secondary px-4" id="btn-print-ticket">
-                    🖨 Chop etish
-                </button>
-                <button type="button" class="btn btn-primary px-5" id="queue-modal-ok">
-                    ✅ Tushunarli
-                </button>
+                <button type="button" class="btn btn-outline-secondary px-4" id="btn-print-ticket">🖨 Chop etish</button>
+                <button type="button" class="btn btn-primary px-5" id="queue-modal-ok">✅ Tushunarli</button>
             </div>
-
-            <!-- Termoprinter uchun chop etish stili -->
             <div id="print-ticket" style="display:none; position:absolute; left:-9999px;">
                 <style>
                 @media print {
                     body * { visibility: hidden !important; }
                     #print-ticket, #print-ticket * { visibility: visible !important; }
-                    #print-ticket {
-                        position: fixed !important;
-                        top: 0 !important; left: 0 !important;
-                        width: 76mm !important;
-                        padding: 4mm !important;
-                        font-family: 'Courier New', monospace !important;
-                        font-size: 12pt !important;
-                    }
+                    #print-ticket { position: fixed !important; top: 0 !important; left: 0 !important; width: 76mm !important; padding: 4mm !important; font-family: 'Courier New', monospace !important; }
                 }
                 </style>
                 <div style="text-align:center; font-family:'Courier New',monospace; width:76mm; padding:4mm;">
-                    <div style="font-size:10pt; border-bottom:1px dashed #000; padding-bottom:3mm; margin-bottom:3mm;">
-                        Markaziy klinik kasalxona<br>MRT bo'limi
-                    </div>
+                    <div style="font-size:10pt; border-bottom:1px dashed #000; padding-bottom:3mm; margin-bottom:3mm;">Markaziy klinik kasalxona<br>MRT bo'limi</div>
                     <div style="font-size:11pt; margin-bottom:2mm;">Navbat raqami</div>
                     <div id="print-num" style="font-size:48pt; font-weight:900; line-height:1;">—</div>
-                    <div style="font-size:9pt; margin-top:3mm; border-top:1px dashed #000; padding-top:3mm;">
-                        MRT xonasi
-                    </div>
+                    <div style="font-size:9pt; margin-top:3mm; border-top:1px dashed #000; padding-top:3mm;">MRT xonasi</div>
                     <div id="print-date" style="font-size:8pt; color:#333;"></div>
-                    <div style="font-size:7pt; margin-top:3mm; border-top:1px dashed #000; padding-top:2mm;">
-                        Navbat kelguncha kuting.<br>Ekrandan raqamingizni kuzating.
-                    </div>
+                    <div style="font-size:7pt; margin-top:3mm; border-top:1px dashed #000; padding-top:2mm;">Navbat kelguncha kuting.<br>Ekrandan raqamingizni kuzating.</div>
                 </div>
             </div>
         </div>
@@ -442,13 +414,11 @@
                         <option value="cancelled">Bekor qilindi</option>
                     </select>
                 </div>
+                <!-- ✅ TO'G'RI ID: edit-doctor (faqat shu yerda) -->
                 <div class="mb-3">
                     <label class="form-label fw-bold">Shifokor</label>
                     <select id="edit-doctor" class="form-select">
                         <option value="">— Tanlang —</option>
-                        {% for doc in doctors %}
-                        <option value="{{ doc.pk }}">{{ doc.full_name }}{% if doc.is_head %} ★{% endif %}</option>
-                        {% endfor %}
                     </select>
                 </div>
                 <div class="mb-3">
@@ -474,34 +444,55 @@ const ADD_URL    = "{% url 'add_service' patient.pk %}";
 const SEARCH_URL = "{% url 'service_search' %}";
 const CSRF       = "{{ csrf_token }}";
 
+// Shifokorlar JSON — bo'lim bo'yicha tartiblangan
+const DOCTORS_DATA = [{% for doc in doctors %}{"id":{{ doc.pk }},"name":"{{ doc.full_name|escapejs }}{% if doc.is_head %} \u2605{% endif %}","dept":"{{ doc.department|default:"Bo'limsiz"|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+function buildDoctorSelect(sel, selectedId) {
+    if (!sel) return;
+    sel.innerHTML = '<option value="">— Tanlang —</option>';
+    let curDept = null, grp = null;
+    DOCTORS_DATA.forEach(function(d) {
+        if (d.dept !== curDept) {
+            if (grp) sel.appendChild(grp);
+            grp = document.createElement('optgroup');
+            grp.label = d.dept;
+            curDept = d.dept;
+        }
+        const o = document.createElement('option');
+        o.value = d.id;
+        o.textContent = d.name;
+        if (selectedId && parseInt(selectedId) === d.id) o.selected = true;
+        grp.appendChild(o);
+    });
+    if (grp) sel.appendChild(grp);
+}
+
+// Sahifa yuklanganda barcha selectlarni to'ldirish
+document.addEventListener('DOMContentLoaded', function() {
+    buildDoctorSelect(document.getElementById('med-doctor'),  null);
+    buildDoctorSelect(document.getElementById('svc-doctor'),  null);
+    buildDoctorSelect(document.getElementById('edit-doctor'), null);
+});
+
 function openServiceModal() {
-  try {
-    var modal = new bootstrap.Modal(document.getElementById('addServiceModal'));
-    modal.show();
-  } catch(e) {
-    document.getElementById('addServiceModal').style.display = 'block';
-    document.getElementById('addServiceModal').classList.add('show');
-    document.body.classList.add('modal-open');
-  }
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    try {
+        var modalEl = document.getElementById('addServiceModal');
+        var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+    } catch(e) {
+        document.getElementById('addServiceModal').style.display = 'block';
+        document.getElementById('addServiceModal').classList.add('show');
+        document.body.classList.add('modal-open');
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function () {
 
-    // ===== JADVAL FILTRI =====
-    document.querySelectorAll('.cat-filter').forEach(btn => {
-        btn.addEventListener('click', function () {
-            document.querySelectorAll('.cat-filter').forEach(b => b.className = 'btn btn-sm btn-outline-primary cat-filter');
-            this.className = 'btn btn-sm btn-primary cat-filter';
-            const cat = this.dataset.cat;
-            document.querySelectorAll('#services-table tbody tr[data-cat]').forEach(row => {
-                row.style.display = (!cat || row.dataset.cat === cat) ? '' : 'none';
-            });
-        });
-    });
-
-    // ===== SAVAT =====
     let cart = [];
-    let selId = null, selName = '', selPrice = 0;
+    let selId = null, selName = '', selPrice = 0, selCatName = '';
     let checkedItems = new Set();
     let checkedQtys  = {};
 
@@ -513,17 +504,15 @@ document.addEventListener('DOMContentLoaded', function () {
         if (summary) summary.style.display = n > 0 ? 'block' : 'none';
         if (btn) btn.style.display = n > 0 ? 'block' : 'none';
     }
-    // FIX 2: selCatName to'g'ri e'lon qilindi
-    let selCatName = '';
 
     function renderCart() {
-        const body     = document.getElementById('cart-body');
-        const empty    = document.getElementById('cart-empty');
-        const table    = document.getElementById('cart-table');
-        const count    = document.getElementById('cart-count');
-        const total    = document.getElementById('cart-grand-total');
-        const saveBtn  = document.getElementById('btn-save-all');
-        const saveCnt  = document.getElementById('save-count');
+        const body    = document.getElementById('cart-body');
+        const empty   = document.getElementById('cart-empty');
+        const table   = document.getElementById('cart-table');
+        const count   = document.getElementById('cart-count');
+        const total   = document.getElementById('cart-grand-total');
+        const saveBtn = document.getElementById('btn-save-all');
+        const saveCnt = document.getElementById('save-count');
 
         count.textContent = cart.length;
         saveCnt.textContent = cart.length;
@@ -586,7 +575,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>`;
                 }).join('');
 
-                // Checkbox eventi
                 svcDropdown.querySelectorAll('.svc-cb').forEach(cb => {
                     cb.addEventListener('change', function(e) {
                         e.stopPropagation();
@@ -595,7 +583,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (this.checked) {
                             checkedItems.add(id);
                             item.classList.add('selected-item');
-                            // Bitta xizmat uchun ham tanlash
                             selId = id; selName = item.dataset.name;
                             selPrice = parseFloat(item.dataset.price);
                             selCatName = item.dataset.cat;
@@ -610,7 +597,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                 });
 
-                // Miqdor o'zgartirish
                 svcDropdown.querySelectorAll('.svc-qty-inline').forEach(inp => {
                     inp.addEventListener('change', function(e) {
                         e.stopPropagation();
@@ -622,7 +608,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     inp.addEventListener('click', e => e.stopPropagation());
                 });
 
-                // Item bosish — checkbox ni toggle qiladi
                 svcDropdown.querySelectorAll('.svc-item').forEach(item => {
                     item.addEventListener('click', function(e) {
                         if (e.target.classList.contains('svc-cb') || e.target.classList.contains('svc-qty-inline')) return;
@@ -635,7 +620,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(err => { svcDropdown.innerHTML = `<div class="svc-item text-danger">❌ Xato: ${err.message}</div>`; });
     }
 
-    svcSearch.addEventListener('input', function () { selId = null; svcPriceEl.textContent = '— so\'m'; fetchSvc(this.value); });
+    svcSearch.addEventListener('input', function () { selId = null; svcPriceEl.textContent = "— so'm"; fetchSvc(this.value); });
     svcSearch.addEventListener('focus', () => fetchSvc(svcSearch.value));
     document.addEventListener('click', e => { if (!svcDropdown.contains(e.target) && e.target !== svcSearch) svcDropdown.style.display = 'none'; });
 
@@ -653,42 +638,35 @@ document.addEventListener('DOMContentLoaded', function () {
         const errDiv = document.getElementById('add-cart-error');
         errDiv.style.display = 'none';
         errDiv.className = 'alert alert-danger mt-2 py-2';
-
-        if (!selId) { errDiv.textContent = '⚠️ Avval xizmat tanlang!'; errDiv.style.display = 'block'; return; }
-
+        if (!selId) { errDiv.textContent = "⚠️ Avval xizmat tanlang!"; errDiv.style.display = 'block'; return; }
         const qty      = parseInt(document.getElementById('svc-qty').value) || 1;
         const doctorId = document.getElementById('svc-doctor').value;
         const notes    = document.getElementById('svc-notes').value;
         const existing = cart.find(c => c.id === selId && c.doctor_id === doctorId);
-
         if (existing) { existing.qty += qty; }
         else { cart.push({ id: selId, name: selName, category: selCatName, price: selPrice, qty, doctor_id: doctorId, notes }); }
-
         renderCart();
         selId = null; selName = ''; selPrice = 0; selCatName = '';
         svcSearch.value = '';
-        svcPriceEl.textContent = '— so\'m';
+        svcPriceEl.textContent = "— so'm";
         document.getElementById('svc-qty').value = 1;
         document.getElementById('svc-notes').value = '';
         svcSearch.focus();
         fetchSvc('');
-
         errDiv.className = 'alert alert-success mt-2 py-2';
-        errDiv.textContent = '✅ Savatga qo\'shildi!';
+        errDiv.textContent = "✅ Savatga qo'shildi!";
         errDiv.style.display = 'block';
         setTimeout(() => { errDiv.style.display = 'none'; errDiv.className = 'alert alert-danger mt-2 py-2'; }, 1500);
     });
 
     document.getElementById('btn-clear-cart').addEventListener('click', function () {
-        if (cart.length && confirm('Savatni tozalashni tasdiqlaysizmi?')) { cart = []; renderCart(); }
+        if (cart.length && confirm("Savatni tozalashni tasdiqlaysizmi?")) { cart = []; renderCart(); }
     });
 
-    // Belgilanganlarni savatga qo'shish
     document.getElementById('btn-add-checked').addEventListener('click', function() {
         const doctorId = document.getElementById('svc-doctor').value;
         const notes    = document.getElementById('svc-notes').value;
         let added = 0;
-
         svcDropdown.querySelectorAll('.svc-item').forEach(item => {
             const id = item.dataset.id;
             if (!checkedItems.has(id)) return;
@@ -701,26 +679,25 @@ document.addEventListener('DOMContentLoaded', function () {
             else { cart.push({ id, name, category: cat, price, qty, doctor_id: doctorId, notes }); }
             added++;
         });
-
         if (added > 0) {
             renderCart();
-            checkedItems.clear();
-            checkedQtys = {};
+            checkedItems.clear(); checkedQtys = {};
             updateCheckedSummary();
             fetchSvc(svcSearch.value);
-
             const errDiv = document.getElementById('add-cart-error');
             errDiv.className = 'alert alert-success mt-2 py-2';
-            errDiv.textContent = '✅ ' + added + ' ta xizmat savatga qo\'shildi!';
+            errDiv.textContent = `✅ ${added} ta xizmat savatga qo'shildi!`;
             errDiv.style.display = 'block';
             setTimeout(() => { errDiv.style.display = 'none'; errDiv.className = 'alert alert-danger mt-2 py-2'; }, 2000);
         }
     });
 
-    // Modal yopilganda tozalash
     document.getElementById('addServiceModal').addEventListener('hidden.bs.modal', function() {
-        checkedItems.clear();
-        checkedQtys = {};
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        checkedItems.clear(); checkedQtys = {};
         updateCheckedSummary();
     });
 
@@ -744,7 +721,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 const data = await res.json();
                 if (data.success) {
                     saved++;
-                    // MRT navbat bo'lsa (yangi yoki mavjud)
                     if (data.queue_number && !queueNumbers.includes(data.queue_number)) {
                         queueNumbers.push(data.queue_number);
                         if (data.patient_name) patientNameFromResponse = data.patient_name;
@@ -754,48 +730,35 @@ document.addEventListener('DOMContentLoaded', function () {
             this.innerHTML = `⏳ Saqlanmoqda... (${saved + failed}/${cart.length})`;
         }
         if (failed === 0) {
-            // MRT navbat bo'lsa modal ko'rsatish
             if (queueNumbers.length > 0) {
-                // Bemor ismini olish
-                const patientNameEl = document.querySelector('.patient-full-name') ||
-                                      document.querySelector('h4, h5, .card-title');
+                const patientNameEl = document.querySelector('strong');
                 const patientName = patientNameEl ? patientNameEl.textContent.trim() : '';
                 showQueueModal(queueNumbers, patientNameFromResponse || patientName);
             } else {
                 window.location.reload();
             }
+        } else {
+            errDiv.textContent = `${saved} ta saqlandi, ${failed} ta xato.`;
+            errDiv.style.display = 'block';
+            this.disabled = false;
+            this.innerHTML = `✅ Barchasini saqlash (<span id="save-count">${cart.length}</span> ta)`;
         }
-        else { errDiv.textContent = `${saved} ta saqlandi, ${failed} ta xato.`; errDiv.style.display = 'block'; this.disabled = false; this.innerHTML = `✅ Barchasini saqlash (<span id="save-count">${cart.length}</span> ta)`; }
     });
-
-    function printQueueTicket() {
-        const ticket = document.getElementById('print-ticket');
-        const orig = document.body.innerHTML;
-        document.body.innerHTML = ticket.innerHTML;
-        window.print();
-        document.body.innerHTML = orig;
-        window.location.reload();
-    }
 
     function showQueueModal(numbers, patientName) {
         const num = numbers.join(', ');
         document.getElementById('modal-queue-number').textContent = num;
         if (patientName) document.getElementById('modal-patient-name').textContent = patientName;
-        // Print ticket yangilash
         document.getElementById('print-num').textContent = num;
         document.getElementById('print-date').textContent =
             new Date().toLocaleDateString('uz-UZ') + ' ' +
             new Date().toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'});
-        // print-ticket faqat chop etishda ko'rinadi
-
         const modal = new bootstrap.Modal(document.getElementById('queueModal'));
         modal.show();
         document.getElementById('btn-print-ticket').onclick = function() {
             const num  = document.getElementById('modal-queue-number').textContent;
             const name = document.getElementById('modal-patient-name').textContent;
             const date = document.getElementById('print-date').textContent;
-
-            // Inline iframe orqali chop etish
             const iframe = document.createElement('iframe');
             iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:80mm;';
             document.body.appendChild(iframe);
@@ -821,14 +784,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="note">Navbat kelguncha kuting.<br>Ekrandan raqamingizni kuzating.</div>
             </body></html>`);
             doc.close();
-            setTimeout(() => {
-                iframe.contentWindow.focus();
-                iframe.contentWindow.print();
-                setTimeout(() => document.body.removeChild(iframe), 1000);
-            }, 300);
+            setTimeout(() => { iframe.contentWindow.focus(); iframe.contentWindow.print(); setTimeout(() => document.body.removeChild(iframe), 1000); }, 300);
         };
         document.getElementById('queue-modal-ok').onclick = function() {
-            // print-ticket yashirin qoladi
             modal.hide();
             window.location.reload();
         };
@@ -838,10 +796,12 @@ document.addEventListener('DOMContentLoaded', function () {
         cart = []; renderCart();
         selId = null; selPrice = 0; selCat = ''; selCatName = '';
         svcSearch.value = '';
-        svcPriceEl.textContent = '— so\'m';
+        svcPriceEl.textContent = "— so'm";
         document.getElementById('svc-qty').value = 1;
         document.getElementById('add-cart-error').style.display = 'none';
         document.getElementById('save-error').style.display = 'none';
+        // svc-doctor ni ham qayta build qilish
+        buildDoctorSelect(document.getElementById('svc-doctor'), null);
         document.querySelectorAll('.modal-cat-btn').forEach((b, i) => {
             if (i === 0) b.classList.replace('btn-outline-primary','btn-primary');
             else b.classList.replace('btn-primary','btn-outline-primary');
@@ -849,15 +809,14 @@ document.addEventListener('DOMContentLoaded', function () {
         setTimeout(() => { fetchSvc(''); svcSearch.focus(); }, 150);
     });
 
-    // FIX 3: TAHRIRLASH — btn-edit class (btn-edit-service emas)
+    // ===== TAHRIRLASH =====
     document.querySelectorAll('.btn-edit').forEach(btn => {
         btn.addEventListener('click', function () {
             document.getElementById('edit-id').value     = this.dataset.id;
             document.getElementById('edit-status').value = this.dataset.status;
             document.getElementById('edit-result').value = this.dataset.result || '';
-            // FIX 4: edit-doctor (edit-svc-doctor emas)
-            var editDoc = document.getElementById('edit-doctor');
-            if (editDoc) editDoc.value = this.dataset.orderedBy || '';
+            // edit-doctor ni build qilib, hozirgi shifokorni tanlaymiz
+            buildDoctorSelect(document.getElementById('edit-doctor'), this.dataset.orderedBy || null);
         });
     });
 
@@ -865,14 +824,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const id     = document.getElementById('edit-id').value;
         const errDiv = document.getElementById('edit-error');
         errDiv.style.display = 'none';
-        var editDoc  = document.getElementById('edit-doctor');
         fetch(`/services/${id}/update/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
             body: JSON.stringify({
                 status:        document.getElementById('edit-status').value,
                 result:        document.getElementById('edit-result').value,
-                ordered_by_id: editDoc ? (editDoc.value || null) : null,
+                ordered_by_id: document.getElementById('edit-doctor').value || null,
             })
         })
         .then(r => r.json())
@@ -899,11 +857,11 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     var medTimer;
-    var medInput    = document.getElementById('med-search-input');
-    var medDrop     = document.getElementById('med-dropdown');
-    var medId       = document.getElementById('med-id');
-    var medUnit     = document.getElementById('med-unit');
-    var medSelName  = document.getElementById('med-selected-name');
+    var medInput   = document.getElementById('med-search-input');
+    var medDrop    = document.getElementById('med-dropdown');
+    var medId      = document.getElementById('med-id');
+    var medUnit    = document.getElementById('med-unit');
+    var medSelName = document.getElementById('med-selected-name');
     const MED_SEARCH_URL = "{% url 'medicine_search' %}";
     const ADD_MED_URL    = "{% url 'add_medicine' patient.pk %}";
 
@@ -925,11 +883,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     item.addEventListener('mouseout',  function () { this.style.background = ''; });
                     item.addEventListener('mousedown', function (e) {
                         e.preventDefault();
-                        medId.value        = this.dataset.id;
-                        medUnit.value      = this.dataset.unit;
-                        medInput.value     = this.dataset.name;
+                        medId.value            = this.dataset.id;
+                        medUnit.value          = this.dataset.unit;
+                        medInput.value         = this.dataset.name;
                         medSelName.textContent = '✓ ' + this.dataset.name;
-                        medDrop.style.display = 'none';
+                        medDrop.style.display  = 'none';
                     });
                 });
             });
@@ -956,10 +914,8 @@ document.addEventListener('DOMContentLoaded', function () {
         var price = document.getElementById('med-price').value;
         var docId = document.getElementById('med-doctor').value;
         var notes = document.getElementById('med-notes').value;
-
         if (!mid)   { errDiv.textContent = 'Dori nomini tanlang';  errDiv.style.display = 'block'; return; }
         if (!qty || parseFloat(qty) <= 0) { errDiv.textContent = 'Miqdorni kiriting'; errDiv.style.display = 'block'; return; }
-
         fetch(ADD_MED_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
@@ -983,7 +939,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 + `<td><button class="btn btn-outline-danger btn-sm py-0 btn-delete-med" data-pk="${data.id}">✕</button></td>`;
             tbody.appendChild(tr);
             tr.querySelector('.btn-delete-med').addEventListener('click', deleteMedicine);
-
             medInput.value = ''; medId.value = ''; medUnit.value = ''; medSelName.textContent = '';
             document.getElementById('med-qty').value   = '1';
             document.getElementById('med-price').value = '0';
@@ -992,20 +947,26 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // FIX 5: apostrof xatosi tuzatildi — template literal ishlatildi
     function deleteMedicine() {
         if (!confirm(`Bu dorini o'chirasizmi?`)) return;
         var pk = this.dataset.pk;
-        fetch('/services/medicine/' + pk + '/delete/', {
-            method: 'POST',
-            headers: { 'X-CSRFToken': CSRF }
-        })
-        .then(r => r.json())
-        .then(data => { if (data.success) document.getElementById('med-row-' + pk).remove(); });
+        fetch('/services/medicine/' + pk + '/delete/', { method: 'POST', headers: { 'X-CSRFToken': CSRF } })
+            .then(r => r.json())
+            .then(data => { if (data.success) document.getElementById('med-row-' + pk).remove(); });
     }
 
     document.querySelectorAll('.btn-delete-med').forEach(btn => btn.addEventListener('click', deleteMedicine));
 
-}); // DOMContentLoaded
+    // Forma bir marta yuborilishi himoya
+    document.querySelectorAll('form').forEach(function(form) {
+        form.addEventListener('submit', function() {
+            form.querySelectorAll('[type="submit"]').forEach(function(btn) {
+                btn.disabled = true;
+                btn.innerHTML = '⏳ Saqlanmoqda...';
+            });
+        });
+    });
+
+}); // DOMContentLoaded end
 </script>
 {% endblock %}

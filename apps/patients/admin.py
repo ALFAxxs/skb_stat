@@ -41,7 +41,11 @@ class PatientCardAdmin(admin.ModelAdmin):
         'admission_count', 'is_war_veteran', 'resident_status',
         'patient_category'
     ]
-    search_fields = ['full_name', 'medical_record_number', 'passport_serial']
+    search_fields = ['full_name', 'medical_record_number', 'passport_serial', 'JSHSHIR', 'phone']
+    list_per_page = 50
+    date_hierarchy = 'admission_date'
+    ordering      = ['-admission_date']
+    list_display_links = ['medical_record_number', 'full_name']
     readonly_fields = ['created_at', 'updated_at']
     fieldsets = (
         ("Bemor statusi", {

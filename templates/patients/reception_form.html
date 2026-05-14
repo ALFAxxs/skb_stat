@@ -942,19 +942,30 @@ document.addEventListener('DOMContentLoaded', function () {
                 .then(data => {
                     if (!data.found) { alertDiv.style.display = 'none'; return; }
 
-                    let html = '<strong>⚠️ Bu bemor avval ham murojaat qilgan:</strong><ul class="mb-0 mt-2">';
+                    let html = '<strong>⚠️ Bu bemor avval ham murojaat qilgan:</strong><ul class="mb-0 mt-2" style="list-style:none;padding:0;">';
                     data.patients.forEach(p => {
                         const statusIcon = p.status_code === 'admitted' ? '🔵' :
                                           p.status_code === 'completed' ? '🟢' : '🟡';
-                        html += `<li>
-                            <a href="/patients/${p.pk}/" target="_blank" class="fw-semibold">
-                                ${p.medical_record_number}
+                        // data-patient atributi orqali xavfsiz uzatish
+                        const safeData = encodeURIComponent(JSON.stringify(p));
+                        html += `<li class="d-flex align-items-center gap-2 py-1 border-bottom">
+                            <div class="flex-grow-1">
+                                <span class="fw-semibold">${p.medical_record_number}</span>
+                                &mdash; ${p.full_name} |
+                                &#128197; ${p.admission_date} |
+                                &#127968; ${p.department} |
+                                ${statusIcon} ${p.status}
+                                <span class="text-muted small"> | ${p.diagnosis}</span>
+                            </div>
+                            <button type="button"
+                                class="btn btn-sm btn-primary flex-shrink-0 btn-copy-patient"
+                                data-patient="${safeData}">
+                                &#128203; Ko&#39;chirish
+                            </button>
+                            <a href="/patients/${p.pk}/" target="_blank"
+                               class="btn btn-sm btn-outline-secondary flex-shrink-0">
+                                &#128065; Ko&#39;rish
                             </a>
-                            — ${p.full_name} |
-                            📅 ${p.admission_date} |
-                            🏥 ${p.department} |
-                            ${statusIcon} ${p.status}
-                            <span class="text-muted small"> | ${p.diagnosis}</span>
                         </li>`;
                     });
                     html += '</ul>';
@@ -963,6 +974,68 @@ document.addEventListener('DOMContentLoaded', function () {
                 })
                 .catch(() => {});
         }
+
+        // Eski bemor ma'lumotini formga ko'chirish
+        function setField(nameOrId, val) {
+            if (!val) return;
+            // name atributi bilan qidirish
+            let el = document.querySelector('[name="' + nameOrId + '"]');
+            // id bilan qidirish
+            if (!el) el = document.getElementById(nameOrId);
+            if (!el) el = document.getElementById('id_' + nameOrId);
+            if (!el) return;
+            el.value = val;
+            el.dispatchEvent(new Event('input',  {bubbles: true}));
+            el.dispatchEvent(new Event('change', {bubbles: true}));
+        }
+
+        function copyPatientToForm(p) {
+            setField('full_name',       p.full_name);
+            setField('birth_date',      p.birth_date_raw);
+            setField('JSHSHIR',         p.jshshir);
+            setField('passport_serial', p.passport);
+            setField('phone',           p.phone);
+            setField('street_address',  p.address);
+
+            // Gender
+            if (p.gender_code) {
+                let gEl = document.querySelector('[name="gender"]')
+                       || document.getElementById('id_gender');
+                if (gEl) {
+                    gEl.value = p.gender_code;
+                    gEl.dispatchEvent(new Event('change', {bubbles: true}));
+                }
+            }
+
+            // Alertni yashirish
+            const alertEl = document.getElementById('repeat-patient-alert');
+            if (alertEl) alertEl.style.display = 'none';
+
+            // Xabar
+            const existing = document.getElementById('copy-success-msg');
+            if (existing) existing.remove();
+            const msg = document.createElement('div');
+            msg.id = 'copy-success-msg';
+            msg.className = 'alert alert-success alert-dismissible fade show';
+            msg.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;min-width:350px;box-shadow:0 4px 12px rgba(0,0,0,.15);';
+            msg.innerHTML = '&#9989; <strong>' + p.full_name + '</strong> ma&#39;lumotlari ko&#39;chirildi.' +
+                '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+            document.body.appendChild(msg);
+            setTimeout(function(){ if(msg.parentNode) msg.remove(); }, 4000);
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        // btn-copy-patient uchun event delegation
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn-copy-patient');
+            if (!btn) return;
+            try {
+                const p = JSON.parse(decodeURIComponent(btn.dataset.patient));
+                copyPatientToForm(p);
+            } catch(err) {
+                console.error('Copy xato:', err);
+            }
+        });
 
         let debounce;
         function onInput() {

@@ -1278,15 +1278,24 @@ def check_existing_patient(request):
     data = []
     for p in matches:
         data.append({
-            'pk': p.pk,
-            'full_name': p.full_name,
+            'pk':                   p.pk,
+            'full_name':            p.full_name,
+            'last_name':            p.last_name  if hasattr(p, 'last_name')  else '',
+            'first_name':           p.first_name if hasattr(p, 'first_name') else '',
+            'middle_name':          p.middle_name if hasattr(p, 'middle_name') else '',
+            'birth_date_raw':       p.birth_date.strftime('%Y-%m-%d') if p.birth_date else '',
+            'gender_code':          p.gender or '',
+            'jshshir':              p.JSHSHIR or '',
+            'passport':             p.passport_serial or '',
+            'phone':                p.phone or '',
+            'address':              p.street_address or '',
             'medical_record_number': p.medical_record_number,
-            'admission_date': p.admission_date.strftime('%d.%m.%Y') if p.admission_date else '—',
-            'department': str(p.department) if p.department else '—',
-            'status': p.get_status_display(),
-            'status_code': p.status,
-            'outcome': p.get_outcome_display() if p.outcome else '—',
-            'diagnosis': p.admission_diagnosis[:60] if p.admission_diagnosis else '—',
+            'admission_date':       p.admission_date.strftime('%d.%m.%Y') if p.admission_date else '—',
+            'department':           str(p.department) if p.department else '—',
+            'status':               p.get_status_display(),
+            'status_code':          p.status,
+            'outcome':              p.get_outcome_display() if p.outcome else '—',
+            'diagnosis':            p.admission_diagnosis[:60] if p.admission_diagnosis else '—',
         })
 
     return JsonResponse({'found': bool(data), 'patients': data})
