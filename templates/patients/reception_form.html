@@ -1044,3 +1044,15 @@ document.addEventListener('DOMContentLoaded', function () {
 })();
 </script>
 {% endblock %}
+<script>
+// Forma bir marta yuborilishi uchun himoya
+document.querySelectorAll('form').forEach(function(form) {
+    form.addEventListener('submit', function() {
+        const btns = form.querySelectorAll('[type="submit"], button[onclick*="submit"]');
+        btns.forEach(function(btn) {
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Saqlanmoqda...';
+        });
+    });
+});
+</script>

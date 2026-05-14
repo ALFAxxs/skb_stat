@@ -857,6 +857,12 @@ def reception_create(request):
             patient.medical_record_number = record_number
             patient.status = 'registered'
             patient.registered_by = request.user
+
+            # Takroriy yuborish himoyasi
+            if PatientCard.objects.filter(medical_record_number=record_number).exists():
+                existing = PatientCard.objects.filter(medical_record_number=record_number).first()
+                return redirect('patient_detail', pk=existing.pk)
+
             # Qo'lda kiritilgan shartnoma raqamini saqlash
             manual_contract_number = request.POST.get('manual_contract_number', '').strip()
             if manual_contract_number:
@@ -1422,6 +1428,11 @@ def ambulatory_create(request):
                 'auto_record_number': auto_number,
                 'now': now.strftime('%Y-%m-%dT%H:%M'),
             })
+
+        # Takroriy yuborish himoyasi — 10 soniya ichida bir xil bayonnoma raqami
+        if PatientCard.objects.filter(medical_record_number=record_number).exists():
+            existing = PatientCard.objects.filter(medical_record_number=record_number).first()
+            return redirect('patient_detail', pk=existing.pk)
 
         patient = PatientCard(
             medical_record_number = record_number,
