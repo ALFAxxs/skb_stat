@@ -53,6 +53,9 @@
         <a href="{% url 'patient_card_pdf' patient.pk %}" class="btn btn-danger">📄 PDF</a>
         <a href="{% url 'patient_card_excel' patient.pk %}" class="btn btn-success">📥 Excel</a>
         <a href="{% url 'patient_invoice' patient.pk %}" class="btn btn-outline-primary">🧾 Hisob-faktura</a>
+        {% if patient.contract %}
+        <a href="{% url 'download_contract' patient.contract.pk %}" class="btn btn-outline-dark">📋 Shartnoma</a>
+        {% endif %}
     </div>
 </div>
 
