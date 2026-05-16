@@ -78,7 +78,9 @@ class Service(models.Model):
         if patient_category == 'railway':
             return self.price_railway if self.price_railway else self.price_normal
         elif patient_category == 'non_resident':
-            return round(self.price_normal * Decimal('1.25'), 2)
+            # Asosiy narx: price_normal, agar 0 bo'lsa price_railway ishlatiladi
+            base = self.price_normal if self.price_normal else self.price_railway
+            return round(base * Decimal('1.25'), 2)
         else:
             return self.price_normal
 
@@ -249,3 +251,41 @@ class PatientMedicine(models.Model):
         verbose_name = "Bemor dorisi"
         verbose_name_plural = "Bemor dorilari"
         ordering = ['-ordered_at']
+
+
+# apps/services/models.py ga qo'shish — oxiriga
+
+class ServicePackage(models.Model):
+    """Shifokor xizmat paketi"""
+    name        = models.CharField(max_length=200, verbose_name="Paket nomi")
+    owner       = models.ForeignKey(
+        'users.CustomUser', on_delete=models.CASCADE,
+        related_name='service_packages', verbose_name="Shifokor"
+    )
+    services    = models.ManyToManyField(
+        'Service', through='ServicePackageItem',
+        related_name='packages', verbose_name="Xizmatlar"
+    )
+    is_active   = models.BooleanField(default=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+    updated_at  = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name        = "Xizmat paketi"
+        verbose_name_plural = "Xizmat paketlari"
+        ordering            = ['name']
+
+    def __str__(self):
+        return f"{self.name} ({self.owner})"
+
+
+class ServicePackageItem(models.Model):
+    """Paket tarkibidagi xizmat"""
+    package    = models.ForeignKey(ServicePackage, on_delete=models.CASCADE, related_name='items')
+    service    = models.ForeignKey('Service', on_delete=models.CASCADE)
+    quantity   = models.PositiveSmallIntegerField(default=1)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ['sort_order', 'service__name']
+        unique_together = ('package', 'service')

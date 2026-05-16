@@ -631,6 +631,7 @@ def patient_detail(request, pk):
         'departments': Department.objects.filter(is_active=True).order_by('name'),
         'doctors':     Doctor.objects.filter(is_active=True).select_related('department').order_by('full_name'),
         'dept_heads':  Doctor.objects.filter(is_active=True, is_head=True).order_by('full_name'),
+        'today':       timezone.localdate(),
         'transfers':   patient.patient_transfers.all().select_related(
                            'from_department', 'to_department',
                            'to_doctor', 'transferred_by'
@@ -731,6 +732,30 @@ def patient_card_edit(request, pk):
     death_instance = getattr(patient, 'death_cause', None)
 
     if request.method == 'POST':
+        # Chiqarish modal dan kelgan so'rov
+        if request.POST.get('_discharge'):
+            from apps.patients.models import Doctor as PatientDoctor
+            patient.outcome         = request.POST.get('outcome', '')
+            patient.status          = request.POST.get('status', 'discharged')
+            patient.final_diagnosis = request.POST.get('final_diagnosis', '')
+            patient.discharge_note  = request.POST.get('discharge_conclusion_text', '')
+            discharge_date = request.POST.get('discharge_date', '')
+            if discharge_date:
+                from datetime import date
+                try:
+                    patient.discharge_date = date.fromisoformat(discharge_date)
+                except ValueError:
+                    pass
+            doc_id  = request.POST.get('attending_doctor')
+            head_id = request.POST.get('department_head')
+            if doc_id:
+                patient.attending_doctor = PatientDoctor.objects.filter(pk=doc_id).first()
+            if head_id:
+                patient.department_head = PatientDoctor.objects.filter(pk=head_id).first()
+            patient.save()
+            messages.success(request, f"✅ Bemor chiqarildi: {patient.full_name}")
+            return redirect('patient_detail', pk=pk)
+
         form = FormClass(request.POST, instance=patient)
 
         if is_ambulatory or is_reception:

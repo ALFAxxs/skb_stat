@@ -41,4 +41,11 @@ urlpatterns = [
     # Export
     path('export/excel/', views.export_services_excel, name='export_services_excel'),
     path('export/pdf/', views.export_services_pdf, name='export_services_pdf'),
+
+    # Paket tizimi
+    path('packages/',                         views.package_list,            name='package_list'),
+    path('packages/add/',                     views.package_add,             name='package_add'),
+    path('packages/toggle-service/',          views.package_toggle_service,  name='package_toggle_service'),
+    path('packages/<int:pk>/delete/',         views.package_delete,          name='package_delete'),
+    path('packages/<int:pk>/remove-service/', views.package_remove_service,  name='package_remove_service'),
 ]

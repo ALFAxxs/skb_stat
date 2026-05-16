@@ -5,6 +5,7 @@ import json
 from datetime import date, timedelta
 
 import openpyxl
+from django.views.decorators.http import require_POST
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from reportlab.lib.pagesizes import landscape, A4
@@ -39,18 +40,18 @@ def service_search(request):
     qs = Service.objects.filter(is_active=True).select_related('category').order_by('name')
     if q:
         qs = qs.filter(Q(name__icontains=q) | Q(name_ru__icontains=q) | Q(code__icontains=q))
-    if category_id:
+    if category_id and category_id != '__my_packages__':
         qs = qs.filter(category_id=category_id)
     # Bo'sh qidiruv — faqat 20 ta ko'rsatish
     # Kategoriya tanlangan bo'lsa — hammasi
     limit = 50 if category_id else 20
 
     # Bemor kategoriyasiga qarab narx hisoblash
-    patient_category = 'railway'
+    patient_category = 'normal'
     if patient_id:
         try:
             patient = PatientCard.objects.get(pk=patient_id)
-            patient_category = patient.patient_category or 'railway'
+            patient_category = patient.patient_category or 'normal'
         except PatientCard.DoesNotExist:
             pass
 
@@ -96,7 +97,6 @@ def patient_services(request, patient_pk):
     total_price = (totals['total_sum'] or 0)
 
     # Kategoriya bo'yicha umumlama
-    from django.db.models import ExpressionWrapper, DecimalField, F as F_
     cat_stats = services.values(
         'service__category__name',
         'service__category__icon',
@@ -185,8 +185,12 @@ def add_service(request, patient_pk):
                 **queue_info,
             })
 
+        except Service.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Xizmat topilmadi'})
         except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
+            import logging
+            logging.getLogger(__name__).error(f"add_service error: {e}", exc_info=True)
+            return JsonResponse({'success': False, 'error': 'Xizmat qo\'shishda xato yuz berdi'})
 
     return JsonResponse({'success': False, 'error': 'POST required'})
 
@@ -221,7 +225,9 @@ def update_service(request, pk):
             return JsonResponse({'success': True})
 
         except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
+            import logging
+            logging.getLogger(__name__).error(f"update_service error: {e}", exc_info=True)
+            return JsonResponse({'success': False, 'error': 'Xizmatni yangilashda xato yuz berdi'})
 
     return JsonResponse({'success': False})
 
@@ -630,8 +636,12 @@ def add_medicine(request, patient_pk):
                 'ordered_by': pm.ordered_by.full_name if pm.ordered_by else '—',
                 'ordered_at': pm.ordered_at.strftime('%d.%m.%Y %H:%M'),
             })
+        except Medicine.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Dori topilmadi'})
         except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
+            import logging
+            logging.getLogger(__name__).error(f"add_medicine error: {e}", exc_info=True)
+            return JsonResponse({'success': False, 'error': 'Dori qo\'shishda xato yuz berdi'})
 
     return JsonResponse({'success': False})
 
@@ -658,7 +668,9 @@ def update_medicine(request, pk):
                 'ordered_by': pm.ordered_by.full_name if pm.ordered_by else '—',
             })
         except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
+            import logging
+            logging.getLogger(__name__).error(f"update_medicine error: {e}", exc_info=True)
+            return JsonResponse({'success': False, 'error': 'Dorini yangilashda xato yuz berdi'})
     return JsonResponse({'success': False})
 
 
@@ -819,7 +831,7 @@ def export_medicine_excel(request):
         c.fill = GOLD; c.font = WFONT; c.alignment = CENTER; c.border = BRD
     ws1.row_dimensions[3].height = 22
 
-    top = (
+    top = list(
         qs.values('medicine__name', 'medicine__unit')
         .annotate(tq=Sum('quantity'), tp=Sum(ExpressionWrapper(F('price') * F('quantity'), output_field=DecimalField())), pc=Count('patient_card', distinct=True))
         .order_by('-tp')
@@ -840,7 +852,7 @@ def export_medicine_excel(request):
             c.fill = LGOLD if ri % 2 == 0 else WHITE
         ws1.row_dimensions[ri+3].height = 18
 
-    last = len(list(top)) + 4
+    last = len(top) + 4
     ws1.merge_cells(start_row=last, start_column=1, end_row=last, end_column=5)
     c = ws1.cell(row=last, column=1, value="JAMI:")
     c.fill = GOLD; c.font = WFONT; c.alignment = LEFT; c.border = BRD
@@ -1830,20 +1842,20 @@ def mark_operations(request):
             messages.error(request, "Hech bir xizmat tanlanmadi.")
         return redirect('mark_operations')
 
-    # Kategoriyalar va ularning xizmatlari
-    categories_raw = ServiceCategory.objects.filter(is_active=True).order_by('name')
+    # Kategoriyalar va ularning xizmatlari (bitta so'rov bilan)
+    from django.db.models import Prefetch
+    categories_raw = ServiceCategory.objects.filter(is_active=True).order_by('name').prefetch_related(
+        Prefetch('services', queryset=Service.objects.filter(is_active=True).order_by('name'), to_attr='services_list')
+    )
     categories = []
     total_services = 0
     total_operations = 0
 
     for cat in categories_raw:
-        svcs = list(
-            Service.objects.filter(category=cat, is_active=True).order_by('name')
-        )
+        svcs = cat.services_list
         if not svcs:
             continue
         op_count  = sum(1 for s in svcs if s.is_operation)
-        cat.services_list = svcs
         cat.total_count   = len(svcs)
         cat.op_count      = op_count
         categories.append(cat)
@@ -1854,4 +1866,135 @@ def mark_operations(request):
         'categories':       categories,
         'total_services':   total_services,
         'total_operations': total_operations,
+    })
+
+# ===== PAKET TIZIMI =====
+
+@login_required
+def package_list(request):
+    from apps.services.models import ServicePackage
+    packages = ServicePackage.objects.filter(
+        owner=request.user, is_active=True
+    ).prefetch_related('items__service')
+    patient_id  = request.GET.get('patient_id')
+    patient_cat = 'railway'
+    if patient_id:
+        try:
+            from apps.patients.models import PatientCard
+            p = PatientCard.objects.get(pk=patient_id)
+            patient_cat = p.patient_category or 'railway'
+        except Exception:
+            pass
+    data = []
+    for pkg in packages:
+        items = []
+        for item in pkg.items.all():
+            price = item.service.price_for_patient(patient_cat)
+            items.append({
+                'service_id':   item.service.pk,
+                'service_name': item.service.name,
+                'category':     item.service.category.name if item.service.category else '',
+                'quantity':     item.quantity,
+                'price':        float(price),
+            })
+        data.append({'id': pkg.pk, 'name': pkg.name, 'items': items})
+    return JsonResponse(data, safe=False)
+
+
+@login_required
+@require_POST
+def package_add(request):
+    from apps.services.models import ServicePackage, ServicePackageItem, Service
+    try:
+        body = json.loads(request.body)
+    except Exception:
+        return JsonResponse({'success': False, 'error': 'JSON xato'})
+    name     = body.get('name', '').strip()
+    services = body.get('services', [])
+    if not name:
+        return JsonResponse({'success': False, 'error': 'Nom kiritilmagan'})
+    pkg = ServicePackage.objects.create(name=name, owner=request.user)
+    for i, svc in enumerate(services):
+        try:
+            service = Service.objects.get(pk=svc['id'], is_active=True)
+            ServicePackageItem.objects.create(
+                package=pkg, service=service,
+                quantity=svc.get('qty', 1), sort_order=i
+            )
+        except Exception:
+            continue
+    return JsonResponse({'success': True, 'id': pkg.pk, 'name': pkg.name})
+
+
+@login_required
+@require_POST
+def package_delete(request, pk):
+    from apps.services.models import ServicePackage
+    ServicePackage.objects.filter(pk=pk, owner=request.user).update(is_active=False)
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_POST
+def package_remove_service(request, pk):
+    from apps.services.models import ServicePackage, ServicePackageItem
+    try:
+        body = json.loads(request.body)
+        svc_id = body.get('service_id')
+    except Exception:
+        return JsonResponse({'success': False})
+    ServicePackageItem.objects.filter(
+        package__pk=pk, package__owner=request.user, service_id=svc_id
+    ).delete()
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_POST
+def package_toggle_service(request):
+    """Xizmatni shifokorning shaxsiy paketiga qo'shish yoki o'chirish (toggle)"""
+    from apps.services.models import ServicePackage, ServicePackageItem
+    try:
+        body = json.loads(request.body)
+        service_id = body.get('service_id')
+    except Exception:
+        return JsonResponse({'success': False, 'error': 'JSON xato'})
+
+    if not service_id:
+        return JsonResponse({'success': False, 'error': 'service_id yo\'q'})
+
+    service = get_object_or_404(Service, pk=service_id, is_active=True)
+
+    # Foydalanuvchining shaxsiy paketini topish yoki yaratish
+    package = ServicePackage.objects.filter(
+        owner=request.user, is_active=True
+    ).first()
+
+    if not package:
+        package = ServicePackage.objects.create(
+            name='Mening paketim',
+            owner=request.user,
+            is_active=True
+        )
+
+    # Toggle: bor bo'lsa o'chirish, yo'q bo'lsa qo'shish
+    existing = ServicePackageItem.objects.filter(package=package, service=service).first()
+    if existing:
+        existing.delete()
+        in_package = False
+    else:
+        sort_order = ServicePackageItem.objects.filter(package=package).count()
+        ServicePackageItem.objects.create(
+            package=package,
+            service=service,
+            quantity=1,
+            sort_order=sort_order
+        )
+        in_package = True
+
+    return JsonResponse({
+        'success': True,
+        'in_package': in_package,
+        'package_id': package.pk,
+        'service_name': service.name,
     })

@@ -51,6 +51,7 @@
                 data-bs-toggle="modal" data-bs-target="#addServiceModal"
                 onclick="openServiceModal()"
                 ontouchend="openServiceModal()">➕ Xizmat qo'shish</button>
+
         <a href="{% url 'patient_detail' patient.pk %}" class="btn btn-outline-secondary">← Bemor kartasi</a>
     </div>
 </div>
@@ -259,7 +260,16 @@
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header bg-success text-white">
-                <h5 class="modal-title">➕ Xizmatlar qo'shish</h5>
+                <h5 class="modal-title">➕ Xizmatlar qo'shish
+                    <span class="badge ms-2 fw-normal fs-6
+                        {% if patient.patient_category == 'railway' %}bg-primary
+                        {% elif patient.patient_category == 'non_resident' %}bg-danger
+                        {% else %}bg-warning text-dark{% endif %}">
+                        {% if patient.patient_category == 'railway' %}🚆 Temir yo'lchi narxi
+                        {% elif patient.patient_category == 'non_resident' %}🌍 Norezident narxi (+25%)
+                        {% else %}💰 Pullik narxi{% endif %}
+                    </span>
+                </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -272,6 +282,7 @@
                                 <div class="mb-2">
                                     <div class="d-flex flex-wrap gap-1" id="modal-cat-btns">
                                         <button type="button" class="btn btn-primary modal-cat-btn py-1 px-2" style="font-size:12px" data-cat="">Barchasi</button>
+                                        <button type="button" class="btn btn-outline-warning modal-cat-btn py-1 px-2" style="font-size:12px" data-cat="__my_packages__">⭐ Mening paketim</button>
                                         {% for cat in categories %}
                                         <button type="button" class="btn btn-outline-primary modal-cat-btn py-1 px-2" style="font-size:12px" data-cat="{{ cat.id }}">{{ cat.icon }} {{ cat.name }}</button>
                                         {% endfor %}
@@ -281,6 +292,8 @@
                                     <input type="text" id="svc-search" class="form-control" placeholder="🔍 Xizmat nomi yoki kodi..." autocomplete="off">
                                     <div id="svc-dropdown" class="svc-dropdown"></div>
                                 </div>
+                                <!-- Paket paneli -->
+                                <div id="pkg-panel" style="display:none; border:1px solid #dee2e6; border-radius:8px; padding:10px; max-height:280px; overflow-y:auto; background:#fff;"></div>
                                 <div class="row g-2 mb-2">
                                     <div class="col-6">
                                         <label class="form-label small fw-bold mb-1">Miqdori</label>
@@ -353,6 +366,7 @@
         </div>
     </div>
 </div>
+
 
 <!-- MRT NAVBAT MODAL -->
 <div class="modal fade" id="queueModal" tabindex="-1" data-bs-backdrop="static">
@@ -440,8 +454,25 @@
 {% block scripts %}
 <script>
 const PATIENT_ID = {{ patient.pk }};
+
+// GLOBAL FUNKSIYALAR — onclick da ishlatiladi
+function openServiceModal() {
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    try {
+        var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('addServiceModal'));
+        modal.show();
+    } catch(e) {
+        var m = document.getElementById('addServiceModal');
+        m.style.display = 'block';
+        m.classList.add('show');
+        document.body.classList.add('modal-open');
+    }
+}
 const ADD_URL    = "{% url 'add_service' patient.pk %}";
 const SEARCH_URL = "{% url 'service_search' %}";
+const TOGGLE_URL = "{% url 'package_toggle_service' %}";
 const CSRF       = "{{ csrf_token }}";
 
 // Shifokorlar JSON — bo'lim bo'yicha tartiblangan
@@ -474,20 +505,7 @@ document.addEventListener('DOMContentLoaded', function() {
     buildDoctorSelect(document.getElementById('edit-doctor'), null);
 });
 
-function openServiceModal() {
-    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-    document.body.classList.remove('modal-open');
-    document.body.style.overflow = '';
-    try {
-        var modalEl = document.getElementById('addServiceModal');
-        var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-        modal.show();
-    } catch(e) {
-        document.getElementById('addServiceModal').style.display = 'block';
-        document.getElementById('addServiceModal').classList.add('show');
-        document.body.classList.add('modal-open');
-    }
-}
+
 
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -495,6 +513,186 @@ document.addEventListener('DOMContentLoaded', function () {
     let selId = null, selName = '', selPrice = 0, selCatName = '';
     let checkedItems = new Set();
     let checkedQtys  = {};
+
+    // ===== PAKET O'ZGARUVCHILARI =====
+    let starredIds = new Set();   // Serverda saqlangan xizmat ID'lari (DB bilan sinxron)
+    let myPackages = [];          // Serverdan yuklangan paketlar
+
+    function updatePkgBadge() {
+        const btn = document.querySelector('.modal-cat-btn[data-cat="__my_packages__"]');
+        if (!btn) return;
+        const n = starredIds.size;
+        btn.innerHTML = n > 0
+            ? '⭐ Mening paketim <span class="badge bg-warning text-dark ms-1">' + n + '</span>'
+            : '⭐ Mening paketim';
+    }
+
+    function loadMyPackages() {
+        fetch('/services/packages/?patient_id=' + PATIENT_ID)
+        .then(r => r.json())
+        .then(function(data) {
+            myPackages = data;
+            starredIds.clear();
+            data.forEach(function(pkg) {
+                pkg.items.forEach(function(item) {
+                    starredIds.add(String(item.service_id));
+                });
+            });
+            updatePkgBadge();
+            if (selCat === '__my_packages__') {
+                showPackagesInDropdown(svcSearch.value);
+            }
+        });
+    }
+
+    function toggleStar(serviceId, starEl) {
+        const wasStarred = starredIds.has(serviceId);
+        // Optimistik yangilash (server javobini kutmasdan)
+        if (wasStarred) { starredIds.delete(serviceId); starEl.textContent = '☆'; }
+        else            { starredIds.add(serviceId);    starEl.textContent = '⭐'; }
+        updatePkgBadge();
+
+        fetch(TOGGLE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+            body: JSON.stringify({ service_id: serviceId })
+        })
+        .then(r => r.json())
+        .then(function(data) {
+            if (!data.success) {
+                // Server xatosi — orqaga qaytarish
+                if (wasStarred) { starredIds.add(serviceId);    starEl.textContent = '⭐'; }
+                else            { starredIds.delete(serviceId); starEl.textContent = '☆'; }
+                updatePkgBadge();
+                return;
+            }
+            if (data.in_package) { starredIds.add(serviceId); starEl.textContent = '⭐'; }
+            else                  { starredIds.delete(serviceId); starEl.textContent = '☆'; }
+            updatePkgBadge();
+            // Paket ma'lumotini qayta yuklash
+            fetch('/services/packages/?patient_id=' + PATIENT_ID)
+            .then(r => r.json())
+            .then(function(d) {
+                myPackages = d;
+                if (selCat === '__my_packages__') { showPackagesInDropdown(svcSearch.value); }
+            });
+        });
+    }
+
+    function showPackagesInDropdown(filterQ) {
+        const allItems = [];
+        const seen = new Set();
+        myPackages.forEach(function(pkg) {
+            pkg.items.forEach(function(item) {
+                if (!seen.has(item.service_id)) {
+                    seen.add(item.service_id);
+                    allItems.push({
+                        id:       String(item.service_id),
+                        name:     item.service_name,
+                        category: item.category || '',
+                        price:    item.price || 0,
+                    });
+                }
+            });
+        });
+
+        if (!allItems.length) {
+            svcDropdown.innerHTML = '<div class="svc-item text-muted text-center py-4">' +
+                '⭐ Paketingiz hali bo\'sh.<br>' +
+                '<small>Istalgan xizmat yonidagi ☆ tugmani bosib qo\'shing</small></div>';
+            svcDropdown.style.display = 'block';
+            return;
+        }
+
+        const q = (filterQ || '').toLowerCase().trim();
+        const filtered = q
+            ? allItems.filter(function(s) {
+                return s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q);
+              })
+            : allItems;
+
+        if (!filtered.length) {
+            svcDropdown.innerHTML = '<div class="svc-item text-muted text-center py-3">🔍 Topilmadi</div>';
+            svcDropdown.style.display = 'block';
+            return;
+        }
+
+        const allChecked = filtered.every(function(s) { return checkedItems.has(s.id); });
+        const selectAllRow =
+            '<div style="padding:8px 14px;background:#f0f4ff;border-bottom:2px solid #c9d7f8;display:flex;align-items:center;gap:8px;">' +
+            '<input type="checkbox" id="pkg-select-all" style="width:16px;height:16px;cursor:pointer;accent-color:#185FA5;" ' + (allChecked ? 'checked' : '') + '>' +
+            '<label for="pkg-select-all" style="cursor:pointer;font-size:13px;font-weight:600;color:#185FA5;flex:1;margin:0;">' +
+            (q ? 'Filtrdagilarni belgilash (' + filtered.length + ' ta)' : 'Barchasini belgilash (' + filtered.length + ' ta)') +
+            '</label></div>';
+
+        svcDropdown.innerHTML = selectAllRow + filtered.map(function(s) {
+            const checked = checkedItems.has(s.id);
+            const qty     = checkedQtys[s.id] || 1;
+            return '<div class="svc-item ' + (checked ? 'selected-item' : '') + '" ' +
+                'data-id="' + s.id + '" data-name="' + s.name.replace(/"/g, '&quot;') + '" ' +
+                'data-cat="' + s.category + '" data-price="' + s.price + '">' +
+                '<div class="svc-item-row">' +
+                '<span class="svc-star" data-id="' + s.id + '" title="Paketdan o\'chirish" ' +
+                'style="cursor:pointer;font-size:16px;flex-shrink:0;line-height:1;user-select:none;">⭐</span>' +
+                '<input type="checkbox" class="svc-cb" data-id="' + s.id + '" ' + (checked ? 'checked' : '') + '>' +
+                '<div class="svc-item-info">' +
+                '<div class="svc-name">' + s.name + '</div>' +
+                '<div class="svc-cat">' + s.category + '</div>' +
+                '</div>' +
+                '<input type="number" class="svc-qty-inline" value="' + qty + '" min="1" max="99" data-id="' + s.id + '">' +
+                '<span class="price-pill">' + Number(s.price).toLocaleString() + ' so\'m</span>' +
+                '</div></div>';
+        }).join('');
+
+        svcDropdown.style.display = 'block';
+
+        const selectAllCb = document.getElementById('pkg-select-all');
+        if (selectAllCb) {
+            selectAllCb.addEventListener('change', function(e) {
+                e.stopPropagation();
+                const isChecked = this.checked;
+                filtered.forEach(function(s) {
+                    if (isChecked) { checkedItems.add(s.id); }
+                    else { checkedItems.delete(s.id); delete checkedQtys[s.id]; }
+                });
+                showPackagesInDropdown(filterQ);
+                updateCheckedSummary();
+            });
+        }
+
+        bindDropdownEvents();
+    }
+
+    function showPackagesPanel() {
+        const panel = document.getElementById('pkg-panel');
+        if (panel) panel.style.display = 'none';
+    }
+
+    function addPackageToCart(pkg) {
+        const doctorId = document.getElementById('svc-doctor').value;
+        pkg.items.forEach(function(item) {
+            const ex = cart.find(c => c.id === String(item.service_id) && c.doctor_id === doctorId);
+            if (ex) { ex.qty += item.quantity; }
+            else {
+                cart.push({
+                    id: String(item.service_id),
+                    name: item.service_name,
+                    category: item.category || '',
+                    price: item.price || 0,
+                    qty: item.quantity,
+                    doctor_id: doctorId,
+                    notes: ''
+                });
+            }
+        });
+        renderCart();
+        hidePkgPanel();
+    }
+
+    function hidePkgPanel() {
+        const panel = document.getElementById('pkg-panel');
+        if (panel) panel.style.display = 'none';
+    }
 
     function updateCheckedSummary() {
         const n = checkedItems.size;
@@ -558,12 +756,24 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch(url)
             .then(r => r.json())
             .then(data => {
-                if (!data.length) { svcDropdown.innerHTML = '<div class="svc-item text-muted">🔍 Topilmadi</div>'; return; }
+                if (!data.length) {
+                    svcDropdown.innerHTML = '<div class="svc-item text-muted">🔍 Topilmadi</div>';
+                    return;
+                }
                 svcDropdown.innerHTML = data.map(s => {
                     const checked = checkedItems.has(s.id);
+                    const starred = starredIds.has(String(s.id));
                     const qty = checkedQtys[s.id] || 1;
-                    return `<div class="svc-item ${checked ? 'selected-item' : ''}" data-id="${s.id}" data-name="${s.name.replace(/"/g,'&quot;')}" data-cat="${s.category}" data-price="${s.price}">
+                    return `<div class="svc-item ${checked ? 'selected-item' : ''}"
+                        data-id="${s.id}"
+                        data-name="${s.name.replace(/"/g,'&quot;')}"
+                        data-cat="${s.category}"
+                        data-price="${s.price}">
                         <div class="svc-item-row">
+                            <span class="svc-star" data-id="${s.id}" title="Paketga qo'shish"
+                                  style="cursor:pointer;font-size:16px;flex-shrink:0;line-height:1;user-select:none;">
+                                ${starred ? '⭐' : '☆'}
+                            </span>
                             <input type="checkbox" class="svc-cb" data-id="${s.id}" ${checked ? 'checked' : ''}>
                             <div class="svc-item-info">
                                 <div class="name">${s.name}${s.name_ru ? '<span style="color:#555;font-size:13px;font-weight:500"> / ' + s.name_ru + '</span>' : ''}</div>
@@ -574,176 +784,70 @@ document.addEventListener('DOMContentLoaded', function () {
                         </div>
                     </div>`;
                 }).join('');
-
-                svcDropdown.querySelectorAll('.svc-cb').forEach(cb => {
-                    cb.addEventListener('change', function(e) {
-                        e.stopPropagation();
-                        const id = this.dataset.id;
-                        const item = this.closest('.svc-item');
-                        if (this.checked) {
-                            checkedItems.add(id);
-                            item.classList.add('selected-item');
-                            selId = id; selName = item.dataset.name;
-                            selPrice = parseFloat(item.dataset.price);
-                            selCatName = item.dataset.cat;
-                            svcSearch.value = selName;
-                            svcPriceEl.textContent = selPrice.toLocaleString() + " so'm";
-                        } else {
-                            checkedItems.delete(id);
-                            delete checkedQtys[id];
-                            item.classList.remove('selected-item');
-                        }
-                        updateCheckedSummary();
-                    });
-                });
-
-                svcDropdown.querySelectorAll('.svc-qty-inline').forEach(inp => {
-                    inp.addEventListener('change', function(e) {
-                        e.stopPropagation();
-                        checkedQtys[this.dataset.id] = parseInt(this.value) || 1;
-                        if (checkedItems.has(this.dataset.id)) {
-                            document.getElementById('svc-qty').value = this.value;
-                        }
-                    });
-                    inp.addEventListener('click', e => e.stopPropagation());
-                });
-
-                svcDropdown.querySelectorAll('.svc-item').forEach(item => {
-                    item.addEventListener('click', function(e) {
-                        if (e.target.classList.contains('svc-cb') || e.target.classList.contains('svc-qty-inline')) return;
-                        const cb = this.querySelector('.svc-cb');
-                        cb.checked = !cb.checked;
-                        cb.dispatchEvent(new Event('change'));
-                    });
-                });
+                bindDropdownEvents();
             })
-            .catch(err => { svcDropdown.innerHTML = `<div class="svc-item text-danger">❌ Xato: ${err.message}</div>`; });
+            .catch(err => {
+                svcDropdown.innerHTML = `<div class="svc-item text-danger">❌ Xato: ${err.message}</div>`;
+            });
     }
 
-    svcSearch.addEventListener('input', function () { selId = null; svcPriceEl.textContent = "— so'm"; fetchSvc(this.value); });
-    svcSearch.addEventListener('focus', () => fetchSvc(svcSearch.value));
-    document.addEventListener('click', e => { if (!svcDropdown.contains(e.target) && e.target !== svcSearch) svcDropdown.style.display = 'none'; });
-
-    document.querySelectorAll('.modal-cat-btn').forEach(btn => {
-        btn.addEventListener('click', function () {
-            document.querySelectorAll('.modal-cat-btn').forEach(b => b.classList.replace('btn-primary','btn-outline-primary'));
-            this.classList.replace('btn-outline-primary','btn-primary');
-            selCat = this.dataset.cat;
-            fetchSvc(svcSearch.value);
+    function bindDropdownEvents() {
+        // Checkbox
+        svcDropdown.querySelectorAll('.svc-cb').forEach(cb => {
+            cb.addEventListener('change', function(e) {
+                e.stopPropagation();
+                const id = this.dataset.id;
+                const item = this.closest('.svc-item');
+                if (this.checked) {
+                    checkedItems.add(id);
+                    item.classList.add('selected-item');
+                    selId = id;
+                    selName = item.dataset.name;
+                    selPrice = parseFloat(item.dataset.price);
+                    selCatName = item.dataset.cat;
+                    svcSearch.value = selName;
+                    svcPriceEl.textContent = selPrice.toLocaleString() + " so'm";
+                } else {
+                    checkedItems.delete(id);
+                    delete checkedQtys[id];
+                    item.classList.remove('selected-item');
+                }
+                updateCheckedSummary();
+            });
         });
-    });
 
-    // ===== SAVATGA QO'SHISH =====
-    document.getElementById('btn-add-to-cart').addEventListener('click', function () {
-        const errDiv = document.getElementById('add-cart-error');
-        errDiv.style.display = 'none';
-        errDiv.className = 'alert alert-danger mt-2 py-2';
-        if (!selId) { errDiv.textContent = "⚠️ Avval xizmat tanlang!"; errDiv.style.display = 'block'; return; }
-        const qty      = parseInt(document.getElementById('svc-qty').value) || 1;
-        const doctorId = document.getElementById('svc-doctor').value;
-        const notes    = document.getElementById('svc-notes').value;
-        const existing = cart.find(c => c.id === selId && c.doctor_id === doctorId);
-        if (existing) { existing.qty += qty; }
-        else { cart.push({ id: selId, name: selName, category: selCatName, price: selPrice, qty, doctor_id: doctorId, notes }); }
-        renderCart();
-        selId = null; selName = ''; selPrice = 0; selCatName = '';
-        svcSearch.value = '';
-        svcPriceEl.textContent = "— so'm";
-        document.getElementById('svc-qty').value = 1;
-        document.getElementById('svc-notes').value = '';
-        svcSearch.focus();
-        fetchSvc('');
-        errDiv.className = 'alert alert-success mt-2 py-2';
-        errDiv.textContent = "✅ Savatga qo'shildi!";
-        errDiv.style.display = 'block';
-        setTimeout(() => { errDiv.style.display = 'none'; errDiv.className = 'alert alert-danger mt-2 py-2'; }, 1500);
-    });
+        // Yulduzcha — shaxsiy paketga qo'shish/o'chirish (DB bilan sinxron)
+        svcDropdown.querySelectorAll('.svc-star').forEach(star => {
+            star.addEventListener('click', function(e) {
+                e.stopPropagation();
+                toggleStar(this.dataset.id, this);
+            });
+        });
 
-    document.getElementById('btn-clear-cart').addEventListener('click', function () {
-        if (cart.length && confirm("Savatni tozalashni tasdiqlaysizmi?")) { cart = []; renderCart(); }
-    });
+        // Miqdor
+        svcDropdown.querySelectorAll('.svc-qty-inline').forEach(inp => {
+            inp.addEventListener('change', function(e) {
+                e.stopPropagation();
+                checkedQtys[this.dataset.id] = parseInt(this.value) || 1;
+                if (checkedItems.has(this.dataset.id)) {
+                    document.getElementById('svc-qty').value = this.value;
+                }
+            });
+            inp.addEventListener('click', e => e.stopPropagation());
+        });
 
-    document.getElementById('btn-add-checked').addEventListener('click', function() {
-        const doctorId = document.getElementById('svc-doctor').value;
-        const notes    = document.getElementById('svc-notes').value;
-        let added = 0;
+        // Item bosish
         svcDropdown.querySelectorAll('.svc-item').forEach(item => {
-            const id = item.dataset.id;
-            if (!checkedItems.has(id)) return;
-            const name  = item.dataset.name;
-            const price = parseFloat(item.dataset.price);
-            const cat   = item.dataset.cat;
-            const qty   = checkedQtys[id] || 1;
-            const existing = cart.find(c => c.id === id && c.doctor_id === doctorId);
-            if (existing) { existing.qty += qty; }
-            else { cart.push({ id, name, category: cat, price, qty, doctor_id: doctorId, notes }); }
-            added++;
+            item.addEventListener('click', function(e) {
+                if (e.target.classList.contains('svc-cb') ||
+                    e.target.classList.contains('svc-qty-inline') ||
+                    e.target.classList.contains('svc-star')) return;
+                const cb = this.querySelector('.svc-cb');
+                if (cb) { cb.checked = !cb.checked; cb.dispatchEvent(new Event('change')); }
+            });
         });
-        if (added > 0) {
-            renderCart();
-            checkedItems.clear(); checkedQtys = {};
-            updateCheckedSummary();
-            fetchSvc(svcSearch.value);
-            const errDiv = document.getElementById('add-cart-error');
-            errDiv.className = 'alert alert-success mt-2 py-2';
-            errDiv.textContent = `✅ ${added} ta xizmat savatga qo'shildi!`;
-            errDiv.style.display = 'block';
-            setTimeout(() => { errDiv.style.display = 'none'; errDiv.className = 'alert alert-danger mt-2 py-2'; }, 2000);
-        }
-    });
+    }
 
-    document.getElementById('addServiceModal').addEventListener('hidden.bs.modal', function() {
-        document.body.classList.remove('modal-open');
-        document.body.style.overflow = '';
-        document.body.style.paddingRight = '';
-        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-        checkedItems.clear(); checkedQtys = {};
-        updateCheckedSummary();
-    });
-
-    // ===== BARCHASINI SAQLASH =====
-    document.getElementById('btn-save-all').addEventListener('click', async function () {
-        const errDiv = document.getElementById('save-error');
-        errDiv.style.display = 'none';
-        if (!cart.length) return;
-        this.disabled = true;
-        let saved = 0, failed = 0;
-        const queueNumbers = [];
-        let patientNameFromResponse = '';
-        for (let i = 0; i < cart.length; i++) {
-            const item = cart[i];
-            try {
-                const res = await fetch(ADD_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-                    body: JSON.stringify({ service_id: item.id, quantity: item.qty, ordered_by_id: item.doctor_id || null, notes: item.notes || '' })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    saved++;
-                    if (data.queue_number && !queueNumbers.includes(data.queue_number)) {
-                        queueNumbers.push(data.queue_number);
-                        if (data.patient_name) patientNameFromResponse = data.patient_name;
-                    }
-                } else failed++;
-            } catch { failed++; }
-            this.innerHTML = `⏳ Saqlanmoqda... (${saved + failed}/${cart.length})`;
-        }
-        if (failed === 0) {
-            if (queueNumbers.length > 0) {
-                const patientNameEl = document.querySelector('strong');
-                const patientName = patientNameEl ? patientNameEl.textContent.trim() : '';
-                showQueueModal(queueNumbers, patientNameFromResponse || patientName);
-            } else {
-                window.location.reload();
-            }
-        } else {
-            errDiv.textContent = `${saved} ta saqlandi, ${failed} ta xato.`;
-            errDiv.style.display = 'block';
-            this.disabled = false;
-            this.innerHTML = `✅ Barchasini saqlash (<span id="save-count">${cart.length}</span> ta)`;
-        }
-    });
 
     function showQueueModal(numbers, patientName) {
         const num = numbers.join(', ');
@@ -792,9 +896,16 @@ document.addEventListener('DOMContentLoaded', function () {
         };
     }
 
-    document.getElementById('addServiceModal').addEventListener('shown.bs.modal', function () {
+    document.getElementById('addServiceModal')?.addEventListener('hide.bs.modal', function () {
+        if (document.activeElement && this.contains(document.activeElement)) {
+            document.activeElement.blur();
+        }
+    });
+
+    document.getElementById('addServiceModal')?.addEventListener('shown.bs.modal', function () {
         cart = []; renderCart();
         selId = null; selPrice = 0; selCat = ''; selCatName = '';
+        loadMyPackages();
         svcSearch.value = '';
         svcPriceEl.textContent = "— so'm";
         document.getElementById('svc-qty').value = 1;
@@ -802,11 +913,190 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('save-error').style.display = 'none';
         // svc-doctor ni ham qayta build qilish
         buildDoctorSelect(document.getElementById('svc-doctor'), null);
-        document.querySelectorAll('.modal-cat-btn').forEach((b, i) => {
-            if (i === 0) b.classList.replace('btn-outline-primary','btn-primary');
-            else b.classList.replace('btn-primary','btn-outline-primary');
+        document.querySelectorAll('.modal-cat-btn').forEach(function(b) {
+            b.classList.remove('btn-primary', 'btn-warning');
+            if (b.dataset.cat === '__my_packages__') {
+                b.classList.add('btn-outline-warning');
+            } else {
+                b.classList.add('btn-outline-primary');
+            }
         });
+        const firstCatBtn = document.querySelector('.modal-cat-btn[data-cat=""]');
+        if (firstCatBtn) {
+            firstCatBtn.classList.remove('btn-outline-primary');
+            firstCatBtn.classList.add('btn-primary');
+        }
         setTimeout(() => { fetchSvc(''); svcSearch.focus(); }, 150);
+    });
+
+    // ===== XIZMAT QIDIRUVI (input) =====
+    let svcTimer;
+    svcSearch.addEventListener('input', function() {
+        clearTimeout(svcTimer);
+        if (selCat === '__my_packages__') {
+            showPackagesInDropdown(this.value);
+            return;
+        }
+        svcTimer = setTimeout(() => fetchSvc(this.value), 250);
+    });
+    svcSearch.addEventListener('focus', function() {
+        if (selCat === '__my_packages__') {
+            showPackagesInDropdown(this.value);
+        } else {
+            fetchSvc(this.value);
+        }
+    });
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#svc-search') &&
+            !e.target.closest('#svc-dropdown') &&
+            !e.target.closest('#pkg-panel') &&
+            !e.target.closest('#modal-cat-btns')) {
+            svcDropdown.style.display = 'none';
+        }
+    });
+
+    // ===== KATEGORIYA TUGMALARI =====
+    document.querySelectorAll('.modal-cat-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            selCat = this.dataset.cat;
+
+            // Barcha tugmalarni reset
+            document.querySelectorAll('.modal-cat-btn').forEach(function(b) {
+                b.classList.remove('btn-primary', 'btn-warning');
+                if (b.dataset.cat === '__my_packages__') {
+                    b.classList.add('btn-outline-warning');
+                } else {
+                    b.classList.add('btn-outline-primary');
+                }
+            });
+            // Faol tugma
+            this.classList.remove('btn-outline-primary', 'btn-outline-warning');
+            this.classList.add(selCat === '__my_packages__' ? 'btn-warning' : 'btn-primary');
+
+            svcDropdown.style.display = 'none';
+            if (selCat === '__my_packages__') {
+                svcSearch.value = '';
+                showPackagesInDropdown('');
+                svcSearch.focus();
+            } else {
+                hidePkgPanel();
+                svcSearch.value = '';
+                fetchSvc('');
+            }
+        });
+    });
+
+    // ===== XIZMATNI SAVATGA QO'SHISH (bitta) =====
+    document.getElementById('btn-add-to-cart')?.addEventListener('click', function() {
+        const errDiv = document.getElementById('add-cart-error');
+        errDiv.style.display = 'none';
+        if (!selId) {
+            errDiv.textContent = 'Avval xizmatni tanlang (checkbox ni belgilang)';
+            errDiv.style.display = 'block';
+            return;
+        }
+        const qty      = parseInt(document.getElementById('svc-qty').value) || 1;
+        const doctorId = document.getElementById('svc-doctor').value;
+        const notes    = document.getElementById('svc-notes').value;
+        const ex = cart.find(c => c.id === selId && c.doctor_id === doctorId);
+        if (ex) { ex.qty += qty; }
+        else { cart.push({ id: selId, name: selName, category: selCatName, price: selPrice, qty, doctor_id: doctorId, notes }); }
+        renderCart();
+        svcDropdown.style.display = 'none';
+        selId = null; selName = ''; selPrice = 0; selCatName = '';
+        svcSearch.value = '';
+        svcPriceEl.textContent = "— so'm";
+        document.getElementById('svc-qty').value = 1;
+        checkedItems.clear();
+        checkedQtys = {};
+        updateCheckedSummary();
+    });
+
+    // ===== BELGILANGANLARNI SAVATGA QO'SHISH =====
+    document.getElementById('btn-add-checked')?.addEventListener('click', function() {
+        const doctorId = document.getElementById('svc-doctor').value;
+        const notes    = document.getElementById('svc-notes').value;
+        svcDropdown.querySelectorAll('.svc-cb:checked').forEach(function(cb) {
+            const item  = cb.closest('.svc-item');
+            const id    = item.dataset.id;
+            const name  = item.dataset.name;
+            const price = parseFloat(item.dataset.price) || 0;
+            const cat   = item.dataset.cat || selCatName;
+            const qty   = checkedQtys[id] || parseInt(item.querySelector('.svc-qty-inline')?.value) || 1;
+            const ex    = cart.find(c => c.id === id && c.doctor_id === doctorId);
+            if (ex) { ex.qty += qty; }
+            else    { cart.push({ id, name, category: cat, price, qty, doctor_id: doctorId, notes }); }
+        });
+        checkedItems.clear();
+        checkedQtys = {};
+        renderCart();
+        updateCheckedSummary();
+        svcDropdown.style.display = 'none';
+        svcSearch.value = '';
+        svcPriceEl.textContent = "— so'm";
+    });
+
+    // ===== SAVATNI TOZALASH =====
+    document.getElementById('btn-clear-cart')?.addEventListener('click', function() {
+        cart = [];
+        checkedItems.clear();
+        checkedQtys = {};
+        renderCart();
+        updateCheckedSummary();
+    });
+
+    // ===== BARCHASINI SAQLASH =====
+    document.getElementById('btn-save-all')?.addEventListener('click', function() {
+        if (!cart.length) return;
+        const btn    = this;
+        const errDiv = document.getElementById('save-error');
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Saqlanmoqda...';
+        errDiv.style.display = 'none';
+
+        let queueNums   = [];
+        let patientName = '';
+
+        function saveNext(idx) {
+            if (idx >= cart.length) {
+                if (queueNums.length) { showQueueModal(queueNums, patientName); }
+                else { window.location.reload(); }
+                return;
+            }
+            const item = cart[idx];
+            fetch(ADD_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+                body: JSON.stringify({
+                    service_id:    item.id,
+                    quantity:      item.qty,
+                    ordered_by_id: item.doctor_id || null,
+                    notes:         item.notes || ''
+                })
+            })
+            .then(r => r.json())
+            .then(function(data) {
+                if (!data.success) {
+                    errDiv.textContent   = data.error || 'Xato yuz berdi';
+                    errDiv.style.display = 'block';
+                    btn.disabled         = false;
+                    btn.innerHTML        = `✅ Barchasini saqlash (<span id="save-count">${cart.length}</span> ta)`;
+                    return;
+                }
+                if (data.queue_number) {
+                    queueNums.push(data.queue_number);
+                    if (data.patient_name) patientName = data.patient_name;
+                }
+                saveNext(idx + 1);
+            })
+            .catch(function() {
+                errDiv.textContent   = 'Tarmoq xatosi. Qayta urinib ko\'ring.';
+                errDiv.style.display = 'block';
+                btn.disabled         = false;
+                btn.innerHTML        = `✅ Barchasini saqlash (<span id="save-count">${cart.length}</span> ta)`;
+            });
+        }
+        saveNext(0);
     });
 
     // ===== TAHRIRLASH =====
@@ -956,6 +1246,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     document.querySelectorAll('.btn-delete-med').forEach(btn => btn.addEventListener('click', deleteMedicine));
+
+
 
     // Forma bir marta yuborilishi himoya
     document.querySelectorAll('form').forEach(function(form) {

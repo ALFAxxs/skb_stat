@@ -1,41 +1,6 @@
 <!-- templates/patients/patient_detail.html -->
 {% extends 'base.html' %}
-{% block title %}{{ patient.full_name }}<!-- KO'CHIRISH TARIXI -->
-{% if patient.patient_transfers.exists %}
-<div class="card mb-3">
-  <div class="card-header bg-info text-white">
-    <strong>🔄 Ko'chirish tarixi</strong>
-  </div>
-  <div class="card-body p-0">
-    <table class="table table-sm table-hover mb-0">
-      <thead class="table-light">
-        <tr>
-          <th>Sana</th>
-          <th>Avvalgi bo'lim</th>
-          <th>Yangi bo'lim</th>
-          <th>Yangi shifokor</th>
-          <th>Kim ko'chirdi</th>
-          <th>Sabab</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for t in patient.patient_transfers.all %}
-        <tr>
-          <td class="text-nowrap">{{ t.transferred_at|date:"d.m.Y H:i" }}</td>
-          <td>{{ t.from_department|default:"—" }}</td>
-          <td><strong>{{ t.to_department|default:"—" }}</strong></td>
-          <td>{{ t.to_doctor|default:"—" }}</td>
-          <td class="text-muted small">{{ t.transferred_by|default:"—" }}</td>
-          <td class="text-muted small">{{ t.reason|default:"—" }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
-{% endif %}
-
-{% endblock %}
+{% block title %}{{ patient.full_name }}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -49,6 +14,7 @@
         </a>
         <a href="{% url 'patient_edit' patient.pk %}" class="btn btn-warning">✏️ Tahrirlash</a>
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#transferModal">🔄 Ko'chirish</button>
+        <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#dischargeModal">🏥 Chiqarish</button>
         <a href="{% url 'patient_list' %}" class="btn btn-secondary">← Ro'yxatga</a>
         <a href="{% url 'patient_card_pdf' patient.pk %}" class="btn btn-danger">📄 PDF</a>
         <a href="{% url 'patient_card_excel' patient.pk %}" class="btn btn-success">📥 Excel</a>
@@ -57,6 +23,103 @@
         <a href="{% url 'download_contract' patient.contract.pk %}" class="btn btn-outline-dark">📋 Shartnoma</a>
         {% endif %}
     </div>
+</div>
+
+
+<!-- CHIQARISH MODALI -->
+<div class="modal fade" id="dischargeModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">🏥 Bemorni chiqarish</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{% url 'patient_edit' patient.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="_discharge" value="1">
+        <div class="modal-body">
+          <div class="row g-3">
+
+            <!-- Chiqish sanasi -->
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Chiqish sanasi *</label>
+              <input type="date" name="discharge_date" class="form-control"
+                     value="{{ today }}" required>
+            </div>
+
+            <!-- Chiqish sababi / natiija -->
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Chiqish natijasi *</label>
+              <select name="outcome" class="form-select" required>
+                <option value="">— Tanlang —</option>
+                <option value="recovered">Sog'ayib ketdi</option>
+                <option value="improved">Yaxshilandi</option>
+                <option value="unchanged">O'zgarishsiz</option>
+                <option value="worse">Yomonlashdi</option>
+                <option value="transferred">Ko'chirildi</option>
+                <option value="died">Vafot etdi</option>
+              </select>
+            </div>
+
+            <!-- Status -->
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Status</label>
+              <select name="status" class="form-select">
+                <option value="discharged" selected>Yakunlangan</option>
+                <option value="admitted">Davolanmoqda</option>
+              </select>
+            </div>
+
+            <!-- Yakuniy tashxis -->
+            <div class="col-12">
+              <label class="form-label fw-bold">Yakuniy tashxis *</label>
+              <input type="text" name="final_diagnosis" class="form-control"
+                     value="{{ patient.final_diagnosis|default:patient.admission_diagnosis|default:'' }}"
+                     placeholder="Yakuniy tashxis..." required>
+            </div>
+
+            <!-- Chiqish xulosasi -->
+            <div class="col-12">
+              <label class="form-label fw-bold">Chiqish xulosasi</label>
+              <textarea name="discharge_conclusion_text" class="form-control" rows="3"
+                        placeholder="Chiqish xulosasi, tavsiyalar...">{{ patient.discharge_note|default:'' }}</textarea>
+            </div>
+
+            <!-- Mas'ul shifokorlar -->
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Davolovchi shifokor</label>
+              <select name="attending_doctor" class="form-select">
+                <option value="">— Tanlang —</option>
+                {% for doc in doctors %}
+                <option value="{{ doc.pk }}"
+                  {% if doc == patient.attending_doctor %}selected{% endif %}>
+                  {{ doc.full_name }}{% if doc.is_head %} ★{% endif %}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Bo'lim mudiri</label>
+              <select name="department_head" class="form-select">
+                <option value="">— Tanlang —</option>
+                {% for doc in dept_heads %}
+                <option value="{{ doc.pk }}"
+                  {% if doc == patient.department_head %}selected{% endif %}>
+                  {{ doc.full_name }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor</button>
+          <button type="submit" class="btn btn-danger">✅ Bemorni chiqarish</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <!-- KO'CHIRISH MODALI -->
@@ -117,6 +180,41 @@
     </div>
   </div>
 </div>
+
+<!-- KO'CHIRISH TARIXI -->
+{% if patient.patient_transfers.exists %}
+<div class="card mb-3">
+  <div class="card-header bg-info text-white">
+    <strong>🔄 Ko'chirish tarixi</strong>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Sana</th>
+          <th>Avvalgi bo'lim</th>
+          <th>Yangi bo'lim</th>
+          <th>Yangi shifokor</th>
+          <th>Kim ko'chirdi</th>
+          <th>Sabab</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in patient.patient_transfers.all %}
+        <tr>
+          <td class="text-nowrap">{{ t.transferred_at|date:"d.m.Y H:i" }}</td>
+          <td>{{ t.from_department|default:"—" }}</td>
+          <td><strong>{{ t.to_department|default:"—" }}</strong></td>
+          <td>{{ t.to_doctor|default:"—" }}</td>
+          <td class="text-muted small">{{ t.transferred_by|default:"—" }}</td>
+          <td class="text-muted small">{{ t.reason|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
 
 <!-- 1. Bemor ma'lumotlari -->
 <div class="card mb-3">

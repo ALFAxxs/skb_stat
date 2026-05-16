@@ -253,7 +253,7 @@ class Command(BaseCommand):
                             workplace_org         = workplace_org,
                             position              = position,
                             admission_diagnosis   = diagnosis,
-                            referring_diagnosis   = diagnosis,
+                            referring_diagnosis   = '',
                             department            = department,
                             admission_date        = adm_dt,
                             patient_category      = 'railway',
@@ -296,3 +296,4 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING(
                 "\n⚠️  Bu DRY-RUN edi. Haqiqatda saqlash uchun --dry-run ni olib tashlang."
             ))
+
