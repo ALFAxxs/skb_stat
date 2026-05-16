@@ -28,7 +28,6 @@ urlpatterns = [
     path('<int:pk>/', views.patient_detail, name='patient_detail'),
     path('<int:pk>/edit/', views.patient_card_edit, name='patient_edit'),
     path('<int:pk>/delete/', views.patient_delete, name='patient_delete'),
-    path('<int:pk>/pdf/', views.patient_card_pdf, name='patient_card_pdf'),
     path('<int:pk>/excel/', views.patient_card_excel, name='patient_card_excel'),
     path('<int:pk>/invoice/', views.patient_invoice, name='patient_invoice'),
     path('<int:pk>/transfer/', views.patient_transfer, name='patient_transfer'),

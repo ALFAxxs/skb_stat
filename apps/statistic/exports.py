@@ -6,11 +6,6 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from django.db.models import Avg, Sum, Count, ExpressionWrapper, DecimalField, F
 from django.http import HttpResponse
-from reportlab.lib.pagesizes import A4, landscape
-from reportlab.lib import colors
-from reportlab.lib.units import cm
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
 from apps.patients.models import PatientCard
 
@@ -841,88 +836,3 @@ def export_excel(request):
     response['Content-Disposition'] = 'attachment; filename="bemorlar_royxati.xlsx"'
     wb.save(response)
     return response
-
-
-def export_pdf(request):
-    qs = get_filtered_queryset(request)
-
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(
-        buffer, pagesize=landscape(A4),
-        rightMargin=1 * cm, leftMargin=1 * cm,
-        topMargin=1.5 * cm, bottomMargin=1 * cm
-    )
-
-    styles = getSampleStyleSheet()
-    title_style = ParagraphStyle(
-        'title', parent=styles['Heading1'],
-        fontSize=14, alignment=1, spaceAfter=12
-    )
-    small_style = ParagraphStyle(
-        'small', parent=styles['Normal'],
-        fontSize=7, leading=9
-    )
-
-    elements = []
-    elements.append(Paragraph(
-        "Shifoxonadan chiqarilganlar statistik ro'yxati", title_style
-    ))
-    elements.append(Spacer(1, 0.3 * cm))
-
-    table_headers = [
-        "№", "Bayonnoma", "Ism-familiya", "Jins", "Tug'ilgan\nsana",
-        "Bo'lim", "Yotqizilgan\nsana", "Yotgan\nkun",
-        "Yakun", "Xulosa", "MKB-10", "Shifokor"
-    ]
-
-    table_data = [[Paragraph(h, small_style) for h in table_headers]]
-
-    for i, patient in enumerate(qs, 1):
-        row = [
-            str(i),
-            patient.medical_record_number or '',
-            Paragraph(patient.full_name or '', small_style),
-            patient.get_gender_display(),
-            patient.birth_date.strftime('%d.%m.%Y') if patient.birth_date else '',
-            Paragraph(str(patient.department) if patient.department else '', small_style),
-            patient.admission_date.strftime('%d.%m.%Y') if patient.admission_date else '',
-            str(patient.days_in_hospital),
-            patient.get_outcome_display(),
-            str(patient.discharge_conclusion) if patient.discharge_conclusion else '—',
-            patient.clinical_main_diagnosis or '',
-            Paragraph(
-                str(patient.attending_doctor) if patient.attending_doctor else '', small_style
-            ),
-        ]
-        table_data.append(row)
-
-    col_widths = [
-        1 * cm, 2.5 * cm, 4.5 * cm, 1.2 * cm, 2.2 * cm,
-        3.5 * cm, 2.5 * cm, 1.5 * cm, 2.5 * cm, 2.5 * cm, 1.8 * cm, 3.8 * cm
-    ]
-
-    table = Table(table_data, colWidths=col_widths, repeatRows=1)
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1F4E79')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-        ('FONTSIZE', (0, 0), (-1, -1), 7),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('GRID', (0, 0), (-1, -1), 0.3, colors.grey),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [
-            colors.white, colors.HexColor('#F2F2F2')
-        ]),
-        ('TOPPADDING', (0, 0), (-1, -1), 3),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
-    ]))
-
-    elements.append(table)
-    doc.build(elements)
-    buffer.seek(0)
-
-    response = HttpResponse(buffer, content_type='application/pdf')
-    response['Content-Disposition'] = 'attachment; filename="bemorlar_royxati.pdf"'
-    return response
-
-
-# apps/statistic/exports.py — get_filtered_queryset yangilash

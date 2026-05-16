@@ -8,11 +8,6 @@ import openpyxl
 from django.views.decorators.http import require_POST
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
-from reportlab.lib.pagesizes import landscape, A4
-from reportlab.lib import colors
-from reportlab.lib.units import cm
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -501,89 +496,6 @@ def export_services_excel(request):
     wb.save(response)
     return response
 
-
-@login_required
-@role_required('admin', 'statistician')
-def export_services_pdf(request):
-    """Xizmatlar hisobotini PDF ga export"""
-    qs = PatientService.objects.exclude(status='cancelled').select_related(
-        'service__category', 'patient_card'
-    ).order_by('-ordered_at')
-
-    date_from   = request.GET.get('date_from')
-    date_to     = request.GET.get('date_to')
-    category_id = request.GET.get('svc_category') or request.GET.get('category')
-    patient_cat = request.GET.get('patient_category')
-    visit_type  = request.GET.get('visit_type')
-
-    if date_from:   qs = qs.filter(ordered_at__date__gte=date_from)
-    if date_to:     qs = qs.filter(ordered_at__date__lte=date_to)
-    if category_id: qs = qs.filter(service__category_id=category_id)
-    if patient_cat: qs = qs.filter(patient_category_at_order=patient_cat)
-    if visit_type:  qs = qs.filter(patient_card__visit_type=visit_type)
-
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(
-        buffer, pagesize=landscape(A4),
-        rightMargin=1*cm, leftMargin=1*cm,
-        topMargin=1.5*cm, bottomMargin=1*cm
-    )
-    styles = getSampleStyleSheet()
-    small = ParagraphStyle('sm', parent=styles['Normal'], fontSize=7, leading=9)
-    title_style = ParagraphStyle(
-        'title', parent=styles['Heading1'],
-        fontSize=14, alignment=1, spaceAfter=10
-    )
-
-    elements = [
-        Paragraph("Xizmatlar hisoboti", title_style),
-        Spacer(1, 0.3*cm)
-    ]
-
-    headers = [
-        '№', 'Sana', 'Bemor', 'Kategoriya',
-        'Xizmat', 'Miqdor', 'Narx', 'Jami', "To'langan"
-    ]
-    table_data = [[Paragraph(h, small) for h in headers]]
-
-    for i, ps in enumerate(qs, 1):
-        table_data.append([
-            str(i),
-            ps.ordered_at.strftime('%d.%m.%Y'),
-            Paragraph(ps.patient_card.full_name, small),
-            Paragraph(ps.service.category.name, small),
-            Paragraph(ps.service.name, small),
-            str(ps.quantity),
-            f"{float(ps.price):,.0f}",
-            f"{float(ps.total_price):,.0f}",
-            'Ha' if ps.is_paid else "Yo'q",
-        ])
-
-    col_widths = [
-        1*cm, 2.5*cm, 4*cm, 3*cm,
-        5*cm, 1.5*cm, 2.5*cm, 2.5*cm, 2*cm
-    ]
-
-    table = Table(table_data, colWidths=col_widths, repeatRows=1)
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1F4E79')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-        ('FONTSIZE', (0, 0), (-1, -1), 7),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('GRID', (0, 0), (-1, -1), 0.3, colors.grey),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F2F2F2')]),
-        ('TOPPADDING', (0, 0), (-1, -1), 3),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
-    ]))
-
-    elements.append(table)
-    doc.build(elements)
-    buffer.seek(0)
-
-    response = HttpResponse(buffer, content_type='application/pdf')
-    response['Content-Disposition'] = 'attachment; filename="xizmatlar_hisoboti.pdf"'
-    return response
 
 # ==================== DORI-DARMON ====================
 

@@ -40,7 +40,6 @@ urlpatterns = [
 
     # Export
     path('export/excel/', views.export_services_excel, name='export_services_excel'),
-    path('export/pdf/', views.export_services_pdf, name='export_services_pdf'),
 
     # Paket tizimi
     path('packages/',                         views.package_list,            name='package_list'),
