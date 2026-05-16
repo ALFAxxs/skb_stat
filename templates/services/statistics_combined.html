@@ -15,8 +15,7 @@
     <div class="d-flex gap-2">
         {% if active_tab == 'services' %}
         <a href="{% url 'export_services_excel' %}?{{ current_filters }}" class="btn btn-success btn-sm">📥 Excel</a>
-        <a href="{% url 'export_services_pdf' %}?{{ current_filters }}" class="btn btn-danger btn-sm">📄 PDF</a>
-        {% elif active_tab == 'medicines' %}
+{% elif active_tab == 'medicines' %}
         <a href="{% url 'export_medicine_excel' %}?{{ current_filters }}" class="btn btn-success btn-sm">📥 Excel</a>
         {% elif active_tab == 'operations' %}
         <a href="{% url 'export_operation_excel' %}?{{ current_filters }}" class="btn btn-success btn-sm">📥 Excel</a>

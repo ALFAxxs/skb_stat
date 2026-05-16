@@ -17,20 +17,21 @@ import json
 def statistics_dashboard(request):
 
     # ==================== FILTERLAR ====================
-    year = request.GET.get('year', '')
-    month = request.GET.get('month', '')
-    department_id = request.GET.get('department', '')
-    doctor_id = request.GET.get('doctor', '')
-    outcome = request.GET.get('outcome', '')
-    status = request.GET.get('status', '')
-    gender = request.GET.get('gender', '')
+    year             = request.GET.get('year', '')
+    month            = request.GET.get('month', '')
+    department_id    = request.GET.get('department', '')
+    doctor_id        = request.GET.get('doctor', '')
+    outcome          = request.GET.get('outcome', '')
+    status           = request.GET.get('status', '')
+    gender           = request.GET.get('gender', '')
     patient_category = request.GET.get('patient_category', '')
-    resident_status = request.GET.get('resident_status', '')
-    referral_type = request.GET.get('referral_type', '')
-    org_id = request.GET.get('org', '')
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
-    age_group = request.GET.get('age_group', '')  # under16 / adult
+    resident_status  = request.GET.get('resident_status', '')
+    referral_type    = request.GET.get('referral_type', '')
+    org_id           = request.GET.get('org', '')
+    date_from        = request.GET.get('date_from', '')
+    date_to          = request.GET.get('date_to', '')
+    age_group        = request.GET.get('age_group', '')
+    visit_type       = request.GET.get('visit_type', '')
 
     qs = PatientCard.objects.all()
 
@@ -39,32 +40,20 @@ def statistics_dashboard(request):
     qs = department_filter(qs, request.user)
 
     # Filterlarni qo'llash
-    if year:
-        qs = qs.filter(admission_date__year=year)
-    if month:
-        qs = qs.filter(admission_date__month=month)
-    if department_id:
-        qs = qs.filter(department_id=department_id)
-    if doctor_id:
-        qs = qs.filter(attending_doctor_id=doctor_id)
-    if outcome:
-        qs = qs.filter(outcome=outcome)
-    if status:
-        qs = qs.filter(status=status)
-    if gender:
-        qs = qs.filter(gender=gender)
-    if patient_category:
-        qs = qs.filter(patient_category=patient_category)
-    if resident_status:
-        qs = qs.filter(resident_status=resident_status)
-    if referral_type:
-        qs = qs.filter(referral_type=referral_type)
-    if org_id:
-        qs = qs.filter(workplace_org_id=org_id)
-    if date_from:
-        qs = qs.filter(admission_date__date__gte=date_from)
-    if date_to:
-        qs = qs.filter(admission_date__date__lte=date_to)
+    if year:             qs = qs.filter(admission_date__year=year)
+    if month:            qs = qs.filter(admission_date__month=month)
+    if department_id:    qs = qs.filter(department_id=department_id)
+    if doctor_id:        qs = qs.filter(attending_doctor_id=doctor_id)
+    if outcome:          qs = qs.filter(outcome=outcome)
+    if status:           qs = qs.filter(status=status)
+    if gender:           qs = qs.filter(gender=gender)
+    if patient_category: qs = qs.filter(patient_category=patient_category)
+    if resident_status:  qs = qs.filter(resident_status=resident_status)
+    if referral_type:    qs = qs.filter(referral_type=referral_type)
+    if org_id:           qs = qs.filter(workplace_org_id=org_id)
+    if date_from:        qs = qs.filter(admission_date__date__gte=date_from)
+    if date_to:          qs = qs.filter(admission_date__date__lte=date_to)
+    if visit_type:       qs = qs.filter(visit_type=visit_type)
 
     from datetime import date as _date
     from dateutil.relativedelta import relativedelta as _rd
@@ -178,11 +167,13 @@ def statistics_dashboard(request):
     org_ids = [o['workplace_org__id'] for o in org_stats]
     org_service_totals = {}
     if org_ids:
+        from django.db.models import ExpressionWrapper, DecimalField, F as F_
         svc_agg = (
             PatientService.objects
             .filter(patient_card__workplace_org_id__in=org_ids)
+            .exclude(status='cancelled')
             .values('patient_card__workplace_org_id')
-            .annotate(total=Sum('price'))
+            .annotate(total=Sum(ExpressionWrapper(F_('price') * F_('quantity'), output_field=DecimalField())))
         )
         for s in svc_agg:
             org_service_totals[s['patient_card__workplace_org_id']] = float(s['total'] or 0)
@@ -238,12 +229,14 @@ def statistics_dashboard(request):
     )
 
     # Umumiy xizmat + dori jami
-    from decimal import Decimal
     from apps.services.models import PatientService as PS
-    services_grand_total = sum(
-        float(ps.price) * ps.quantity
-        for ps in PS.objects.filter(patient_card__in=qs)
-    ) if qs.exists() else 0
+    from django.db.models import ExpressionWrapper, DecimalField, F as _F
+    services_grand_total = float(
+        PS.objects.filter(patient_card__in=qs)
+        .exclude(status='cancelled')
+        .aggregate(t=Sum(ExpressionWrapper(_F('price') * _F('quantity'), output_field=DecimalField())))
+        ['t'] or 0
+    )
 
     # ==================== IJTIMOIY HOLAT ====================
     social_stats = (
@@ -301,6 +294,7 @@ def statistics_dashboard(request):
         'selected_year': year,
         'selected_month': month,
         'selected_dept': department_id,
+        'selected_department': department_id,
         'selected_doctor': doctor_id,
         'selected_outcome': outcome,
         'selected_status': status,
@@ -309,6 +303,7 @@ def statistics_dashboard(request):
         'selected_resident': resident_status,
         'selected_referral': referral_type,
         'selected_org': org_id,
+        'visit_type': visit_type,
         'org_selected_name': Organization.objects.get(pk=org_id).display_name if org_id and Organization.objects.filter(pk=org_id).exists() else '',
         'organizations': Organization.objects.filter(is_active=True).order_by('enterprise_name', 'branch_name'),
         'date_from': date_from,

@@ -101,6 +101,14 @@
                     </select>
                 </div>
                 <div class="col-md-2">
+                    <label class="form-label small">Tashrif turi</label>
+                    <select name="visit_type" class="form-select form-select-sm">
+                        <option value="">Barchasi</option>
+                        <option value="inpatient"  {% if visit_type == 'inpatient'  %}selected{% endif %}>🏥 Statsionar</option>
+                        <option value="ambulatory" {% if visit_type == 'ambulatory' %}selected{% endif %}>🚶 Ambulator</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <label class="form-label small">Yosh guruhi</label>
                     <select name="age_group" class="form-select form-select-sm">
                         <option value="">Barchasi</option>
@@ -246,7 +254,7 @@
                             <div class="text-muted small">Jami bemorlarning {% widthratio under16_count total 100 %}%</div>
                             {% endif %}
                         </div>
-                        <a href="?age_group=under16&year={{ selected_year }}&month={{ selected_month }}&department={{ selected_department }}&patient_category={{ selected_category }}"
+                        <a href="?age_group=under16&year={{ selected_year }}&month={{ selected_month }}&department={{ selected_dept }}&patient_category={{ selected_category }}&visit_type={{ visit_type }}"
                            class="btn btn-sm btn-outline-warning">Ko'rish</a>
                     </div>
                 </div>
@@ -265,7 +273,7 @@
                             <div class="text-muted small">Jami bemorlarning {% widthratio adult_count total 100 %}%</div>
                             {% endif %}
                         </div>
-                        <a href="?age_group=adult&year={{ selected_year }}&month={{ selected_month }}&department={{ selected_department }}&patient_category={{ selected_category }}"
+                        <a href="?age_group=adult&year={{ selected_year }}&month={{ selected_month }}&department={{ selected_dept }}&patient_category={{ selected_category }}&visit_type={{ visit_type }}"
                            class="btn btn-sm btn-outline-info">Ko'rish</a>
                     </div>
                 </div>
@@ -276,7 +284,7 @@
             {% if age_group == 'under16' %}👶 <strong>16 yoshgacha bemorlar:</strong>
             {% else %}🧑 <strong>16 yoshdan katta bemorlar:</strong>{% endif %}
             {{ total }} ta bemor ko'rsatilmoqda
-            <a href="?year={{ selected_year }}&month={{ selected_month }}&department={{ selected_department }}&patient_category={{ selected_category }}"
+            <a href="?year={{ selected_year }}&month={{ selected_month }}&department={{ selected_dept }}&patient_category={{ selected_category }}&visit_type={{ visit_type }}"
                class="btn btn-sm btn-outline-secondary ms-auto">✕ Filtrni olib tashlash</a>
         </div>
         {% endif %}
@@ -467,7 +475,6 @@
     <a href="{% url 'export_excel' %}?{{ current_filters }}" class="btn btn-success">📥 Excel (eski)</a>
     <a href="{% url 'export_monthly_report' %}?{{ current_filters }}" class="btn btn-warning text-dark">📋 Oylik rasmiy hisobot</a>
     <a href="{% url 'export_full_report' %}?{{ current_filters }}" class="btn btn-primary">📊 To'liq hisobot (8 sheet)</a>
-    <a href="{% url 'export_pdf' %}?{{ current_filters }}" class="btn btn-danger">📄 PDF</a>
 </div>
 
 {% endblock %}

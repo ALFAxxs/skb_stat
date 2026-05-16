@@ -16,7 +16,6 @@
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#transferModal">🔄 Ko'chirish</button>
         <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#dischargeModal">🏥 Chiqarish</button>
         <a href="{% url 'patient_list' %}" class="btn btn-secondary">← Ro'yxatga</a>
-        <a href="{% url 'patient_card_pdf' patient.pk %}" class="btn btn-danger">📄 PDF</a>
         <a href="{% url 'patient_card_excel' patient.pk %}" class="btn btn-success">📥 Excel</a>
         <a href="{% url 'patient_invoice' patient.pk %}" class="btn btn-outline-primary">🧾 Hisob-faktura</a>
         {% if patient.contract %}

@@ -88,6 +88,10 @@ def get_filtered_queryset(request):
     if org_id:
         qs = qs.filter(workplace_org_id=org_id)
 
+    visit_type = request.GET.get('visit_type')
+    if visit_type:
+        qs = qs.filter(visit_type=visit_type)
+
     return qs
 
 

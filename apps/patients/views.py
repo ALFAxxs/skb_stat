@@ -8,11 +8,6 @@ from django.db.models import Q
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required
 from apps.users.decorators import role_required, department_filter
-from reportlab.lib.pagesizes import A4
-from reportlab.lib import colors
-from reportlab.lib.units import cm
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 import io
 import json
 import uuid
@@ -97,37 +92,8 @@ def operation_type_search(request):
     return JsonResponse(data, safe=False)
 
 
-# ==================== PDF ====================
-
-@login_required
-def patient_card_pdf(request, pk):
-    patient = get_object_or_404(
-        PatientCard.objects.select_related(
-            'department', 'attending_doctor', 'department_head',
-            'referral_organization', 'country', 'region', 'district',
-            'city', 'discharge_conclusion'
-        ).prefetch_related('operations__operation_type'),
-        pk=pk
-    )
-
-    # Bo'lim tekshiruvi
-    if not request.user.is_superuser and request.user.role != 'admin':
-        if request.user.role == 'reception':
-            if patient.registered_by != request.user:
-                messages.error(request, "Ruxsat yo'q.")
-                return redirect('patient_list')
-        elif request.user.department and patient.department != request.user.department:
-            messages.error(request, "Ruxsat yo'q.")
-            return redirect('patient_list')
-
-    death_cause = getattr(patient, 'death_cause', None)
-
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(
-        buffer, pagesize=A4,
-        rightMargin=2*cm, leftMargin=2*cm,
-        topMargin=2*cm, bottomMargin=2*cm
-    )
+def __pdf_body_start():
+    pass
 
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle(
