@@ -367,19 +367,17 @@ def export_services_excel(request):
         'service__category', 'patient_card', 'ordered_by', 'performed_by'
     )
 
-    date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date_to')
-    category_id = request.GET.get('category')
+    date_from   = request.GET.get('date_from')
+    date_to     = request.GET.get('date_to')
+    category_id = request.GET.get('svc_category') or request.GET.get('category')
     patient_cat = request.GET.get('patient_category')
+    visit_type  = request.GET.get('visit_type')
 
-    if date_from:
-        qs = qs.filter(ordered_at__date__gte=date_from)
-    if date_to:
-        qs = qs.filter(ordered_at__date__lte=date_to)
-    if category_id:
-        qs = qs.filter(service__category_id=category_id)
-    if patient_cat:
-        qs = qs.filter(patient_category_at_order=patient_cat)
+    if date_from:   qs = qs.filter(ordered_at__date__gte=date_from)
+    if date_to:     qs = qs.filter(ordered_at__date__lte=date_to)
+    if category_id: qs = qs.filter(service__category_id=category_id)
+    if patient_cat: qs = qs.filter(patient_category_at_order=patient_cat)
+    if visit_type:  qs = qs.filter(patient_card__visit_type=visit_type)
 
     wb = openpyxl.Workbook()
 
@@ -512,12 +510,17 @@ def export_services_pdf(request):
         'service__category', 'patient_card'
     ).order_by('-ordered_at')
 
-    date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date_to')
-    if date_from:
-        qs = qs.filter(ordered_at__date__gte=date_from)
-    if date_to:
-        qs = qs.filter(ordered_at__date__lte=date_to)
+    date_from   = request.GET.get('date_from')
+    date_to     = request.GET.get('date_to')
+    category_id = request.GET.get('svc_category') or request.GET.get('category')
+    patient_cat = request.GET.get('patient_category')
+    visit_type  = request.GET.get('visit_type')
+
+    if date_from:   qs = qs.filter(ordered_at__date__gte=date_from)
+    if date_to:     qs = qs.filter(ordered_at__date__lte=date_to)
+    if category_id: qs = qs.filter(service__category_id=category_id)
+    if patient_cat: qs = qs.filter(patient_category_at_order=patient_cat)
+    if visit_type:  qs = qs.filter(patient_card__visit_type=visit_type)
 
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -780,11 +783,15 @@ def export_medicine_excel(request):
     date_from   = request.GET.get('date_from', '')
     date_to     = request.GET.get('date_to', '')
     medicine_id = request.GET.get('medicine', '')
+    patient_cat = request.GET.get('patient_category', '')
+    visit_type  = request.GET.get('visit_type', '')
 
     qs = PatientMedicine.objects.select_related('medicine', 'patient_card', 'ordered_by')
-    if date_from: qs = qs.filter(ordered_at__date__gte=date_from)
-    if date_to:   qs = qs.filter(ordered_at__date__lte=date_to)
+    if date_from:   qs = qs.filter(ordered_at__date__gte=date_from)
+    if date_to:     qs = qs.filter(ordered_at__date__lte=date_to)
     if medicine_id: qs = qs.filter(medicine_id=medicine_id)
+    if patient_cat: qs = qs.filter(patient_card__patient_category=patient_cat)
+    if visit_type:  qs = qs.filter(patient_card__visit_type=visit_type)
 
     GOLD  = PatternFill('solid', fgColor='856404')
     LGOLD = PatternFill('solid', fgColor='FFF8E1')
@@ -1343,6 +1350,7 @@ def export_operation_service_excel(request):
     category_id = request.GET.get('category', '')
     service_id  = request.GET.get('service', '')
     patient_cat = request.GET.get('patient_category', '')
+    visit_type  = request.GET.get('visit_type', '')
 
     qs = PatientService.objects.filter(
         service__is_operation=True
@@ -1352,6 +1360,7 @@ def export_operation_service_excel(request):
     if category_id: qs = qs.filter(service__category_id=category_id)
     if service_id:  qs = qs.filter(service_id=service_id)
     if patient_cat: qs = qs.filter(patient_card__patient_category=patient_cat)
+    if visit_type:  qs = qs.filter(patient_card__visit_type=visit_type)
 
     # Stillar
     BLUE  = PatternFill('solid', fgColor='1F4E79')
