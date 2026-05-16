@@ -258,24 +258,22 @@ def delete_service(request, pk):
 def service_statistics(request):
     """Xizmatlar statistikasi dashboard"""
     # Filterlar
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
+    date_from   = request.GET.get('date_from', '')
+    date_to     = request.GET.get('date_to', '')
     category_id = request.GET.get('category', '')
-    period = request.GET.get('period', 'month')  # day/month/year
+    period      = request.GET.get('period', 'month')
     patient_cat = request.GET.get('patient_category', '')
+    visit_type  = request.GET.get('visit_type', '')
 
     qs = PatientService.objects.exclude(status='cancelled').select_related(
         'service__category', 'patient_card'
     )
 
-    if date_from:
-        qs = qs.filter(ordered_at__date__gte=date_from)
-    if date_to:
-        qs = qs.filter(ordered_at__date__lte=date_to)
-    if category_id:
-        qs = qs.filter(service__category_id=category_id)
-    if patient_cat:
-        qs = qs.filter(patient_category_at_order=patient_cat)
+    if date_from:    qs = qs.filter(ordered_at__date__gte=date_from)
+    if date_to:      qs = qs.filter(ordered_at__date__lte=date_to)
+    if category_id:  qs = qs.filter(service__category_id=category_id)
+    if patient_cat:  qs = qs.filter(patient_category_at_order=patient_cat)
+    if visit_type:   qs = qs.filter(patient_card__visit_type=visit_type)
 
     # Umumiy ko'rsatkichlar
     totals = qs.aggregate(
@@ -1591,6 +1589,7 @@ def statistics_combined(request):
     date_to     = request.GET.get('date_to', '')
     patient_cat = request.GET.get('patient_category', '')
     period      = request.GET.get('period', 'month')
+    visit_type  = request.GET.get('visit_type', '')
 
     # ==================== 1. XIZMATLAR ====================
     svc_qs = PatientService.objects.exclude(
@@ -1599,6 +1598,7 @@ def statistics_combined(request):
     if date_from:    svc_qs = svc_qs.filter(ordered_at__date__gte=date_from)
     if date_to:      svc_qs = svc_qs.filter(ordered_at__date__lte=date_to)
     if patient_cat:  svc_qs = svc_qs.filter(patient_category_at_order=patient_cat)
+    if visit_type:   svc_qs = svc_qs.filter(patient_card__visit_type=visit_type)
     if request.GET.get('svc_category'):
         svc_qs = svc_qs.filter(service__category_id=request.GET['svc_category'])
 
@@ -1645,6 +1645,7 @@ def statistics_combined(request):
     if date_from:   med_qs = med_qs.filter(ordered_at__date__gte=date_from)
     if date_to:     med_qs = med_qs.filter(ordered_at__date__lte=date_to)
     if patient_cat: med_qs = med_qs.filter(patient_card__patient_category=patient_cat)
+    if visit_type:  med_qs = med_qs.filter(patient_card__visit_type=visit_type)
     if request.GET.get('medicine'):
         med_qs = med_qs.filter(medicine_id=request.GET['medicine'])
 
@@ -1779,6 +1780,7 @@ def statistics_combined(request):
         'date_to': date_to,
         'patient_cat': patient_cat,
         'period': period,
+        'visit_type': visit_type,
         'current_filters': current_filters,
 
         # Xizmatlar

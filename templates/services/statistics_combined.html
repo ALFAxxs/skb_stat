@@ -30,28 +30,28 @@
 <ul class="nav nav-tabs mb-0" id="statTabs">
     <li class="nav-item">
         <a class="nav-link {% if active_tab == 'services' %}active{% endif %}"
-           href="?tab=services&date_from={{ date_from }}&date_to={{ date_to }}&patient_category={{ patient_cat }}&period={{ period }}">
+           href="?tab=services&date_from={{ date_from }}&date_to={{ date_to }}&patient_category={{ patient_cat }}&period={{ period }}&visit_type={{ visit_type }}">
             🏥 Xizmatlar
             <span class="badge bg-secondary ms-1">{{ svc_totals.count|default:0 }}</span>
         </a>
     </li>
     <li class="nav-item">
         <a class="nav-link {% if active_tab == 'medicines' %}active{% endif %}"
-           href="?tab=medicines&date_from={{ date_from }}&date_to={{ date_to }}&patient_category={{ patient_cat }}&period={{ period }}">
+           href="?tab=medicines&date_from={{ date_from }}&date_to={{ date_to }}&patient_category={{ patient_cat }}&period={{ period }}&visit_type={{ visit_type }}">
             💊 Dorilar
             <span class="badge bg-secondary ms-1">{{ med_totals.total_records|default:0 }}</span>
         </a>
     </li>
     <li class="nav-item">
         <a class="nav-link {% if active_tab == 'operations' %}active{% endif %}"
-           href="?tab=operations&date_from={{ date_from }}&date_to={{ date_to }}&patient_category={{ patient_cat }}&period={{ period }}">
+           href="?tab=operations&date_from={{ date_from }}&date_to={{ date_to }}&patient_category={{ patient_cat }}&period={{ period }}&visit_type={{ visit_type }}">
             🔪 Operatsiyalar
             <span class="badge bg-secondary ms-1">{{ op_totals.total|default:0 }}</span>
         </a>
     </li>
     <li class="nav-item">
         <a class="nav-link {% if active_tab == 'opservices' %}active{% endif %}"
-           href="?tab=opservices&date_from={{ date_from }}&date_to={{ date_to }}&patient_category={{ patient_cat }}&period={{ period }}">
+           href="?tab=opservices&date_from={{ date_from }}&date_to={{ date_to }}&patient_category={{ patient_cat }}&period={{ period }}&visit_type={{ visit_type }}">
             🏥 Op. xizmatlari
             <span class="badge bg-secondary ms-1">{{ opx_totals.total_count|default:0 }}</span>
         </a>
@@ -81,6 +81,14 @@
                     <option value="railway"      {% if patient_cat == 'railway'      %}selected{% endif %}>🚂 Temir yo'lchi</option>
                     <option value="paid"         {% if patient_cat == 'paid'         %}selected{% endif %}>💳 Pullik</option>
                     <option value="non_resident" {% if patient_cat == 'non_resident' %}selected{% endif %}>🌍 Norezident</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold mb-1">Tashrif turi</label>
+                <select name="visit_type" class="form-select form-select-sm">
+                    <option value="">Barchasi</option>
+                    <option value="inpatient"   {% if visit_type == 'inpatient'   %}selected{% endif %}>🏥 Statsionar</option>
+                    <option value="ambulatory"  {% if visit_type == 'ambulatory'  %}selected{% endif %}>🚶 Ambulator</option>
                 </select>
             </div>
 
