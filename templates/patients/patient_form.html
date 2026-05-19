@@ -1106,7 +1106,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ==================== SHIFOKORLAR GURUHLANGAN SELECT ====================
     (function() {
-        const DOCTORS_DATA = [{% for doc in doctors %}{"id":{{ doc.pk }},"name":"{{ doc.full_name|escapejs }}{% if doc.is_head %} ★{% endif %}","dept":"{{ doc.department.name|default:"Bo'limsiz"|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}];
+        const DOCTORS_DATA = [{% for doc in doctors %}{"id":{{ doc.pk }},"name":"{{ doc.full_name|escapejs }}{% if doc.is_head %} ★{% endif %}","dept":"{{ doc.department|default:"Bo'limsiz"|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}];
 
         function buildGroupedSelect(sel) {
             if (!sel || !DOCTORS_DATA.length) return;
@@ -1210,7 +1210,6 @@ document.addEventListener('DOMContentLoaded', function() {
             selInfo.textContent  = 'Tanlangan muassasa (ID: ' + idInput.value + ')';
         }
     })();
-})();
 
 // Forma bir marta yuborilishi uchun himoya
 document.querySelectorAll('form').forEach(function(form) {

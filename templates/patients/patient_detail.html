@@ -92,21 +92,33 @@
                         placeholder="Chiqish xulosasi, tavsiyalar...">{{ patient.discharge_note|default:'' }}</textarea>
             </div>
 
-            <!-- Yotgan kunlar -->
+            <!-- Yotgan kunlar + Shifokorlar -->
             <div class="col-md-4">
               <label class="form-label fw-bold">Yotgan kunlar soni</label>
               <input type="number" name="days_in_hospital" class="form-control"
                      min="0" value="{{ patient.days_in_hospital|default:0 }}">
             </div>
-
-            <!-- Mas'ul shifokorlar -->
-            <div class="col-md-6">
+            <div class="col-md-4">
               <label class="form-label fw-bold">Davolovchi shifokor</label>
-              <select name="attending_doctor" id="discharge-doctor" class="form-select"></select>
+              <select name="attending_doctor" id="discharge-doctor" class="form-select">
+                <option value="">— Tanlang —</option>
+                {% for doc in doctors %}
+                <option value="{{ doc.pk }}" {% if doc.pk == patient.attending_doctor.pk %}selected{% endif %}>
+                  {{ doc.full_name }}{% if doc.is_head %} ★{% endif %}
+                </option>
+                {% endfor %}
+              </select>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
               <label class="form-label fw-bold">Bo'lim mudiri</label>
-              <select name="department_head" id="discharge-head" class="form-select"></select>
+              <select name="department_head" id="discharge-head" class="form-select">
+                <option value="">— Tanlang —</option>
+                {% for doc in doctors %}
+                <option value="{{ doc.pk }}" {% if doc.pk == patient.department_head.pk %}selected{% endif %}>
+                  {{ doc.full_name }}{% if doc.is_head %} ★{% endif %}
+                </option>
+                {% endfor %}
+              </select>
             </div>
 
           </div>
@@ -154,11 +166,25 @@
             </div>
             <div class="col-12 mb-2">
               <label class="form-label fw-bold">Yangi shifokor</label>
-              <select name="to_doctor" id="transfer-doctor" class="form-select"></select>
+              <select name="to_doctor" id="transfer-doctor" class="form-select">
+                <option value="">— Avvalgisi qolsin —</option>
+                {% for doc in doctors %}
+                <option value="{{ doc.pk }}" {% if doc.pk == patient.attending_doctor.pk %}selected{% endif %}>
+                  {{ doc.full_name }}{% if doc.is_head %} ★{% endif %}
+                </option>
+                {% endfor %}
+              </select>
             </div>
             <div class="col-12 mb-2">
               <label class="form-label fw-bold">Yangi bo'lim mudiri</label>
-              <select name="to_dept_head" id="transfer-head" class="form-select"></select>
+              <select name="to_dept_head" id="transfer-head" class="form-select">
+                <option value="">— Avvalgisi qolsin —</option>
+                {% for doc in doctors %}
+                <option value="{{ doc.pk }}" {% if doc.pk == patient.department_head.pk %}selected{% endif %}>
+                  {{ doc.full_name }}{% if doc.is_head %} ★{% endif %}
+                </option>
+                {% endfor %}
+              </select>
             </div>
             <div class="col-12">
               <label class="form-label fw-bold">Sabab / izoh *</label>
@@ -646,14 +672,13 @@
 
 {% block scripts %}
 <script>
-const DOCTORS_DATA = [{% for doc in doctors %}{"id":{{ doc.pk }},"name":"{{ doc.full_name|escapejs }}{% if doc.is_head %} ★{% endif %}","dept":"{{ doc.department.name|default:"Bo'limsiz"|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}];
+const DOCTORS_DATA = [{% for doc in doctors %}{"id":{{ doc.pk }},"name":"{{ doc.full_name|escapejs }}{% if doc.is_head %} ★{% endif %}","dept":"{{ doc.department|default:"Bo'limsiz"|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}];
 
-const CURRENT_DOCTOR_ID   = {{ patient.attending_doctor.pk|default:"null" }};
-const CURRENT_HEAD_ID     = {{ patient.department_head.pk|default:"null" }};
-
-function buildDoctorSelect(sel, selectedId, emptyLabel) {
-    if (!sel) return;
-    sel.innerHTML = '<option value="">' + (emptyLabel || '— Tanlang —') + '</option>';
+function buildDoctorSelect(sel, selectedId) {
+    if (!sel || !DOCTORS_DATA.length) return;
+    const firstOpt = sel.options[0];
+    const emptyLabel = firstOpt ? firstOpt.text : '— Tanlang —';
+    sel.innerHTML = '<option value="">' + emptyLabel + '</option>';
     let curDept = null, grp = null;
     DOCTORS_DATA.forEach(function(d) {
         if (d.dept !== curDept) {
@@ -672,12 +697,12 @@ function buildDoctorSelect(sel, selectedId, emptyLabel) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    // Chiqarish modali uchun
-    buildDoctorSelect(document.getElementById('discharge-doctor'), CURRENT_DOCTOR_ID, '— Tanlang —');
-    buildDoctorSelect(document.getElementById('discharge-head'),   CURRENT_HEAD_ID,   '— Tanlang —');
-    // Ko'chirish modali uchun
-    buildDoctorSelect(document.getElementById('transfer-doctor'), CURRENT_DOCTOR_ID, '— Avvalgisi qolsin —');
-    buildDoctorSelect(document.getElementById('transfer-head'),   CURRENT_HEAD_ID,   '— Avvalgisi qolsin —');
+    const docId  = {{ patient.attending_doctor.pk|default:"null" }};
+    const headId = {{ patient.department_head.pk|default:"null" }};
+    buildDoctorSelect(document.getElementById('discharge-doctor'), docId);
+    buildDoctorSelect(document.getElementById('discharge-head'),   headId);
+    buildDoctorSelect(document.getElementById('transfer-doctor'),  docId);
+    buildDoctorSelect(document.getElementById('transfer-head'),    headId);
 });
 </script>
 {% endblock %}
