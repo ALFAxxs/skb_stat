@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'apps.services',
     'apps.contracts',
     'apps.queue_app',
+    'apps.laboratory',
 ]
 
 MIDDLEWARE = [

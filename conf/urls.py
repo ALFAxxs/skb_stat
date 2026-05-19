@@ -13,4 +13,5 @@ urlpatterns = [
     path('', include('apps.users.urls')),  # login, logout, users, access-denied
     path('contracts/', include('apps.contracts.urls')),
     path('queue/', include('apps.queue_app.urls')),
+    path('laboratory/', include('apps.laboratory.urls')),
 ]

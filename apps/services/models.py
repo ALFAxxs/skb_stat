@@ -69,6 +69,13 @@ class Service(models.Model):
         null=True, blank=True,
         verbose_name="Mas'ul bo'lim"
     )
+    lab_template = models.ForeignKey(
+        'laboratory.LabTemplate',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='linked_services',
+        verbose_name="Lab shabloni"
+    )
     is_active    = models.BooleanField(default=True)
     is_operation = models.BooleanField(default=False, verbose_name="Operatsiyami?")
 

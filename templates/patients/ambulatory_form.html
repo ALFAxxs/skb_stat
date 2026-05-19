@@ -280,4 +280,14 @@ let debounce;
 });
 
 }); // DOMContentLoaded end
+
+// Forma bir marta yuborilishi uchun himoya
+document.querySelectorAll('form').forEach(function(form) {
+    form.addEventListener('submit', function() {
+        form.querySelectorAll('[type="submit"]').forEach(function(btn) {
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Saqlanmoqda...';
+        });
+    });
+});
 </script>

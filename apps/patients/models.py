@@ -558,11 +558,12 @@ class PatientTransfer(models.Model):
         verbose_name="Yangi bo'lim mudiri"
     )
     reason = models.TextField(blank=True, verbose_name="Sabab / izoh")
+    transfer_date = models.DateField(null=True, blank=True, verbose_name="Ko'chirish sanasi")
     transferred_by = models.ForeignKey(
         'users.CustomUser', on_delete=models.SET_NULL,
         null=True, blank=True, verbose_name="Kim ko'chirdi"
     )
-    transferred_at = models.DateTimeField(auto_now_add=True, verbose_name="Ko'chirilgan vaqt")
+    transferred_at = models.DateTimeField(auto_now_add=True, verbose_name="Yaratilgan vaqt")
 
     class Meta:
         verbose_name        = "Ko'chirish tarixi"

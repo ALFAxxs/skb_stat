@@ -13,13 +13,20 @@ from .decorators import role_required
 
 def login_view(request):
     if request.user.is_authenticated:
+        if request.user.role == 'laborant':
+            return redirect('lab_home')
         return redirect('patient_list')
     form = LoginForm(request, data=request.POST or None)
     if request.method == 'POST' and form.is_valid():
         user = form.get_user()
         login(request, user)
         messages.success(request, f"Xush kelibsiz, {user.get_full_name()}!")
-        return redirect(request.GET.get('next', 'patient_list'))
+        next_url = request.GET.get('next', '')
+        if next_url:
+            return redirect(next_url)
+        if user.role == 'laborant':
+            return redirect('lab_home')
+        return redirect('patient_list')
     return render(request, 'users/login.html', {'form': form})
 
 

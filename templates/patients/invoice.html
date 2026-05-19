@@ -165,6 +165,56 @@
         </table>
     </div>
 
+    {% if transfers %}
+    <!-- Ko'chirish tarixi -->
+    <div class="card-body p-0 border-top">
+        <div class="px-3 pt-3 pb-1">
+            <strong class="text-primary">🔄 Ko'chirish tarixi</strong>
+        </div>
+        {% for period in transfer_periods %}
+        <div class="border-bottom mx-3 mb-2 pb-2">
+            <div class="d-flex justify-content-between align-items-center py-1">
+                <div class="small fw-semibold">
+                    <span class="badge bg-primary me-1">{{ period.dept|default:"—" }}</span>
+                    {% if period.doctor %}
+                        <span class="text-muted">Shifokor: {{ period.doctor }}</span>
+                    {% endif %}
+                </div>
+                <span class="small text-muted">
+                    {{ period.services|length }} xizmat —
+                    {{ period.services_total|floatformat:0 }} so'm
+                </span>
+            </div>
+            {% if period.services %}
+            <table class="table table-sm table-borderless mb-1" style="font-size:12px;">
+                <tbody>
+                    {% for svc in period.services %}
+                    <tr>
+                        <td class="ps-2">{{ svc.service.name }}</td>
+                        <td class="text-center" style="width:50px">× {{ svc.quantity }}</td>
+                        <td class="text-end pe-2" style="width:120px">{{ svc.total_price|floatformat:0 }} so'm</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+            {% if period.transfer %}
+            <div class="small text-muted ps-2 pb-1">
+                ↓ Ko'chirildi:
+                <strong>{{ period.transfer.from_department|default:"—" }}</strong>
+                →
+                <strong>{{ period.transfer.to_department|default:"—" }}</strong>
+                &nbsp;({% if period.transfer.transfer_date %}{{ period.transfer.transfer_date|date:"d.m.Y" }}{% else %}{{ period.transfer.transferred_at|date:"d.m.Y" }}{% endif %})
+                {% if period.transfer.reason %}
+                    — {{ period.transfer.reason }}
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <!-- Imzo qismi -->
     <div class="card-body border-top">
         <div class="row mt-3">

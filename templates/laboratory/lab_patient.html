@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Laboratoriya — {{ patient.full_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <!-- Sarlavha / Orqaga -->
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h4 class="mb-1">🔬 {{ patient.full_name }}</h4>
+      <div class="text-muted small">
+        Karta №: <strong>{{ patient.medical_record_number }}</strong>
+        &middot;
+        Tug'ilgan: {{ patient.birth_date|date:"d.m.Y" }}
+        &middot;
+        {% if patient.gender == 'M' %}Erkak{% else %}Ayol{% endif %}
+        {% if patient.department %}
+          &middot; Bo'lim: {{ patient.department.name }}
+        {% endif %}
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'patient_detail' patient.pk %}" class="btn btn-outline-secondary btn-sm">← Bemor kartasi</a>
+      <a href="{% url 'lab_home' %}" class="btn btn-outline-secondary btn-sm">🔬 Lab bosh sahifa</a>
+    </div>
+  </div>
+
+  <div class="row">
+
+    <!-- Chap: Yangi natija yaratish — faqat admin va laborant -->
+    <div class="col-lg-5">
+      <div class="card mb-3">
+        <div class="card-header bg-primary text-white py-2">
+          <strong>📝 Yangi natija yaratish</strong>
+        </div>
+        <div class="card-body">
+        {% if not can_edit %}
+          <div class="alert alert-warning py-2 mb-0 small">
+            Siz faqat natijalarni ko'rish va chop etish huquqiga egasiz.
+            Natija kiritish uchun laborantga murojaat qiling.
+          </div>
+        {% else %}
+          <form method="post" action="{% url 'lab_result_create' patient.pk %}">
+            {% csrf_token %}
+
+            <!-- Lab xizmatlar -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Xizmatlar:</label>
+              {% if lab_services %}
+                <div class="border rounded p-2" style="max-height:200px; overflow-y:auto;">
+                  {% for svc in lab_services %}
+                  <div class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="service_ids"
+                      value="{{ svc.pk }}"
+                      id="svc_{{ svc.pk }}"
+                    >
+                    <label class="form-check-label" for="svc_{{ svc.pk }}">
+                      <strong>{{ svc.service.name }}</strong>
+                      <small class="text-muted ms-1">
+                        {{ svc.ordered_at|date:"d.m.Y H:i" }}
+                      </small>
+                      <span class="badge ms-1
+                        {% if svc.status == 'completed' %}bg-success
+                        {% elif svc.status == 'in_progress' %}bg-warning text-dark
+                        {% elif svc.status == 'cancelled' %}bg-danger
+                        {% else %}bg-secondary{% endif %}">
+                        {{ svc.get_status_display }}
+                      </span>
+                    </label>
+                  </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <p class="text-muted small mb-0">Lab xizmatlar yo'q</p>
+              {% endif %}
+            </div>
+
+            <!-- Shablon tanlash -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="template_id">Shablon:</label>
+              <select name="template_id" id="template_id" class="form-select" required>
+                <option value="">— Shablon tanlang —</option>
+                {% for tmpl in templates %}
+                <option value="{{ tmpl.pk }}">
+                  {{ tmpl.get_category_display }} — {{ tmpl.name }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">
+              📝 Javob yaratish
+            </button>
+          </form>
+        {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- O'ng: Mavjud natijalar -->
+    <div class="col-lg-7">
+      <div class="card">
+        <div class="card-header py-2">
+          <strong>📋 Mavjud natijalar</strong>
+          <span class="badge bg-secondary ms-2">{{ existing_results|length }}</span>
+        </div>
+        {% if existing_results %}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Sana</th>
+                <th>Shablon</th>
+                <th>Holat</th>
+                <th class="text-center">Amallar</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for res in existing_results %}
+              <tr>
+                <td>
+                  <small>{{ res.created_at|date:"d.m.Y H:i" }}</small>
+                </td>
+                <td>{{ res.template.name }}</td>
+                <td>
+                  <span class="badge
+                    {% if res.status == 'draft' %}bg-secondary
+                    {% elif res.status == 'done' %}bg-primary
+                    {% elif res.status == 'verified' %}bg-success
+                    {% elif res.status == 'printed' %}bg-info text-dark
+                    {% endif %}">
+                    {{ res.get_status_display }}
+                  </span>
+                </td>
+                <td class="text-center">
+                  <a href="{% url 'lab_result_enter' res.pk %}"
+                     class="btn btn-sm btn-outline-primary me-1" title="Kirish">
+                    ✏️ Kirish
+                  </a>
+                  <a href="{% url 'lab_result_print' res.pk %}"
+                     class="btn btn-sm btn-outline-secondary" target="_blank" title="Chop etish">
+                    🖨 Chop
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="card-body text-muted text-center py-4">
+          Hali natija kiritilmagan
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

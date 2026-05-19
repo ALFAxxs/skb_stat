@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Lab shablonlar{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <!-- Sarlavha -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">📋 Lab shablonlar</h4>
+    <div class="d-flex gap-2">
+      <a href="{% url 'lab_home' %}" class="btn btn-outline-secondary btn-sm">← Laboratoriya</a>
+      <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createModal">
+        + Yangi shablon
+      </button>
+    </div>
+  </div>
+
+  <!-- Shablonlar jadvali -->
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover table-sm mb-0">
+        <thead class="table-light">
+          <tr>
+            <th width="40">#</th>
+            <th>Nomi</th>
+            <th>Kategoriya</th>
+            <th width="130" class="text-center">Parametrlar soni</th>
+            <th width="80" class="text-center">Faolmi</th>
+            <th width="80" class="text-center">Amallar</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tmpl in templates %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>
+              <strong>{{ tmpl.name }}</strong>
+              {% if tmpl.description %}
+                <br><small class="text-muted">{{ tmpl.description|truncatechars:60 }}</small>
+              {% endif %}
+            </td>
+            <td>{{ tmpl.get_category_display }}</td>
+            <td class="text-center">
+              <span class="badge bg-secondary">{{ tmpl.param_count }}</span>
+            </td>
+            <td class="text-center">
+              {% if tmpl.is_active %}
+                <span class="badge bg-success">Ha</span>
+              {% else %}
+                <span class="badge bg-danger">Yo'q</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              <a href="{% url 'lab_template_detail' tmpl.pk %}"
+                 class="btn btn-sm btn-outline-primary">✏️</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">
+              Hali shablon yo'q. Yangi shablon yarating.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal: Yangi shablon yaratish -->
+<div class="modal fade" id="createModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Yangi shablon yaratish</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="create-error" class="alert alert-danger d-none"></div>
+        <div class="mb-3">
+          <label class="form-label">Nomi <span class="text-danger">*</span></label>
+          <input type="text" id="tmpl-name" class="form-control" placeholder="Shablon nomi">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Kategoriya</label>
+          <select id="tmpl-category" class="form-select">
+            {% for val, label in category_choices %}
+            <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Tavsifi</label>
+          <textarea id="tmpl-desc" class="form-control" rows="2" placeholder="Ixtiyoriy..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor</button>
+        <button type="button" class="btn btn-primary" id="save-template-btn">Saqlash</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('save-template-btn').addEventListener('click', async function() {
+  const name = document.getElementById('tmpl-name').value.trim();
+  const category = document.getElementById('tmpl-category').value;
+  const description = document.getElementById('tmpl-desc').value.trim();
+  const errorDiv = document.getElementById('create-error');
+
+  if (!name) {
+    errorDiv.classList.remove('d-none');
+    errorDiv.textContent = 'Nomi kiritilishi shart!';
+    return;
+  }
+  errorDiv.classList.add('d-none');
+
+  try {
+    const resp = await fetch("{% url 'lab_template_create' %}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}',
+      },
+      body: JSON.stringify({ name, category, description }),
+    });
+    const data = await resp.json();
+    if (data.success) {
+      window.location.href = "/laboratory/templates/" + data.id + "/";
+    } else {
+      errorDiv.classList.remove('d-none');
+      errorDiv.textContent = data.error || 'Xato yuz berdi';
+    }
+  } catch (e) {
+    errorDiv.classList.remove('d-none');
+    errorDiv.textContent = 'Tarmoq xatosi: ' + e.message;
+  }
+});
+</script>
+{% endblock %}

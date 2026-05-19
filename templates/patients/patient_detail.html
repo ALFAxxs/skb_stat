@@ -12,6 +12,14 @@
                 {% if cnt %}<span class="badge bg-white text-dark">{{ cnt }}</span>{% endif %}
             {% endwith %}
         </a>
+        {% if request.user.role == 'admin' or request.user.role == 'doctor' or request.user.is_superuser %}
+        <a href="{% url 'lab_patient' patient.pk %}" class="btn btn-outline-success">
+            🔬 Lab natijalari
+            {% with cnt=patient.lab_results.count %}
+                {% if cnt %}<span class="badge bg-success text-white">{{ cnt }}</span>{% endif %}
+            {% endwith %}
+        </a>
+        {% endif %}
         <a href="{% url 'patient_edit' patient.pk %}" class="btn btn-warning">✏️ Tahrirlash</a>
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#transferModal">🔄 Ko'chirish</button>
         <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#dischargeModal">🏥 Chiqarish</button>
@@ -84,30 +92,21 @@
                         placeholder="Chiqish xulosasi, tavsiyalar...">{{ patient.discharge_note|default:'' }}</textarea>
             </div>
 
+            <!-- Yotgan kunlar -->
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Yotgan kunlar soni</label>
+              <input type="number" name="days_in_hospital" class="form-control"
+                     min="0" value="{{ patient.days_in_hospital|default:0 }}">
+            </div>
+
             <!-- Mas'ul shifokorlar -->
             <div class="col-md-6">
               <label class="form-label fw-bold">Davolovchi shifokor</label>
-              <select name="attending_doctor" class="form-select">
-                <option value="">— Tanlang —</option>
-                {% for doc in doctors %}
-                <option value="{{ doc.pk }}"
-                  {% if doc == patient.attending_doctor %}selected{% endif %}>
-                  {{ doc.full_name }}{% if doc.is_head %} ★{% endif %}
-                </option>
-                {% endfor %}
-              </select>
+              <select name="attending_doctor" id="discharge-doctor" class="form-select"></select>
             </div>
             <div class="col-md-6">
               <label class="form-label fw-bold">Bo'lim mudiri</label>
-              <select name="department_head" class="form-select">
-                <option value="">— Tanlang —</option>
-                {% for doc in dept_heads %}
-                <option value="{{ doc.pk }}"
-                  {% if doc == patient.department_head %}selected{% endif %}>
-                  {{ doc.full_name }}
-                </option>
-                {% endfor %}
-              </select>
+              <select name="department_head" id="discharge-head" class="form-select"></select>
             </div>
 
           </div>
@@ -138,37 +137,34 @@
             {{ patient.attending_doctor }} |
             {{ patient.department_head }}
           </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">Yangi bo'lim *</label>
-            <select name="to_department" class="form-select" required id="transfer-dept">
-              <option value="">— Tanlang —</option>
-              {% for dept in departments %}
-              <option value="{{ dept.pk }}" {% if dept == patient.department %}selected{% endif %}>{{ dept }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">Yangi shifokor</label>
-            <select name="to_doctor" class="form-select" id="transfer-doctor">
-              <option value="">— Avvalgisi qolsin —</option>
-              {% for doc in doctors %}
-              <option value="{{ doc.pk }}" {% if doc == patient.attending_doctor %}selected{% endif %}>{{ doc }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">Yangi bo'lim mudiri</label>
-            <select name="to_dept_head" class="form-select">
-              <option value="">— Avvalgisi qolsin —</option>
-              {% for doc in dept_heads %}
-              <option value="{{ doc.pk }}" {% if doc == patient.department_head %}selected{% endif %}>{{ doc }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">Sabab / izoh *</label>
-            <textarea name="reason" class="form-control" rows="3"
-                      placeholder="Ko'chirish sababi..." required></textarea>
+          <div class="row g-2">
+            <div class="col-md-6 mb-2">
+              <label class="form-label fw-bold">Ko'chirish sanasi *</label>
+              <input type="date" name="transfer_date" class="form-control"
+                     value="{{ today }}" required>
+            </div>
+            <div class="col-md-6 mb-2">
+              <label class="form-label fw-bold">Yangi bo'lim *</label>
+              <select name="to_department" class="form-select" required id="transfer-dept">
+                <option value="">— Tanlang —</option>
+                {% for dept in departments %}
+                <option value="{{ dept.pk }}" {% if dept == patient.department %}selected{% endif %}>{{ dept }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-12 mb-2">
+              <label class="form-label fw-bold">Yangi shifokor</label>
+              <select name="to_doctor" id="transfer-doctor" class="form-select"></select>
+            </div>
+            <div class="col-12 mb-2">
+              <label class="form-label fw-bold">Yangi bo'lim mudiri</label>
+              <select name="to_dept_head" id="transfer-head" class="form-select"></select>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-bold">Sabab / izoh *</label>
+              <textarea name="reason" class="form-control" rows="3"
+                        placeholder="Ko'chirish sababi..." required></textarea>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
@@ -181,36 +177,87 @@
 </div>
 
 <!-- KO'CHIRISH TARIXI -->
-{% if patient.patient_transfers.exists %}
+{% if transfers %}
 <div class="card mb-3">
-  <div class="card-header bg-info text-white">
+  <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
     <strong>🔄 Ko'chirish tarixi</strong>
+    <span class="badge bg-white text-dark">{{ transfers|length }} ta ko'chirish</span>
   </div>
   <div class="card-body p-0">
-    <table class="table table-sm table-hover mb-0">
-      <thead class="table-light">
-        <tr>
-          <th>Sana</th>
-          <th>Avvalgi bo'lim</th>
-          <th>Yangi bo'lim</th>
-          <th>Yangi shifokor</th>
-          <th>Kim ko'chirdi</th>
-          <th>Sabab</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for t in patient.patient_transfers.all %}
-        <tr>
-          <td class="text-nowrap">{{ t.transferred_at|date:"d.m.Y H:i" }}</td>
-          <td>{{ t.from_department|default:"—" }}</td>
-          <td><strong>{{ t.to_department|default:"—" }}</strong></td>
-          <td>{{ t.to_doctor|default:"—" }}</td>
-          <td class="text-muted small">{{ t.transferred_by|default:"—" }}</td>
-          <td class="text-muted small">{{ t.reason|default:"—" }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    {% for period in transfer_periods %}
+    <div class="border-bottom">
+      <!-- Davr sarlavhasi -->
+      <div class="bg-light px-3 py-2 d-flex justify-content-between align-items-center">
+        <div>
+          <strong>📍 Bo'lim:</strong>
+          <span class="badge bg-primary ms-1">{{ period.dept|default:"—" }}</span>
+          {% if period.doctor %}
+            <span class="text-muted ms-2 small">Shifokor: <strong>{{ period.doctor }}</strong></span>
+          {% endif %}
+          {% if period.dept_head %}
+            <span class="text-muted ms-2 small">Mudiri: <strong>{{ period.dept_head }}</strong></span>
+          {% endif %}
+        </div>
+        <span class="badge bg-secondary">
+          {{ period.services|length }} ta xizmat —
+          {{ period.services_total|floatformat:0 }} so'm
+        </span>
+      </div>
+
+      <!-- Bu davrda qo'shilgan xizmatlar -->
+      {% if period.services %}
+      <div class="px-3 py-2">
+        <table class="table table-sm table-borderless mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Xizmat</th>
+              <th class="text-center" style="width:60px">Miqdor</th>
+              <th class="text-end" style="width:120px">Narx</th>
+              <th class="text-muted small" style="width:140px">Sana</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for svc in period.services %}
+            <tr>
+              <td>{{ svc.service.name }}</td>
+              <td class="text-center">{{ svc.quantity }}</td>
+              <td class="text-end">{{ svc.total_price|floatformat:0 }}</td>
+              <td class="text-muted small">{{ svc.ordered_at|date:"d.m.Y H:i" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="px-3 py-2 text-muted small">Bu davrda xizmat qo'shilmagan</div>
+      {% endif %}
+
+      <!-- Ko'chirish strelkasi (agar so'nggi davr bo'lmasa) -->
+      {% if period.transfer %}
+      <div class="bg-warning bg-opacity-25 px-3 py-2 border-top small">
+        <strong>🔄 Ko'chirish:</strong>
+        <span class="badge bg-secondary">{{ period.transfer.from_department|default:"—" }}</span>
+        →
+        <span class="badge bg-primary">{{ period.transfer.to_department|default:"—" }}</span>
+        &nbsp;
+        {% if period.transfer.transfer_date %}
+          <span class="text-muted">{{ period.transfer.transfer_date|date:"d.m.Y" }}</span>
+        {% else %}
+          <span class="text-muted">{{ period.transfer.transferred_at|date:"d.m.Y" }}</span>
+        {% endif %}
+        {% if period.transfer.to_doctor %}
+          &nbsp;· Yangi shifokor: <strong>{{ period.transfer.to_doctor }}</strong>
+        {% endif %}
+        {% if period.transfer.reason %}
+          &nbsp;· <em class="text-muted">{{ period.transfer.reason }}</em>
+        {% endif %}
+        {% if period.transfer.transferred_by %}
+          <span class="text-muted ms-2">Kim ko'chirdi: {{ period.transfer.transferred_by }}</span>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
   </div>
 </div>
 {% endif %}
@@ -595,4 +642,42 @@
     Yaratilgan: {{ patient.created_at|date:"d.m.Y H:i" }} |
     Yangilangan: {{ patient.updated_at|date:"d.m.Y H:i" }}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const DOCTORS_DATA = [{% for doc in doctors %}{"id":{{ doc.pk }},"name":"{{ doc.full_name|escapejs }}{% if doc.is_head %} ★{% endif %}","dept":"{{ doc.department.name|default:"Bo'limsiz"|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+const CURRENT_DOCTOR_ID   = {{ patient.attending_doctor.pk|default:"null" }};
+const CURRENT_HEAD_ID     = {{ patient.department_head.pk|default:"null" }};
+
+function buildDoctorSelect(sel, selectedId, emptyLabel) {
+    if (!sel) return;
+    sel.innerHTML = '<option value="">' + (emptyLabel || '— Tanlang —') + '</option>';
+    let curDept = null, grp = null;
+    DOCTORS_DATA.forEach(function(d) {
+        if (d.dept !== curDept) {
+            if (grp) sel.appendChild(grp);
+            grp = document.createElement('optgroup');
+            grp.label = d.dept;
+            curDept = d.dept;
+        }
+        const o = document.createElement('option');
+        o.value = d.id;
+        o.textContent = d.name;
+        if (selectedId && parseInt(selectedId) === d.id) o.selected = true;
+        grp.appendChild(o);
+    });
+    if (grp) sel.appendChild(grp);
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Chiqarish modali uchun
+    buildDoctorSelect(document.getElementById('discharge-doctor'), CURRENT_DOCTOR_ID, '— Tanlang —');
+    buildDoctorSelect(document.getElementById('discharge-head'),   CURRENT_HEAD_ID,   '— Tanlang —');
+    // Ko'chirish modali uchun
+    buildDoctorSelect(document.getElementById('transfer-doctor'), CURRENT_DOCTOR_ID, '— Avvalgisi qolsin —');
+    buildDoctorSelect(document.getElementById('transfer-head'),   CURRENT_HEAD_ID,   '— Avvalgisi qolsin —');
+});
+</script>
 {% endblock %}

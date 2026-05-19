@@ -77,6 +77,13 @@
 
 
 
+                    <!-- Laboratoriya — admin, doctor, laborant -->
+                    {% if request.user.role == 'admin' or request.user.role == 'doctor' or request.user.role == 'laborant' or request.user.is_superuser %}
+                        <a href="{% url 'lab_home' %}" class="text-white text-decoration-none">
+                            🔬 Laboratoriya
+                        </a>
+                    {% endif %}
+
                     <!-- Xizmatlar statistikasi — faqat admin va statistician -->
                     {% if request.user.role == 'admin' or request.user.role == 'statistician' or request.user.is_superuser %}
                     <a href="{% url 'statistics_dashboard' %}" class="text-white text-decoration-none">

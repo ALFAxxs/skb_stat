@@ -11,7 +11,8 @@ class CustomUser(AbstractUser):
         ('admin', 'Administrator'),
         ('doctor', 'Shifokor'),
         ('statistician', 'Statistik'),
-        ('reception', 'Qabulxona'),      # ← qo'shildi
+        ('reception', 'Qabulxona'),
+        ('laborant', 'Laborant'),
         ('viewer', "Faqat ko'rish"),
     ]
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='viewer')

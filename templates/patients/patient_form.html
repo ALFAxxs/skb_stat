@@ -1104,6 +1104,35 @@ document.addEventListener('DOMContentLoaded', function() {
         if (passportInput) passportInput.addEventListener('input', onInput);
     })();
 
+    // ==================== SHIFOKORLAR GURUHLANGAN SELECT ====================
+    (function() {
+        const DOCTORS_DATA = [{% for doc in doctors %}{"id":{{ doc.pk }},"name":"{{ doc.full_name|escapejs }}{% if doc.is_head %} ★{% endif %}","dept":"{{ doc.department.name|default:"Bo'limsiz"|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+        function buildGroupedSelect(sel) {
+            if (!sel || !DOCTORS_DATA.length) return;
+            const currentVal = sel.value;
+            sel.innerHTML = '<option value="">— Tanlang —</option>';
+            let curDept = null, grp = null;
+            DOCTORS_DATA.forEach(function(d) {
+                if (d.dept !== curDept) {
+                    if (grp) sel.appendChild(grp);
+                    grp = document.createElement('optgroup');
+                    grp.label = d.dept;
+                    curDept = d.dept;
+                }
+                const o = document.createElement('option');
+                o.value = d.id;
+                o.textContent = d.name;
+                if (currentVal && parseInt(currentVal) === d.id) o.selected = true;
+                grp.appendChild(o);
+            });
+            if (grp) sel.appendChild(grp);
+        }
+
+        buildGroupedSelect(document.getElementById('id_attending_doctor'));
+        buildGroupedSelect(document.getElementById('id_department_head'));
+    })();
+
 }); // DOMContentLoaded
 
 // ===== YO'LLAGAN MUASSASA AJAX QIDIRUV =====
@@ -1181,6 +1210,16 @@ document.addEventListener('DOMContentLoaded', function() {
             selInfo.textContent  = 'Tanlangan muassasa (ID: ' + idInput.value + ')';
         }
     })();
- tugadi
+})();
+
+// Forma bir marta yuborilishi uchun himoya
+document.querySelectorAll('form').forEach(function(form) {
+    form.addEventListener('submit', function() {
+        form.querySelectorAll('[type="submit"]').forEach(function(btn) {
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Saqlanmoqda...';
+        });
+    });
+});
 </script>
 {% endblock %}

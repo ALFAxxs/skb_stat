@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block title %}{{ template.name }} — Shablon{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <!-- Sarlavha -->
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h4 class="mb-1">{{ template.name }}</h4>
+      <div class="text-muted small">
+        Kategoriya: <strong>{{ template.get_category_display }}</strong>
+        &middot;
+        Holat:
+        {% if template.is_active %}
+          <span class="badge bg-success">Faol</span>
+        {% else %}
+          <span class="badge bg-danger">Nofaol</span>
+        {% endif %}
+        {% if template.description %}
+          &middot; {{ template.description }}
+        {% endif %}
+      </div>
+    </div>
+    <a href="{% url 'lab_template_list' %}" class="btn btn-outline-secondary btn-sm">← Orqaga</a>
+  </div>
+
+  <!-- Xato xabari -->
+  <div id="global-error" class="alert alert-danger d-none mb-3"></div>
+  <div id="global-success" class="alert alert-success d-none mb-3"></div>
+
+  <!-- Parametrlar jadvali -->
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center py-2">
+      <strong>Parametrlar</strong>
+      <button class="btn btn-primary btn-sm" id="show-add-form-btn">
+        + Parametr qo'shish
+      </button>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0" id="params-table">
+        <thead class="table-light">
+          <tr>
+            <th width="50" class="text-center">Tartib</th>
+            <th>Nomi</th>
+            <th>Nomi (ru)</th>
+            <th width="70">Birlik</th>
+            <th width="120">Me'yor (umumiy)</th>
+            <th width="120">Me'yor (E/A)</th>
+            <th width="70">Turi</th>
+            <th width="60" class="text-center">O'chir</th>
+          </tr>
+        </thead>
+        <tbody id="params-tbody">
+          {% for param in parameters %}
+          <tr id="param-row-{{ param.pk }}">
+            <td class="text-center text-muted">{{ param.sort_order }}</td>
+            <td><strong>{{ param.name }}</strong></td>
+            <td class="text-muted">{{ param.name_ru }}</td>
+            <td>{{ param.unit }}</td>
+            <td>{{ param.get_normal_display }}</td>
+            <td>
+              {% if param.normal_min_m or param.normal_max_m %}
+                <span class="text-primary small">E: {{ param.normal_min_m|default:"?" }} – {{ param.normal_max_m|default:"?" }}</span><br>
+              {% endif %}
+              {% if param.normal_min_f or param.normal_max_f %}
+                <span class="text-danger small">A: {{ param.normal_min_f|default:"?" }} – {{ param.normal_max_f|default:"?" }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge bg-secondary">{{ param.get_param_type_display }}</span>
+            </td>
+            <td class="text-center">
+              <button
+                class="btn btn-sm btn-outline-danger delete-param-btn"
+                data-param-id="{{ param.pk }}"
+                title="O'chirish">
+                🗑
+              </button>
+            </td>
+          </tr>
+          {% empty %}
+          <tr id="empty-row">
+            <td colspan="8" class="text-center text-muted py-3">
+              Hali parametr yo'q. Parametr qo'shing.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Parametr qo'shish formasi (boshlanganda yashirin) -->
+  <div id="add-param-form" class="card mb-3 d-none">
+    <div class="card-header py-2 bg-primary text-white">
+      <strong>+ Yangi parametr</strong>
+      <button type="button" class="btn-close btn-close-white float-end" id="hide-add-form-btn"></button>
+    </div>
+    <div class="card-body">
+      <div id="add-param-error" class="alert alert-danger d-none"></div>
+      <div class="row g-2">
+        <div class="col-md-4">
+          <label class="form-label small mb-1">Nomi (uz) <span class="text-danger">*</span></label>
+          <input type="text" id="p-name" class="form-control form-control-sm" placeholder="Masalan: Gemoglobin">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small mb-1">Nomi (ru)</label>
+          <input type="text" id="p-name-ru" class="form-control form-control-sm" placeholder="Гемоглобин">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small mb-1">Birlik</label>
+          <input type="text" id="p-unit" class="form-control form-control-sm" placeholder="g/L">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small mb-1">Tur</label>
+          <select id="p-type" class="form-select form-select-sm">
+            {% for val, label in param_type_choices %}
+            <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small mb-1">Me'yor min (umumiy)</label>
+          <input type="number" step="any" id="p-normal-min" class="form-control form-control-sm" placeholder="0">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small mb-1">Me'yor max (umumiy)</label>
+          <input type="number" step="any" id="p-normal-max" class="form-control form-control-sm" placeholder="0">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small mb-1">Erkak min</label>
+          <input type="number" step="any" id="p-normal-min-m" class="form-control form-control-sm" placeholder="0">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small mb-1">Erkak max</label>
+          <input type="number" step="any" id="p-normal-max-m" class="form-control form-control-sm" placeholder="0">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small mb-1">Ayol min</label>
+          <input type="number" step="any" id="p-normal-min-f" class="form-control form-control-sm" placeholder="0">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small mb-1">Ayol max</label>
+          <input type="number" step="any" id="p-normal-max-f" class="form-control form-control-sm" placeholder="0">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small mb-1">Tartib raqami</label>
+          <input type="number" id="p-sort" class="form-control form-control-sm" value="{{ parameters|length }}">
+        </div>
+        <div class="col-12">
+          <button class="btn btn-primary btn-sm" id="add-param-btn">Parametr qo'shish</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm ms-2" id="cancel-add-btn">Bekor</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const TEMPLATE_PK = {{ template.pk }};
+const ADD_URL = "{% url 'lab_parameter_add' template.pk %}";
+const CSRF = "{{ csrf_token }}";
+
+// Forma ko'rsatish / yashirish
+document.getElementById('show-add-form-btn').addEventListener('click', () => {
+  document.getElementById('add-param-form').classList.remove('d-none');
+});
+document.getElementById('hide-add-form-btn').addEventListener('click', () => {
+  document.getElementById('add-param-form').classList.add('d-none');
+});
+document.getElementById('cancel-add-btn').addEventListener('click', () => {
+  document.getElementById('add-param-form').classList.add('d-none');
+});
+
+// Parametr qo'shish
+document.getElementById('add-param-btn').addEventListener('click', async function() {
+  const errorDiv = document.getElementById('add-param-error');
+  errorDiv.classList.add('d-none');
+
+  const name = document.getElementById('p-name').value.trim();
+  if (!name) {
+    errorDiv.classList.remove('d-none');
+    errorDiv.textContent = 'Nomi kiritilishi shart!';
+    return;
+  }
+
+  const payload = {
+    name: name,
+    name_ru: document.getElementById('p-name-ru').value.trim(),
+    unit: document.getElementById('p-unit').value.trim(),
+    param_type: document.getElementById('p-type').value,
+    normal_min: document.getElementById('p-normal-min').value || null,
+    normal_max: document.getElementById('p-normal-max').value || null,
+    normal_min_m: document.getElementById('p-normal-min-m').value || null,
+    normal_max_m: document.getElementById('p-normal-max-m').value || null,
+    normal_min_f: document.getElementById('p-normal-min-f').value || null,
+    normal_max_f: document.getElementById('p-normal-max-f').value || null,
+    sort_order: parseInt(document.getElementById('p-sort').value) || 0,
+  };
+
+  try {
+    const resp = await fetch(ADD_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify(payload),
+    });
+    const data = await resp.json();
+    if (data.success) {
+      // Jadvalga yangi qator qo'shish
+      const tbody = document.getElementById('params-tbody');
+      const emptyRow = document.getElementById('empty-row');
+      if (emptyRow) emptyRow.remove();
+
+      const row = document.createElement('tr');
+      row.id = 'param-row-' + data.id;
+      row.innerHTML = `
+        <td class="text-center text-muted">${data.sort_order}</td>
+        <td><strong>${data.name}</strong></td>
+        <td class="text-muted">${data.name_ru || ''}</td>
+        <td>${data.unit || ''}</td>
+        <td>${data.normal_display || '—'}</td>
+        <td></td>
+        <td><span class="badge bg-secondary">${data.param_type}</span></td>
+        <td class="text-center">
+          <button class="btn btn-sm btn-outline-danger delete-param-btn"
+                  data-param-id="${data.id}" title="O'chirish">🗑</button>
+        </td>
+      `;
+      tbody.appendChild(row);
+
+      // Forma tozalash
+      document.getElementById('p-name').value = '';
+      document.getElementById('p-name-ru').value = '';
+      document.getElementById('p-unit').value = '';
+      document.getElementById('p-normal-min').value = '';
+      document.getElementById('p-normal-max').value = '';
+      document.getElementById('p-normal-min-m').value = '';
+      document.getElementById('p-normal-max-m').value = '';
+      document.getElementById('p-normal-min-f').value = '';
+      document.getElementById('p-normal-max-f').value = '';
+
+      document.getElementById('global-success').classList.remove('d-none');
+      document.getElementById('global-success').textContent = '"' + data.name + '" parametri qo\'shildi.';
+      setTimeout(() => document.getElementById('global-success').classList.add('d-none'), 3000);
+
+      // Delete tugmalarini qayta ulash
+      attachDeleteHandlers();
+    } else {
+      errorDiv.classList.remove('d-none');
+      errorDiv.textContent = data.error || 'Xato yuz berdi';
+    }
+  } catch (e) {
+    errorDiv.classList.remove('d-none');
+    errorDiv.textContent = 'Tarmoq xatosi: ' + e.message;
+  }
+});
+
+// Parametr o'chirish
+function attachDeleteHandlers() {
+  document.querySelectorAll('.delete-param-btn').forEach(btn => {
+    btn.onclick = async function() {
+      const paramId = this.dataset.paramId;
+      if (!confirm('Parametrni o\'chirishni tasdiqlaysizmi?')) return;
+
+      try {
+        const resp = await fetch(`/laboratory/parameter/${paramId}/delete/`, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': CSRF },
+        });
+        const data = await resp.json();
+        if (data.success) {
+          const row = document.getElementById('param-row-' + paramId);
+          if (row) row.remove();
+        } else {
+          alert('Xato: ' + (data.error || 'Noma\'lum xato'));
+        }
+      } catch (e) {
+        alert('Tarmoq xatosi: ' + e.message);
+      }
+    };
+  });
+}
+
+attachDeleteHandlers();
+</script>
+{% endblock %}

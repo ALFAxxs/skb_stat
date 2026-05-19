@@ -13,12 +13,26 @@ import uuid
 
 from django.utils import timezone
 
+from datetime import timedelta
+
 from .forms import PatientCardForm, DeathCauseForm, SurgicalOperationFormSet, ReceptionForm
 from .models import (
     PatientCard, ICD10Code, DischargeConclusion,
     Region, District, City, Village, Country, OperationType,
     Department, Doctor
 )
+
+
+def _find_recent_duplicate(full_name, birth_date, seconds=120):
+    """Bir xil ism+tug'ilgan sana bilan so'nggi N soniyada yaratilgan bemor."""
+    if not full_name or not birth_date:
+        return None
+    cutoff = timezone.now() - timedelta(seconds=seconds)
+    return PatientCard.objects.filter(
+        full_name__iexact=full_name,
+        birth_date=birth_date,
+        created_at__gte=cutoff,
+    ).order_by('-created_at').first()
 
 
 # ==================== AJAX VIEWS ====================
@@ -266,6 +280,56 @@ def patient_detail(request, pk):
 
     grand_total = float(services_total or 0) + float(medicines_total or 0)
 
+    # Ko'chirish tarixi va xizmatlarni davrlarga bo'lib guruhlash
+    transfers = list(
+        patient.patient_transfers.all().select_related(
+            'from_department', 'from_doctor', 'from_dept_head',
+            'to_department', 'to_doctor', 'to_dept_head', 'transferred_by'
+        ).order_by('transferred_at')
+    )
+
+    # Xizmatlarni vaqt bo'yicha tartiblash (ascending)
+    all_svc_asc = list(PatientService.objects.filter(
+        patient_card=patient
+    ).select_related('service__category', 'ordered_by').order_by('ordered_at'))
+
+    transfer_periods = []
+    if transfers:
+        # Birinchi davr: yotqizilishdan birinchi ko'chirishgacha
+        boundaries = [None] + [t.transferred_at for t in transfers]
+        for i, t in enumerate(transfers):
+            t_start = boundaries[i]
+            t_end   = t.transferred_at
+            if t_start is None:
+                period_svcs = [s for s in all_svc_asc if s.ordered_at < t_end]
+            else:
+                period_svcs = [s for s in all_svc_asc if t_start <= s.ordered_at < t_end]
+            transfer_periods.append({
+                'period_num':    i + 1,
+                'start':         t_start,
+                'end':           t_end,
+                'transfer':      t,
+                'dept':          t.from_department,
+                'doctor':        t.from_doctor,
+                'dept_head':     t.from_dept_head,
+                'services':      period_svcs,
+                'services_total': sum(s.price * s.quantity for s in period_svcs),
+            })
+        # Oxirgi davr: so'nggi ko'chirishdan hozirga qadar
+        last_t = transfers[-1]
+        last_svcs = [s for s in all_svc_asc if s.ordered_at >= last_t.transferred_at]
+        transfer_periods.append({
+            'period_num':    len(transfers) + 1,
+            'start':         last_t.transferred_at,
+            'end':           None,
+            'transfer':      None,
+            'dept':          last_t.to_department,
+            'doctor':        last_t.to_doctor,
+            'dept_head':     last_t.to_dept_head,
+            'services':      last_svcs,
+            'services_total': sum(s.price * s.quantity for s in last_svcs),
+        })
+
     return render(request, 'patients/patient_detail.html', {
         'patient': patient,
         'death_cause': death_cause,
@@ -277,13 +341,11 @@ def patient_detail(request, pk):
         'grand_total': grand_total,
         'prev_visits': prev_visits,
         'departments': Department.objects.filter(is_active=True).order_by('name'),
-        'doctors':     Doctor.objects.filter(is_active=True).select_related('department').order_by('full_name'),
+        'doctors':     Doctor.objects.filter(is_active=True).select_related('department').order_by('department__name', 'full_name'),
         'dept_heads':  Doctor.objects.filter(is_active=True, is_head=True).order_by('full_name'),
         'today':       timezone.localdate(),
-        'transfers':   patient.patient_transfers.all().select_related(
-                           'from_department', 'to_department',
-                           'to_doctor', 'transferred_by'
-                       ),
+        'transfers':   transfers,
+        'transfer_periods': transfer_periods,
     })
 
 
@@ -315,6 +377,14 @@ def patient_card_create(request):
             forms_valid = forms_valid and death_form.is_valid()
 
         if forms_valid:
+            dup = _find_recent_duplicate(
+                form.cleaned_data.get('full_name', ''),
+                form.cleaned_data.get('birth_date'),
+            )
+            if dup:
+                messages.warning(request, f"⚠️ Bu bemor 2 daqiqa ichida allaqachon ro'yxatga olingan: {dup.full_name} (#{dup.medical_record_number})")
+                return redirect('patient_detail', pk=dup.pk)
+
             patient = form.save(commit=False)
             if not request.user.is_superuser and request.user.role != 'admin':
                 if request.user.department:
@@ -400,6 +470,12 @@ def patient_card_edit(request, pk):
                 patient.attending_doctor = PatientDoctor.objects.filter(pk=doc_id).first()
             if head_id:
                 patient.department_head = PatientDoctor.objects.filter(pk=head_id).first()
+            days_str = request.POST.get('days_in_hospital', '')
+            if days_str:
+                try:
+                    patient.days_in_hospital = int(days_str)
+                except ValueError:
+                    pass
             patient.save()
             messages.success(request, f"✅ Bemor chiqarildi: {patient.full_name}")
             return redirect('patient_detail', pk=pk)
@@ -491,6 +567,7 @@ def patient_card_edit(request, pk):
         'surgery_formset': surgery_formset,
         'title': f"Tahrirlash: {patient.full_name}",
         'patient': patient,
+        'doctors': Doctor.objects.filter(is_active=True).select_related('department').order_by('department__name', 'full_name'),
     })
 
 
@@ -511,6 +588,15 @@ def reception_create(request):
     if request.method == 'POST':
         form = ReceptionForm(request.POST)
         if form.is_valid():
+            # Takroriy yuborish himoyasi — 2 daqiqa ichida bir xil ism+sana
+            dup = _find_recent_duplicate(
+                form.cleaned_data.get('full_name', ''),
+                form.cleaned_data.get('birth_date'),
+            )
+            if dup:
+                messages.warning(request, f"⚠️ Bu bemor 2 daqiqa ichida allaqachon qabul qilingan: {dup.full_name} (#{dup.medical_record_number})")
+                return redirect('patient_detail', pk=dup.pk)
+
             patient = form.save(commit=False)
 
             # Bo'limni avtomatik qo'yish
@@ -530,11 +616,6 @@ def reception_create(request):
             patient.medical_record_number = record_number
             patient.status = 'registered'
             patient.registered_by = request.user
-
-            # Takroriy yuborish himoyasi
-            if PatientCard.objects.filter(medical_record_number=record_number).exists():
-                existing = PatientCard.objects.filter(medical_record_number=record_number).first()
-                return redirect('patient_detail', pk=existing.pk)
 
             # Qo'lda kiritilgan shartnoma raqamini saqlash
             manual_contract_number = request.POST.get('manual_contract_number', '').strip()
@@ -1015,6 +1096,48 @@ def patient_invoice(request, pk):
     medicines_total = sum(m.total_price for m in medicines) or 0
     grand_total = float(services_total) + float(medicines_total)
 
+    # Ko'chirish tarixi va xizmatlarni davrlarga bo'lib guruhlash
+    from apps.patients.models import PatientTransfer
+    transfers = list(
+        PatientTransfer.objects.filter(patient_card=patient).select_related(
+            'from_department', 'from_doctor',
+            'to_department', 'to_doctor', 'to_dept_head', 'transferred_by'
+        ).order_by('transferred_at')
+    )
+
+    all_svc_asc = list(PatientService.objects.filter(
+        patient_card=patient
+    ).select_related('service__category').order_by('ordered_at'))
+
+    transfer_periods = []
+    if transfers:
+        boundaries = [None] + [t.transferred_at for t in transfers]
+        for i, t in enumerate(transfers):
+            t_start = boundaries[i]
+            t_end   = t.transferred_at
+            if t_start is None:
+                period_svcs = [s for s in all_svc_asc if s.ordered_at < t_end]
+            else:
+                period_svcs = [s for s in all_svc_asc if t_start <= s.ordered_at < t_end]
+            transfer_periods.append({
+                'period_num':     i + 1,
+                'dept':           t.from_department,
+                'doctor':         t.from_doctor,
+                'transfer':       t,
+                'services':       period_svcs,
+                'services_total': sum(s.price * s.quantity for s in period_svcs),
+            })
+        last_t = transfers[-1]
+        last_svcs = [s for s in all_svc_asc if s.ordered_at >= last_t.transferred_at]
+        transfer_periods.append({
+            'period_num':     len(transfers) + 1,
+            'dept':           last_t.to_department,
+            'doctor':         last_t.to_doctor,
+            'transfer':       None,
+            'services':       last_svcs,
+            'services_total': sum(s.price * s.quantity for s in last_svcs),
+        })
+
     return render(request, 'patients/invoice.html', {
         'patient': patient,
         'services': services,
@@ -1023,6 +1146,8 @@ def patient_invoice(request, pk):
         'medicines': medicines,
         'medicines_total': medicines_total,
         'grand_total': grand_total,
+        'transfers': transfers,
+        'transfer_periods': transfer_periods,
     })
 
 
@@ -1111,10 +1236,12 @@ def ambulatory_create(request):
                 'now': now.strftime('%Y-%m-%dT%H:%M'),
             })
 
-        # Takroriy yuborish himoyasi — 10 soniya ichida bir xil bayonnoma raqami
-        if PatientCard.objects.filter(medical_record_number=record_number).exists():
-            existing = PatientCard.objects.filter(medical_record_number=record_number).first()
-            return redirect('patient_detail', pk=existing.pk)
+        # Takroriy yuborish himoyasi — 2 daqiqa ichida bir xil ism+sana
+        if birth_date:
+            dup = _find_recent_duplicate(full_name, birth_date)
+            if dup:
+                messages.warning(request, f"⚠️ Bu bemor 2 daqiqa ichida allaqachon qabul qilingan: {dup.full_name} (#{dup.medical_record_number})")
+                return redirect('patient_detail', pk=dup.pk)
 
         patient = PatientCard(
             medical_record_number = record_number,
@@ -1159,6 +1286,15 @@ def patient_transfer(request, pk):
         messages.error(request, "Bo'lim tanlanmagan.")
         return redirect('patient_detail', pk=pk)
 
+    transfer_date_str = request.POST.get('transfer_date', '').strip()
+    transfer_date = None
+    if transfer_date_str:
+        from datetime import date as _date
+        try:
+            transfer_date = _date.fromisoformat(transfer_date_str)
+        except ValueError:
+            pass
+
     PatientTransfer.objects.create(
         patient_card    = patient,
         from_department = patient.department,
@@ -1168,6 +1304,7 @@ def patient_transfer(request, pk):
         to_doctor       = Doctor.objects.filter(pk=to_doc_id).first() if to_doc_id else None,
         to_dept_head    = Doctor.objects.filter(pk=to_head_id).first() if to_head_id else None,
         reason          = reason,
+        transfer_date   = transfer_date,
         transferred_by  = request.user,
     )
 
