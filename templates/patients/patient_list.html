@@ -4,9 +4,14 @@
 {% block content %}
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="mb-0">🏥 Bemorlar ro'yxati
-        <span class="badge bg-secondary ms-2">{{ total_count }}</span>
-    </h5>
+    <div class="d-flex align-items-center gap-2">
+        <h5 class="mb-0">🏥 Bemorlar ro'yxati
+            <span class="badge bg-secondary ms-2">{{ total_count }}</span>
+        </h5>
+        <a href="?status=discharged" class="btn btn-sm btn-outline-secondary {% if selected_status == 'discharged' %}active{% endif %}">
+            📤 Chiqarilganlar
+        </a>
+    </div>
     {% if request.user.role in 'admin,reception' or request.user.is_superuser %}
     <div class="d-flex gap-2">
         <a href="{% url 'reception_create' %}" class="btn btn-primary btn-sm">📋 Statsionar qabul</a>
@@ -44,10 +49,11 @@
 
                 <div class="col-md-2 col-6">
                     <select name="status" class="form-select form-select-sm">
-                        <option value="">Barcha statuslar</option>
+                        <option value="">Faol bemorlar</option>
                         <option value="registered" {% if selected_status == 'registered' %}selected{% endif %}>🟡 Registratsiya</option>
                         <option value="admitted"   {% if selected_status == 'admitted' %}selected{% endif %}>🔵 Yotqizilgan</option>
                         <option value="completed"  {% if selected_status == 'completed' %}selected{% endif %}>🟢 Yakunlangan</option>
+                        <option value="discharged" {% if selected_status == 'discharged' %}selected{% endif %}>📤 Chiqarilgan</option>
                     </select>
                 </div>
 

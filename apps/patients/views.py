@@ -450,7 +450,11 @@ def patient_card_edit(request, pk):
     death_instance = getattr(patient, 'death_cause', None)
 
     if request.method == 'POST':
-        # Chiqarish modal dan kelgan so'rov
+        # Chiqarish modal dan kelgan so'rov — faqat admin/doctor/statistician
+        if request.POST.get('_discharge') and request.user.role == 'reception' and not request.user.is_superuser:
+            messages.error(request, "Sizda bemorni chiqarish huquqi yo'q.")
+            return redirect('patient_detail', pk=pk)
+
         if request.POST.get('_discharge'):
             from apps.patients.models import Doctor as PatientDoctor
             patient.outcome         = request.POST.get('outcome', '')
@@ -1271,6 +1275,7 @@ def ambulatory_create(request):
     })
 
 @login_required
+@role_required('admin', 'doctor', 'statistician')
 @require_POST
 def patient_transfer(request, pk):
     """Bemorni boshqa bo'limga ko'chirish"""
