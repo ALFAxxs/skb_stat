@@ -450,10 +450,14 @@ def patient_card_edit(request, pk):
     death_instance = getattr(patient, 'death_cause', None)
 
     if request.method == 'POST':
-        # Chiqarish modal dan kelgan so'rov — faqat admin/doctor/statistician
-        if request.POST.get('_discharge') and request.user.role == 'reception' and not request.user.is_superuser:
-            messages.error(request, "Sizda bemorni chiqarish huquqi yo'q.")
-            return redirect('patient_detail', pk=pk)
+        # Chiqarish modal dan kelgan so'rov — faqat admin/doctor/statistician, faqat statsionar
+        if request.POST.get('_discharge'):
+            if patient.visit_type == 'ambulatory':
+                messages.error(request, "Ambulator bemor chiqarilmaydi.")
+                return redirect('patient_detail', pk=pk)
+            if request.user.role == 'reception' and not request.user.is_superuser:
+                messages.error(request, "Sizda bemorni chiqarish huquqi yo'q.")
+                return redirect('patient_detail', pk=pk)
 
         if request.POST.get('_discharge'):
             from apps.patients.models import Doctor as PatientDoctor
@@ -1282,6 +1286,11 @@ def patient_transfer(request, pk):
     from apps.patients.models import PatientTransfer, Department, Doctor
 
     patient      = get_object_or_404(PatientCard, pk=pk)
+
+    if patient.visit_type == 'ambulatory':
+        messages.error(request, "Ambulator bemor ko'chirilmaydi.")
+        return redirect('patient_detail', pk=pk)
+
     to_dept_id   = request.POST.get('to_department')
     to_doc_id    = request.POST.get('to_doctor')
     to_head_id   = request.POST.get('to_dept_head')
