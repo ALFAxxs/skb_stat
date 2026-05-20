@@ -106,15 +106,18 @@
             <th>Bemor</th>
             <th>Karta №</th>
             <th>Xizmatlar va holati</th>
-            <th width="100" class="text-center">Amal</th>
           </tr>
         </thead>
         <tbody>
           {% for data in patients_list %}
-          <tr>
+          <tr style="cursor:pointer;"
+              onclick="window.location='{% url 'lab_patient' data.patient.pk %}'">
             <td class="text-muted small">{{ forloop.counter }}</td>
             <td>
-              <strong>{{ data.patient.full_name }}</strong><br>
+              <a href="{% url 'lab_patient' data.patient.pk %}"
+                 class="text-decoration-none fw-bold">
+                {{ data.patient.full_name }}
+              </a><br>
               <small class="text-muted">
                 {% if data.patient.gender == 'M' %}Erkak{% else %}Ayol{% endif %}
                 · {{ data.patient.birth_date|date:"d.m.Y" }}
@@ -134,10 +137,6 @@
                 {{ svc_data.ps.service.name }}
               </span>
               {% endfor %}
-            </td>
-            <td class="text-center">
-              <a href="{% url 'lab_patient' data.patient.pk %}"
-                 class="btn btn-primary btn-sm">🔬 Ochish</a>
             </td>
           </tr>
           {% endfor %}

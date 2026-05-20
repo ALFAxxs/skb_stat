@@ -157,7 +157,8 @@
         </thead>
         <tbody>
             {% for patient in page_obj %}
-            <tr>
+            <tr style="cursor:pointer;"
+                onclick="if(!event.target.closest('a,button'))window.location='{% url 'patient_detail' patient.pk %}'">
                 <td class="small">
                     <div class="text-muted">{{ patient.medical_record_number }}</div>
                     {% if patient.registered_by %}
