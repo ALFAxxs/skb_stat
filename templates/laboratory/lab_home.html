@@ -1,30 +1,34 @@
 {% extends "base.html" %}
-
-{% block title %}Laboratoriya — Bugungi buyurtmalar{% endblock %}
+{% block title %}Laboratoriya — {{ filter_date|date:"d.m.Y" }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-3">
 
   <!-- Sarlavha -->
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0">🔬 Laboratoriya</h4>
-    <a href="{% url 'lab_template_list' %}" class="btn btn-outline-secondary btn-sm">
-      📋 Shablonlar
-    </a>
+    <h4 class="mb-0">🔬 Laboratoriya
+      <span class="badge bg-secondary ms-2">{{ patients_list|length }} bemor</span>
+    </h4>
+    <a href="{% url 'lab_template_list' %}" class="btn btn-outline-secondary btn-sm">📋 Shablonlar</a>
   </div>
 
-  <!-- Sana filtri -->
-  <div class="card mb-3">
+  <!-- Filtrlar -->
+  <div class="card mb-3 shadow-sm">
     <div class="card-body py-2">
       <form method="get" class="row g-2 align-items-end">
         <div class="col-auto">
-          <label class="form-label mb-0 small">Sana:</label>
-          <input
-            type="date"
-            name="date"
-            class="form-control form-control-sm"
-            value="{{ filter_date|date:'Y-m-d' }}"
-          >
+          <label class="form-label mb-0 small fw-semibold">Sana</label>
+          <input type="date" name="date" class="form-control form-control-sm"
+                 value="{{ filter_date|date:'Y-m-d' }}">
+        </div>
+        <div class="col-auto">
+          <label class="form-label mb-0 small fw-semibold">Holat</label>
+          <select name="status" class="form-select form-select-sm" style="min-width:160px">
+            <option value="">Barcha holatlar</option>
+            {% for val, label in item_statuses %}
+            <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
         </div>
         <div class="col-auto">
           <button type="submit" class="btn btn-primary btn-sm">Ko'rsatish</button>
@@ -34,66 +38,106 @@
     </div>
   </div>
 
-  <!-- Natijalar jadvali -->
+  <!-- Tezkor statistika -->
+  {% if status_counts %}
+  <div class="row g-2 mb-3">
+    {% if status_counts.pending %}
+    <div class="col-auto">
+      <a href="?date={{ filter_date|date:'Y-m-d' }}&status=pending"
+         class="badge bg-secondary text-decoration-none fs-6 py-2 px-3">
+        🕐 Kutilmoqda: {{ status_counts.pending }}
+      </a>
+    </div>
+    {% endif %}
+    {% if status_counts.sample_taken %}
+    <div class="col-auto">
+      <a href="?date={{ filter_date|date:'Y-m-d' }}&status=sample_taken"
+         class="badge bg-info text-dark text-decoration-none fs-6 py-2 px-3">
+        🧪 Namuna: {{ status_counts.sample_taken }}
+      </a>
+    </div>
+    {% endif %}
+    {% if status_counts.in_progress %}
+    <div class="col-auto">
+      <a href="?date={{ filter_date|date:'Y-m-d' }}&status=in_progress"
+         class="badge bg-warning text-dark text-decoration-none fs-6 py-2 px-3">
+        ⚙️ Jarayonda: {{ status_counts.in_progress }}
+      </a>
+    </div>
+    {% endif %}
+    {% if status_counts.result_entering %}
+    <div class="col-auto">
+      <a href="?date={{ filter_date|date:'Y-m-d' }}&status=result_entering"
+         class="badge bg-primary text-decoration-none fs-6 py-2 px-3">
+        ✏️ Kiritilmoqda: {{ status_counts.result_entering }}
+      </a>
+    </div>
+    {% endif %}
+    {% if status_counts.completed %}
+    <div class="col-auto">
+      <a href="?date={{ filter_date|date:'Y-m-d' }}&status=completed"
+         class="badge bg-success text-decoration-none fs-6 py-2 px-3">
+        ✅ Tayyor: {{ status_counts.completed }}
+      </a>
+    </div>
+    {% endif %}
+    {% if status_counts.rejected %}
+    <div class="col-auto">
+      <a href="?date={{ filter_date|date:'Y-m-d' }}&status=rejected"
+         class="badge bg-danger text-decoration-none fs-6 py-2 px-3">
+        ✕ Rad: {{ status_counts.rejected }}
+      </a>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Bemorlar jadvali -->
   {% if patients_list %}
-  <div class="card">
-    <div class="card-header py-2">
-      <strong>{{ filter_date|date:"d.m.Y" }} — Buyurtmalar</strong>
-      <span class="badge bg-primary ms-2">{{ patients_list|length }} bemor</span>
+  <div class="card shadow-sm">
+    <div class="card-header py-2 bg-primary text-white">
+      <strong>{{ filter_date|date:"d.m.Y" }} — Laboratoriya buyurtmalari</strong>
     </div>
     <div class="table-responsive">
-      <table class="table table-hover table-sm mb-0">
+      <table class="table table-hover table-sm align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th width="40">#</th>
-            <th>Bemor ismi</th>
+            <th width="36">#</th>
+            <th>Bemor</th>
             <th>Karta №</th>
-            <th>Buyurilgan xizmatlar</th>
-            <th width="100" class="text-center">Natijalar</th>
-            <th width="130" class="text-center">Amal</th>
+            <th>Xizmatlar va holati</th>
+            <th width="100" class="text-center">Amal</th>
           </tr>
         </thead>
         <tbody>
-          {% for item in patients_list %}
+          {% for data in patients_list %}
           <tr>
-            <td>{{ forloop.counter }}</td>
+            <td class="text-muted small">{{ forloop.counter }}</td>
             <td>
-              <strong>{{ item.patient.full_name }}</strong>
-              <br>
+              <strong>{{ data.patient.full_name }}</strong><br>
               <small class="text-muted">
-                {% if item.patient.gender == 'M' %}Erkak{% else %}Ayol{% endif %}
-                &middot; {{ item.patient.birth_date|date:"d.m.Y" }}
+                {% if data.patient.gender == 'M' %}Erkak{% else %}Ayol{% endif %}
+                · {{ data.patient.birth_date|date:"d.m.Y" }}
               </small>
             </td>
+            <td><code class="small">{{ data.patient.medical_record_number }}</code></td>
             <td>
-              <code>{{ item.patient.medical_record_number }}</code>
-            </td>
-            <td>
-              {% for svc in item.services %}
-                <span class="badge bg-light text-dark border me-1 mb-1">
-                  {{ svc.service.name }}
-                  <span class="ms-1
-                    {% if svc.status == 'completed' %}text-success
-                    {% elif svc.status == 'in_progress' %}text-warning
-                    {% elif svc.status == 'cancelled' %}text-danger
-                    {% else %}text-secondary{% endif %}">
-                    &bull;
-                  </span>
-                </span>
+              {% for svc_data in data.services %}
+              <span class="badge border me-1 mb-1
+                {% if svc_data.status == 'completed' or svc_data.status == 'verified' %}bg-success
+                {% elif svc_data.status == 'result_entering' %}bg-primary
+                {% elif svc_data.status == 'in_progress' %}bg-warning text-dark
+                {% elif svc_data.status == 'sample_taken' %}bg-info text-dark
+                {% elif svc_data.status == 'rejected' %}bg-danger
+                {% elif svc_data.status == 'recollect' %}bg-danger
+                {% else %}bg-light text-dark{% endif %}">
+                {{ svc_data.ps.service.name }}
+              </span>
               {% endfor %}
             </td>
             <td class="text-center">
-              {% if item.result_count > 0 %}
-                <span class="badge bg-success">{{ item.result_count }} ta</span>
-              {% else %}
-                <span class="text-muted small">—</span>
-              {% endif %}
-            </td>
-            <td class="text-center">
-              <a href="{% url 'lab_patient' item.patient.pk %}"
-                 class="btn btn-primary btn-sm">
-                🔬 Tahlillar
-              </a>
+              <a href="{% url 'lab_patient' data.patient.pk %}"
+                 class="btn btn-primary btn-sm">🔬 Ochish</a>
             </td>
           </tr>
           {% endfor %}
@@ -104,7 +148,8 @@
 
   {% else %}
   <div class="alert alert-info">
-    <strong>{{ filter_date|date:"d.m.Y" }}</strong> kuni laboratoriya buyurtmasi yo'q.
+    <strong>{{ filter_date|date:"d.m.Y" }}</strong> kuni
+    {% if status_filter %}tanlangan holatda {% endif %}laboratoriya buyurtmasi yo'q.
   </div>
   {% endif %}
 

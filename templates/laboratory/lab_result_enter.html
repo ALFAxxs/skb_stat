@@ -293,9 +293,19 @@ async function saveResult(status) {
     });
     const data = await resp.json();
     if (data.success) {
+      const statusLabels = {
+        draft:'Qoralama', done:'Bajarildi', verified:'Tasdiqlandi', printed:'Chop etildi'
+      };
+      const label = statusLabels[data.status] || data.status || '';
+      const pctText = data.pct !== undefined ? ` (${data.pct}% to'liq)` : '';
       statusEl.className = 'alert alert-success py-1 px-2 small mb-2';
-      statusEl.textContent = 'Muvaffaqiyatli saqlandi. Holat: ' + (data.status || '');
-      setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
+      statusEl.textContent = 'Saqlandi: ' + label + pctText;
+      // To'liq saqlansa va status final bo'lsa — sahifani yangilash
+      if (status && status !== '' && data.status !== 'draft') {
+        setTimeout(() => location.reload(), 1000);
+      } else {
+        setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
+      }
     } else {
       statusEl.className = 'alert alert-danger py-1 px-2 small mb-2';
       statusEl.textContent = 'Xato: ' + (data.error || "Noma'lum xato");
@@ -307,10 +317,8 @@ async function saveResult(status) {
 }
 
 {% if can_edit %}
-// Har 30 soniyada avtomatik saqlash (faqat laborant/admin)
-setInterval(() => {
-  saveResult('');
-}, 30000);
+// Har 45 soniyada avtomatik saqlash
+setInterval(() => { saveResult(''); }, 45000);
 {% endif %}
 </script>
 {% endblock %}

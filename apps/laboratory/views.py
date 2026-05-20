@@ -13,11 +13,15 @@ from apps.patients.models import PatientCard
 from apps.services.models import PatientService
 
 from .models import (
+    LabOrder,
+    LabOrderItem,
     LabParameter,
     LabParameterGroup,
     LabResult,
     LabResultValue,
+    LabStatusLog,
     LabTemplate,
+    LabTemplateService,
 )
 
 
@@ -30,9 +34,19 @@ def _can_edit_lab(request):
     return request.user.is_superuser or request.user.role in ('admin', 'laborant')
 
 
+def _item_status_priority(status):
+    """Statuslar bo'yicha tartiblash uchun priority"""
+    ORDER = ['sample_taken', 'in_progress', 'result_entering',
+             'pending', 'completed', 'verified', 'printed', 'rejected', 'recollect']
+    try:
+        return ORDER.index(status)
+    except ValueError:
+        return 99
+
+
 @login_required
 def lab_home(request):
-    """Bugungi lab buyurtmalar ro'yxati, bemorlar bo'yicha guruhlangan"""
+    """Bugungi lab xizmatlar, bemorlar bo'yicha guruhlangan + LabOrderItem statuslari"""
     if not _check_role(request):
         return redirect('patient_list')
 
@@ -46,73 +60,259 @@ def lab_home(request):
     else:
         filter_date = date.today()
 
-    # Faqat lab kategoriyasidagi xizmatlar
-    lab_services = PatientService.objects.filter(
+    # Status filtri
+    status_filter = request.GET.get('status', '')
+
+    # Bugungi lab PatientService larni olish
+    lab_ps_qs = PatientService.objects.filter(
         service__category__category_type='lab',
         ordered_at__date=filter_date,
     ).select_related(
         'patient_card', 'service', 'service__category'
-    ).order_by('patient_card__full_name')
+    ).order_by('patient_card__full_name', '-ordered_at')
+
+    # LabOrderItem statuslarini bir so'rovda olish
+    items_map = {
+        item.patient_service_id: item
+        for item in LabOrderItem.objects.filter(
+            patient_service__in=lab_ps_qs
+        ).select_related('template', 'result')
+    }
 
     # Bemorlar bo'yicha guruhlash
     patients_dict = {}
-    for ps in lab_services:
-        pk = ps.patient_card_id
-        if pk not in patients_dict:
-            patients_dict[pk] = {
-                'patient': ps.patient_card,
-                'services': [],
-            }
-        patients_dict[pk]['services'].append(ps)
+    for ps in lab_ps_qs:
+        item = items_map.get(ps.pk)
+        item_status = item.status if item else 'pending'
 
-    # Har bir bemor uchun mavjud natijalar sonini hisoblash
-    patients_list = []
-    for pk, data in patients_dict.items():
-        result_count = LabResult.objects.filter(patient_card_id=pk).count()
-        patients_list.append({
-            'patient': data['patient'],
-            'services': data['services'],
-            'result_count': result_count,
+        # Status filtri
+        if status_filter and item_status != status_filter:
+            continue
+
+        pid = ps.patient_card_id
+        if pid not in patients_dict:
+            patients_dict[pid] = {
+                'patient':  ps.patient_card,
+                'services': [],
+                'statuses': [],
+            }
+        patients_dict[pid]['services'].append({
+            'ps':         ps,
+            'item':       item,
+            'status':     item_status,
         })
+        patients_dict[pid]['statuses'].append(item_status)
+
+    # Tezkor statistika uchun counter
+    from collections import Counter
+    all_statuses = [
+        s['status']
+        for data in patients_dict.values()
+        for s in data['services']
+    ]
+    status_counts = Counter(all_statuses)
+
+    # Eng yuqori prioritetli status bo'yicha saralash
+    patients_list = sorted(
+        patients_dict.values(),
+        key=lambda d: min(_item_status_priority(s) for s in d['statuses'])
+    )
 
     context = {
-        'patients_list': patients_list,
-        'filter_date': filter_date,
-        'today': date.today(),
+        'patients_list':  patients_list,
+        'filter_date':    filter_date,
+        'today':          date.today(),
+        'status_filter':  status_filter,
+        'status_counts':  status_counts,
+        'item_statuses':  LabOrderItem.STATUS_CHOICES,
     }
     return render(request, 'laboratory/lab_home.html', context)
 
 
+def _get_or_create_order_item(patient_service, order):
+    """
+    PatientService uchun LabOrderItem topish yoki yaratish.
+    LabTemplateService orqali shablon avtomatik biriktiriladi.
+    """
+    item, created = LabOrderItem.objects.get_or_create(
+        patient_service=patient_service,
+        defaults={'order': order},
+    )
+    if created or not item.order_id:
+        item.order = order
+        item.save(update_fields=['order'])
+
+    # Shablon avtomatik biriktirish (agar hali yo'q bo'lsa)
+    if not item.template_id:
+        link = LabTemplateService.objects.filter(
+            service=patient_service.service
+        ).select_related('template').first()
+        if link:
+            item.template = link.template
+            item.save(update_fields=['template'])
+
+    return item, created
+
+
 @login_required
 def lab_patient(request, pk):
-    """Bemorning barcha lab xizmatlari va natijalari"""
+    """Bemorning barcha lab xizmatlari — LabOrderItem statuslari bilan"""
     if not _check_role(request):
         return redirect('patient_list')
 
     patient = get_object_or_404(PatientCard, pk=pk)
+    can_edit = _can_edit_lab(request)
 
-    # Bemorning barcha lab xizmatlari
+    # Bemorning barcha lab PatientService lari
     lab_services = PatientService.objects.filter(
         patient_card=patient,
         service__category__category_type='lab',
     ).select_related('service', 'service__category').order_by('-ordered_at')
 
-    # Mavjud natijalar
-    existing_results = LabResult.objects.filter(
-        patient_card=patient
-    ).select_related('template').order_by('-created_at')
+    # Bemor uchun LabOrder topish yoki yaratish
+    order, _ = LabOrder.objects.get_or_create(
+        patient_card=patient,
+        defaults={'ordered_by': request.user},
+    )
 
-    # Faol shablonlar
+    # Har bir PatientService uchun LabOrderItem topish/yaratish
+    order_items = []
+    for ps in lab_services:
+        item, _ = _get_or_create_order_item(ps, order)
+        order_items.append(item)
+
+    # Jadval uchun order itemlarni to'ldirish
+    items_with_ps = []
+    for item in LabOrderItem.objects.filter(
+        order=order
+    ).select_related(
+        'patient_service__service__category',
+        'template', 'result', 'assigned_to'
+    ).order_by('-patient_service__ordered_at'):
+        items_with_ps.append(item)
+
+    # Statuslar bo'yicha statistika
+    from collections import Counter
+    status_counts = Counter(i.status for i in items_with_ps)
+
+    # Faol shablonlar (qo'lda biriktirish uchun)
     templates = LabTemplate.objects.filter(is_active=True).order_by('category', 'name')
 
     context = {
-        'patient': patient,
-        'lab_services': lab_services,
-        'existing_results': existing_results,
-        'templates': templates,
-        'can_edit': _can_edit_lab(request),
+        'patient':       patient,
+        'order':         order,
+        'items':         items_with_ps,
+        'status_counts': status_counts,
+        'templates':     templates,
+        'can_edit':      can_edit,
+        'item_statuses': LabOrderItem.STATUS_CHOICES,
     }
     return render(request, 'laboratory/lab_patient.html', context)
+
+
+@login_required
+@require_POST
+def lab_item_transition(request, pk):
+    """
+    AJAX: LabOrderItem status o'zgartirish.
+    Body: {"action": "sample_taken" | "start_entry" | "reject" | "recollect" | "verify"}
+    """
+    if not _can_edit_lab(request):
+        return JsonResponse({'success': False, 'error': 'Ruxsat yo\'q'}, status=403)
+
+    item = get_object_or_404(
+        LabOrderItem.objects.select_related('template', 'result', 'order'),
+        pk=pk
+    )
+
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, Exception):
+        return JsonResponse({'success': False, 'error': 'JSON xatosi'}, status=400)
+
+    action = data.get('action', '')
+    note   = data.get('note', '')
+    template_id = data.get('template_id')
+
+    # Shablon biriktirish (agar action = start_entry va template_id kelsa)
+    if template_id and not item.template_id:
+        tmpl = LabTemplate.objects.filter(pk=template_id).first()
+        if tmpl:
+            item.template = tmpl
+            item.save(update_fields=['template'])
+
+    # Natija yaratish (start_entry uchun)
+    if action == 'start_entry':
+        if not item.template:
+            return JsonResponse(
+                {'success': False, 'error': 'Avval shablon tanlang'},
+                status=400
+            )
+        # LabResult topish yoki yaratish
+        if not item.result_id:
+            # Bir xil template bilan mavjud result bormi?
+            existing = LabResult.objects.filter(
+                patient_card=item.order.patient_card,
+                template=item.template,
+            ).first()
+            if existing:
+                item.result = existing
+            else:
+                item.result = LabResult.objects.create(
+                    patient_card=item.order.patient_card,
+                    template=item.template,
+                    status='draft',
+                    created_by=request.user,
+                )
+            item.save(update_fields=['result'])
+        item.transition('result_entering', request.user, note)
+        return JsonResponse({
+            'success':   True,
+            'status':    item.status,
+            'result_id': item.result_id,
+            'redirect':  f'/laboratory/result/{item.result_id}/enter/',
+        })
+
+    # Oddiy status o'tishlar
+    ACTION_MAP = {
+        'sample_taken': 'sample_taken',
+        'reject':       'rejected',
+        'recollect':    'recollect',
+        'verify':       'verified',
+        'mark_done':    'completed',
+    }
+    new_status = ACTION_MAP.get(action)
+    if not new_status:
+        return JsonResponse({'success': False, 'error': 'Noto\'g\'ri action'}, status=400)
+
+    # Rad etish uchun sabab majburiy
+    if new_status == 'rejected':
+        item.reject_reason = data.get('reject_reason', 'other')
+        item.reject_note   = note
+        item.save(update_fields=['reject_reason', 'reject_note'])
+
+    item.transition(new_status, request.user, note)
+    return JsonResponse({'success': True, 'status': item.status})
+
+
+@login_required
+@require_POST
+def lab_item_set_template(request, pk):
+    """AJAX: LabOrderItem ga shablon biriktirish"""
+    if not _can_edit_lab(request):
+        return JsonResponse({'success': False, 'error': 'Ruxsat yo\'q'}, status=403)
+
+    item = get_object_or_404(LabOrderItem, pk=pk)
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({'success': False, 'error': 'JSON xatosi'}, status=400)
+
+    template_id = data.get('template_id')
+    template = get_object_or_404(LabTemplate, pk=template_id)
+    item.template = template
+    item.save(update_fields=['template'])
+    return JsonResponse({'success': True, 'template_name': template.name})
 
 
 @login_required
@@ -270,17 +470,40 @@ def lab_result_save(request, pk):
             }
         )
 
-    if conclusion:
-        result.conclusion = conclusion
+    result.conclusion = conclusion
 
+    # Status yangilash
     if new_status in ('draft', 'done', 'verified', 'printed'):
         result.status = new_status
         if new_status == 'verified':
             result.verified_by = request.user
+        elif new_status == 'printed':
+            result.printed_at = timezone.now()
+    elif not new_status:
+        # Explicit status berilmasa — to'liqlikka qarab avtomatik
+        if result.is_complete:
+            result.status = 'done'
+        else:
+            result.status = 'draft'
 
     result.save()
 
-    return JsonResponse({'success': True, 'status': result.status})
+    # LabOrderItem statusini sinxronlashtirish
+    item = LabOrderItem.objects.filter(result=result).first()
+    if item:
+        if result.status == 'verified' and item.status != 'verified':
+            item.transition('verified', request.user)
+        elif result.status == 'done' and item.status in ('result_entering', 'in_progress', 'pending', 'sample_taken'):
+            item.transition('completed', request.user)
+        elif result.status == 'printed' and item.status != 'printed':
+            item.transition('printed', request.user)
+
+    return JsonResponse({
+        'success':   True,
+        'status':    result.status,
+        'complete':  result.is_complete,
+        'pct':       result.completion_percent,
+    })
 
 
 @login_required
