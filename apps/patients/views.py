@@ -346,6 +346,9 @@ def patient_detail(request, pk):
         'today':       timezone.localdate(),
         'transfers':   transfers,
         'transfer_periods': transfer_periods,
+        'discharge_conclusions': DischargeConclusion.objects.filter(is_active=True).order_by('name'),
+        'outcome_choices':  PatientCard.OUTCOME_CHOICES,
+        'status_choices':   PatientCard.STATUS_CHOICES,
     })
 
 
@@ -484,6 +487,9 @@ def patient_card_edit(request, pk):
                     patient.days_in_hospital = int(days_str)
                 except ValueError:
                     pass
+            conclusion_id = request.POST.get('discharge_conclusion')
+            if conclusion_id:
+                patient.discharge_conclusion = DischargeConclusion.objects.filter(pk=conclusion_id).first()
             patient.save()
             messages.success(request, f"✅ Bemor chiqarildi: {patient.full_name}")
             return redirect('patient_detail', pk=pk)

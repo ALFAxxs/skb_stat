@@ -58,26 +58,30 @@
                      value="{{ today }}" required>
             </div>
 
-            <!-- Chiqish sababi / natiija -->
+            <!-- Kasallanish yakuni -->
             <div class="col-md-4">
-              <label class="form-label fw-bold">Chiqish natijasi *</label>
+              <label class="form-label fw-bold">Kasallanish yakuni *</label>
               <select name="outcome" class="form-select" required>
                 <option value="">— Tanlang —</option>
-                <option value="recovered">Sog'ayib ketdi</option>
-                <option value="improved">Yaxshilandi</option>
-                <option value="unchanged">O'zgarishsiz</option>
-                <option value="worse">Yomonlashdi</option>
-                <option value="transferred">Ko'chirildi</option>
-                <option value="died">Vafot etdi</option>
+                {% for val, label in outcome_choices %}
+                <option value="{{ val }}" {% if patient.outcome == val %}selected{% endif %}>
+                  {{ label }}
+                </option>
+                {% endfor %}
               </select>
             </div>
 
             <!-- Status -->
             <div class="col-md-4">
-              <label class="form-label fw-bold">Status</label>
+              <label class="form-label fw-bold">Bemor statusi</label>
               <select name="status" class="form-select">
-                <option value="discharged" selected>Yakunlangan</option>
-                <option value="admitted">Davolanmoqda</option>
+                {% for val, label in status_choices %}
+                <option value="{{ val }}"
+                  {% if patient.status == val %}selected
+                  {% elif val == 'completed' and not patient.status %}selected{% endif %}>
+                  {{ label }}
+                </option>
+                {% endfor %}
               </select>
             </div>
 
@@ -89,11 +93,25 @@
                      placeholder="Yakuniy tashxis..." required>
             </div>
 
-            <!-- Chiqish xulosasi -->
+            <!-- Chiqish xulosasi (FK) -->
             <div class="col-12">
               <label class="form-label fw-bold">Chiqish xulosasi</label>
-              <textarea name="discharge_conclusion_text" class="form-control" rows="3"
-                        placeholder="Chiqish xulosasi, tavsiyalar...">{{ patient.discharge_note|default:'' }}</textarea>
+              <select name="discharge_conclusion" class="form-select">
+                <option value="">— Tanlang —</option>
+                {% for dc in discharge_conclusions %}
+                <option value="{{ dc.pk }}"
+                  {% if patient.discharge_conclusion_id == dc.pk %}selected{% endif %}>
+                  {{ dc.name }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Qo'shimcha izoh -->
+            <div class="col-12">
+              <label class="form-label fw-bold">Qo'shimcha izoh / tavsiyalar</label>
+              <textarea name="discharge_conclusion_text" class="form-control" rows="2"
+                        placeholder="Qo'shimcha izoh...">{{ patient.discharge_note|default:'' }}</textarea>
             </div>
 
             <!-- Yotgan kunlar + Shifokorlar -->
