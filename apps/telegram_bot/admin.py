@@ -1,3 +1,4 @@
+from django import forms
 from django.contrib import admin
 from .models import (
     TelegramUser, PatientTelegramBinding,
@@ -61,10 +62,96 @@ class AuditLogAdmin(admin.ModelAdmin):
         return False
 
 
+class BotConfigForm(forms.ModelForm):
+    # Kontaktlar — oddiy maydonlar
+    contact_phone   = forms.CharField(label="Telefon raqami", required=False,
+                                      help_text="Masalan: +998 71 299-62-90")
+    contact_phone2  = forms.CharField(label="Telefon raqami 2", required=False)
+    contact_email   = forms.CharField(label="E-mail", required=False)
+    contact_address = forms.CharField(label="Manzil", required=False,
+                                      widget=forms.Textarea(attrs={'rows': 2}))
+    contact_maps    = forms.CharField(label="Google Maps havolasi", required=False)
+
+    # Ish vaqti — oddiy maydonlar
+    hours_weekday   = forms.CharField(label="Dushanba–Juma", required=False,
+                                      help_text="Masalan: 08:00 – 17:00")
+    hours_saturday  = forms.CharField(label="Shanba", required=False,
+                                      help_text="Masalan: 08:00 – 13:00, yoki 'Dam olish kuni'")
+    hours_sunday    = forms.CharField(label="Yakshanba", required=False,
+                                      help_text="Masalan: Dam olish kuni")
+
+    class Meta:
+        model  = BotConfig
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            c = self.instance.contacts or {}
+            self.fields['contact_phone'].initial   = c.get('phone', '')
+            self.fields['contact_phone2'].initial  = c.get('phone2', '')
+            self.fields['contact_email'].initial   = c.get('email', '')
+            self.fields['contact_address'].initial = c.get('address', '')
+            self.fields['contact_maps'].initial    = c.get('maps', '')
+
+            h = self.instance.working_hours or {}
+            self.fields['hours_weekday'].initial  = h.get('mon_fri', '')
+            self.fields['hours_saturday'].initial = h.get('sat', '')
+            self.fields['hours_sunday'].initial   = h.get('sun', '')
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.contacts = {
+            'phone':   self.cleaned_data.get('contact_phone', ''),
+            'phone2':  self.cleaned_data.get('contact_phone2', ''),
+            'email':   self.cleaned_data.get('contact_email', ''),
+            'address': self.cleaned_data.get('contact_address', ''),
+            'maps':    self.cleaned_data.get('contact_maps', ''),
+        }
+        instance.working_hours = {
+            'mon_fri': self.cleaned_data.get('hours_weekday', ''),
+            'sat':     self.cleaned_data.get('hours_saturday', ''),
+            'sun':     self.cleaned_data.get('hours_sunday', ''),
+        }
+        if commit:
+            instance.save()
+        return instance
+
+
 @admin.register(BotConfig)
 class BotConfigAdmin(admin.ModelAdmin):
+    form = BotConfigForm
+    fieldsets = (
+        ("🏥 Klinika haqida", {
+            'fields': ('about_uz', 'about_ru'),
+        }),
+        ("📞 Kontaktlar", {
+            'fields': (
+                'contact_phone', 'contact_phone2',
+                'contact_email', 'contact_address', 'contact_maps',
+            ),
+        }),
+        ("🕐 Ish vaqti", {
+            'fields': ('hours_weekday', 'hours_saturday', 'hours_sunday'),
+        }),
+        ("👋 Xush kelibsiz matni", {
+            'fields': ('welcome_uz', 'welcome_ru', 'welcome_en'),
+            'classes': ('collapse',),
+        }),
+        ("⚙️ Texnik sozlamalar", {
+            'fields': ('is_maintenance', 'maintenance_msg'),
+            'classes': ('collapse',),
+        }),
+    )
+
     def has_add_permission(self, request):
         return not BotConfig.objects.exists()
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+    def changelist_view(self, request, extra_context=None):
+        # Ro'yxat o'rniga to'g'ridan-to'g'ri tahrirlash sahifasiga o'tish
+        obj, _ = BotConfig.objects.get_or_create(pk=1)
+        from django.shortcuts import redirect
+        return redirect(f'/admin/telegram_bot/botconfig/{obj.pk}/change/')
