@@ -195,10 +195,6 @@ def generate_contract_pdf(contract) -> bytes:
             story.append(p(f'&nbsp;&nbsp;&nbsp;&nbsp;{item}'))
         story.append(sp(1))
 
-    story += [sp(2), hr(), sp(2)]
-    story.append(p('<b>8. TOMONLARNING HUQUQIY MANZILLARI</b>', sBs))
-    story.append(sp(2))
-
     cw = W / 2 - 3*mm
     sign_table = Table([[
         Paragraph('<b>IJROCHI</b>', sB),
@@ -255,8 +251,11 @@ def generate_contract_pdf(contract) -> bytes:
         ('BOTTOMPADDING', (0,0), (-1,-1), 6),
     ]))
 
-    # Imzo jadvali va QR kodni bitta blokda saqlash — ajralmasin
+    # HR, sarlavha, imzo jadvali va QR — barchasi bitta blokda (ajralmasin)
     story.append(KeepTogether([
+        sp(2), hr(), sp(2),
+        p('<b>8. TOMONLARNING HUQUQIY MANZILLARI</b>', sBs),
+        sp(2),
         sign_table,
         sp(6),
         qr_table,
