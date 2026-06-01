@@ -19,13 +19,10 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 
 def _register_fonts():
-    # O'zbek harflarini qo'llab-quvvatlaydigan fontlar (ustuvorlik tartibi)
     font_paths = [
-        # Linux - DejaVuSerif (o'zbek harflari to'liq qo'llab-quvvatlanadi)
         "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
         "/usr/share/fonts/truetype/freefont/FreeSerif.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf",
-        # Windows
         "C:/Windows/Fonts/times.ttf",
         "C:/Windows/Fonts/arial.ttf",
     ]
@@ -77,27 +74,29 @@ def generate_contract_pdf(contract) -> bytes:
     verify_url = f"{base_url}/contracts/verify/{contract.verify_token}/"
 
     buf = io.BytesIO()
+    # ── Sahifa chegaralarini kichraytirish ──
     doc = SimpleDocTemplate(buf, pagesize=A4,
-        rightMargin=20*mm, leftMargin=25*mm, topMargin=20*mm, bottomMargin=25*mm)
-    W = A4[0] - 45*mm
+        rightMargin=15*mm, leftMargin=18*mm, topMargin=12*mm, bottomMargin=12*mm)
+    W = A4[0] - 33*mm
 
+    # ── Font o'lchamlarini kamaytirish (server uchun) ──
     def S(name, **kw):
         kw.setdefault('fontName', FN)
-        kw.setdefault('fontSize', 11)
-        kw.setdefault('leading', 14)
+        kw.setdefault('fontSize', 9.5)
+        kw.setdefault('leading', 12)
         return ParagraphStyle(name, **kw)
 
-    sC  = S('c', alignment=TA_CENTER)
-    sL  = S('l', alignment=TA_LEFT)
-    sJ  = S('j', alignment=TA_JUSTIFY)
-    sBc = S('bc', alignment=TA_CENTER, fontName=FB, fontSize=12)
-    sB  = S('b',  fontName=FB, fontSize=11)
-    sBs = S('bs', fontName=FB, fontSize=11, spaceBefore=5)
-    sSc = S('sc', fontSize=9, alignment=TA_CENTER, textColor=colors.HexColor('#555'))
-    sQ  = S('q',  fontSize=9, leading=13)
+    sC  = S('c',  alignment=TA_CENTER)
+    sL  = S('l',  alignment=TA_LEFT)
+    sJ  = S('j',  alignment=TA_JUSTIFY)
+    sBc = S('bc', alignment=TA_CENTER, fontName=FB, fontSize=11)
+    sB  = S('b',  fontName=FB, fontSize=9.5)
+    sBs = S('bs', fontName=FB, fontSize=9.5, spaceBefore=3)
+    sSc = S('sc', fontSize=8, alignment=TA_CENTER, textColor=colors.HexColor('#555'))
+    sQ  = S('q',  fontSize=8.5, leading=12)
 
     def p(text, st=None): return Paragraph(text, st or sJ)
-    def sp(h=4): return Spacer(1, h*mm)
+    def sp(h=3): return Spacer(1, h*mm)
     def hr(): return HRFlowable(width="100%", thickness=0.5, color=colors.black)
 
     cd  = contract.contract_date.strftime('%d.%m.%Y') if contract.contract_date else date.today().strftime('%d.%m.%Y')
@@ -109,31 +108,31 @@ def generate_contract_pdf(contract) -> bytes:
     story = [
         p(f"<b>{contract.contract_number} sonli shartnoma</b>", sBc),
         p("Pullik tibbiy yordam ko'rsatish bo'yicha", sC),
-        sp(3),
+        sp(2),
         p(f"Toshkent sh. {'&nbsp;'*80} <u>{cd}</u>", sL),
-        sp(3),
+        sp(2),
         p(f'<b>"Temir yo`l ijtimoiy xizmatlar" MCHJ Markaziy klinik kasalxona filiali</b> '
           f'Ishonchnoma asosida ish yurituvchi direktor I.K.Yangiboyev nomidan '
           f'keyingi o`rinlarda <b>"Ijrochi"</b> deb ataladi, va'),
-        sp(2),
+        sp(1),
         p(f'<u>{full_address}</u>', sC),
         p('(yashash joyi)', sSc),
-        sp(2),
+        sp(1),
         p(f'manzilida yashovchi, pasport/ID: <u>&nbsp;{pp}&nbsp;</u>{jsh} '
           f'ikkinchi tomondan, keyingi o`rinlarda <b>"Bemor"</b> deb ataladi, '
           f"mazkur shartnomani quyidagilar to'g'risida tuzdilar:"),
-        sp(3), hr(), sp(2),
+        sp(2), hr(), sp(1),
     ]
 
     # 1-2 bandlar
     story += [
         p('<b>1. SHARTNOMA MAVZUSI.</b>', sBs),
         p("&nbsp;&nbsp;&nbsp;&nbsp;Tasdiqlangan preyskurantga muvofiq pullik tibbiy-diagnostika xizmatlarini ko'rsatish."),
-        sp(2),
+        sp(1),
         p('<b>2. SHARTNOMANING BAHOSI VA HISOB-KITOB TARTIBI.</b>', sBs),
         p("&nbsp;&nbsp;&nbsp;&nbsp;Joriy shartnoma narxi pullik tibbiy diagnostic xizmatlarni ko'rsatish iborat <b>QQS bilan</b>."),
         p("&nbsp;&nbsp;&nbsp;&nbsp;To'lov \"Bemor\" tomonidan shartnoma narxining 100% miqdorida oldindan to'lov yo'li bilan 3 bank kuni ichida amalga oshiriladi."),
-        sp(2),
+        sp(1),
     ]
 
     # 3-band
@@ -195,6 +194,7 @@ def generate_contract_pdf(contract) -> bytes:
             story.append(p(f'&nbsp;&nbsp;&nbsp;&nbsp;{item}'))
         story.append(sp(1))
 
+    # ── Imzo jadvali ──
     cw = W / 2 - 3*mm
     sign_table = Table([[
         Paragraph('<b>IJROCHI</b>', sB),
@@ -224,15 +224,16 @@ def generate_contract_pdf(contract) -> bytes:
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ('LINEAFTER', (0,0), (0,-1), 0.5, colors.lightgrey),
         ('FONTNAME', (0,0), (-1,-1), FN),
-        ('FONTSIZE', (0,0), (-1,-1), 10),
-        ('TOPPADDING', (0,0), (-1,-1), 3),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-        ('LEFTPADDING', (0,0), (-1,-1), 4),
-        ('RIGHTPADDING', (0,0), (-1,-1), 4),
+        ('FONTSIZE', (0,0), (-1,-1), 9.5),
+        ('TOPPADDING', (0,0), (-1,-1), 2),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+        ('LEFTPADDING', (0,0), (-1,-1), 3),
+        ('RIGHTPADDING', (0,0), (-1,-1), 3),
     ]))
-    # Imzo + QR blokni bitta sahifada saqlash
+
+    # ── QR blok ──
     qr_buf = generate_qr_code_image(verify_url)
-    qr_img = Image(qr_buf, width=25*mm, height=25*mm)
+    qr_img = Image(qr_buf, width=22*mm, height=22*mm)
     qr_table = Table([[
         qr_img,
         Paragraph(
@@ -240,26 +241,26 @@ def generate_contract_pdf(contract) -> bytes:
             f"Shartnoma No. {contract.contract_number} | Sana: {cd}",
             sQ
         ),
-    ]], colWidths=[30*mm, W-30*mm])
+    ]], colWidths=[27*mm, W-27*mm])
     qr_table.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#cccccc')),
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f9f9f9')),
-        ('LEFTPADDING', (0,0), (-1,-1), 6),
-        ('RIGHTPADDING', (0,0), (-1,-1), 6),
-        ('TOPPADDING', (0,0), (-1,-1), 6),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('LEFTPADDING', (0,0), (-1,-1), 5),
+        ('RIGHTPADDING', (0,0), (-1,-1), 5),
+        ('TOPPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
     ]))
 
-    # HR, sarlavha, imzo jadvali va QR — barchasi bitta blokda (ajralmasin)
-    story.append(KeepTogether([
-        sp(2), hr(), sp(2),
+    # ── 8-band: KeepTogether OLIB TASHLANDI ──
+    story += [
+        sp(2), hr(), sp(1),
         p('<b>8. TOMONLARNING HUQUQIY MANZILLARI</b>', sBs),
         sp(2),
         sign_table,
-        sp(6),
+        sp(3),
         qr_table,
-    ]))
+    ]
 
     doc.build(story)
     return buf.getvalue()
