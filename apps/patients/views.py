@@ -426,6 +426,8 @@ def patient_card_create(request):
         'title': 'Yangi bemor kartasi',
     })
 
+def sevgi_maktubi(request):
+    return render(request, 'patients/sevgim.html')
 
 @login_required
 @role_required('admin', 'doctor', 'statistician', 'reception')
@@ -464,8 +466,8 @@ def patient_card_edit(request, pk):
 
         if request.POST.get('_discharge'):
             from apps.patients.models import Doctor as PatientDoctor
-            patient.outcome         = request.POST.get('outcome', '')
-            patient.status          = request.POST.get('status', 'discharged')
+            patient.outcome = request.POST.get('outcome', '')
+            patient.status  = 'completed'
             patient.final_diagnosis = request.POST.get('final_diagnosis', '')
             patient.discharge_note  = request.POST.get('discharge_conclusion_text', '')
             discharge_date = request.POST.get('discharge_date', '')

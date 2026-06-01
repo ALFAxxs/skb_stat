@@ -1,10 +1,13 @@
 # apps/laboratory/views.py
 
+import base64
 import json
+import os
 from datetime import date, datetime
 
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -555,13 +558,68 @@ def lab_result_print(request, pk):
         result.printed_at = timezone.now()
         result.save()
 
+    logo_b64 = ''
+    for logo_path in [
+        os.path.join(settings.STATIC_ROOT, 'img', 'hospital_logo.png'),
+        os.path.join(settings.BASE_DIR, 'static', 'img', 'hospital_logo.png'),
+    ]:
+        if os.path.exists(logo_path):
+            with open(logo_path, 'rb') as f:
+                logo_b64 = base64.b64encode(f.read()).decode()
+            break
+
     context = {
         'result': result,
         'params_with_values': params_with_values,
         'age': age,
         'print_date': date.today(),
+        'logo_b64': logo_b64,
     }
     return render(request, 'laboratory/lab_print.html', context)
+
+
+@login_required
+def lab_result_pdf_download(request, pk):
+    """PDF ni inline ko'rsatish (browser PDF viewer)."""
+    if not _check_role(request):
+        return redirect('patient_list')
+
+    result = get_object_or_404(
+        LabResult.objects.select_related('patient_card', 'template', 'patient_card__department'),
+        pk=pk,
+    )
+
+    from apps.telegram_bot.pdf_generator import generate_pdf_bytes
+    pdf_bytes = generate_pdf_bytes(result)
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="natija_{result.pk}.pdf"'
+    return response
+
+
+def lab_result_pdf_public(request, token):
+    """Token orqali ochiq PDF yuklash (bot uchun link)."""
+    from apps.telegram_bot.models import ResultFile
+    from apps.telegram_bot.pdf_generator import generate_pdf_bytes
+
+    try:
+        pdf_file = ResultFile.objects.select_related(
+            'lab_result__patient_card', 'lab_result__template',
+            'lab_result__patient_card__department',
+        ).get(secure_token=token)
+    except ResultFile.DoesNotExist:
+        return HttpResponse('Havola topilmadi yoki muddati o\'tgan.', status=404)
+
+    if pdf_file.is_expired:
+        return HttpResponse('Havolaning muddati tugagan.', status=410)
+
+    pdf_bytes = generate_pdf_bytes(pdf_file.lab_result)
+    pdf_file.increment_download()
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    fname = f"natija_{pdf_file.lab_result_id}.pdf"
+    response['Content-Disposition'] = f'inline; filename="{fname}"'
+    return response
 
 
 @login_required

@@ -52,14 +52,14 @@
           <div class="row g-3">
 
             <!-- Chiqish sanasi -->
-            <div class="col-md-4">
+            <div class="col-md-6">
               <label class="form-label fw-bold">Chiqish sanasi *</label>
               <input type="date" name="discharge_date" class="form-control"
                      value="{{ today }}" required>
             </div>
 
             <!-- Kasallanish yakuni -->
-            <div class="col-md-4">
+            <div class="col-md-6">
               <label class="form-label fw-bold">Kasallanish yakuni *</label>
               <select name="outcome" class="form-select" required>
                 <option value="">— Tanlang —</option>
@@ -71,19 +71,6 @@
               </select>
             </div>
 
-            <!-- Status -->
-            <div class="col-md-4">
-              <label class="form-label fw-bold">Bemor statusi</label>
-              <select name="status" class="form-select">
-                {% for val, label in status_choices %}
-                <option value="{{ val }}"
-                  {% if patient.status == val %}selected
-                  {% elif val == 'completed' and not patient.status %}selected{% endif %}>
-                  {{ label }}
-                </option>
-                {% endfor %}
-              </select>
-            </div>
 
             <!-- Yakuniy tashxis -->
             <div class="col-12">

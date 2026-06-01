@@ -11,6 +11,8 @@ from .views import (
     lab_patient,
     lab_result_create,
     lab_result_enter,
+    lab_result_pdf_download,
+    lab_result_pdf_public,
     lab_result_print,
     lab_result_save,
     lab_template_create,
@@ -34,6 +36,8 @@ urlpatterns = [
     path('result/<int:pk>/enter/', lab_result_enter, name='lab_result_enter'),
     path('result/<int:pk>/save/', lab_result_save, name='lab_result_save'),
     path('result/<int:pk>/print/', lab_result_print, name='lab_result_print'),
+    path('result/<int:pk>/pdf/', lab_result_pdf_download, name='lab_result_pdf_download'),
+    path('result/pdf/<str:token>/', lab_result_pdf_public, name='lab_result_pdf_public'),
 
     # ── Templates ────────────────────────────────────────
     path('templates/', lab_template_list, name='lab_template_list'),

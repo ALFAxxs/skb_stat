@@ -14,4 +14,5 @@ urlpatterns = [
     path('contracts/', include('apps.contracts.urls')),
     path('queue/', include('apps.queue_app.urls')),
     path('laboratory/', include('apps.laboratory.urls')),
+    path('api/bot/', include('apps.telegram_bot.urls')),
 ]

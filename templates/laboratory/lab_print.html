@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lab natijasi № {{ result.pk }} — {{ result.patient_card.full_name }}</title>
+  <title>Lab natijasi &numero; {{ result.pk }} &mdash; {{ result.patient_card.full_name }}</title>
   <style>
     @page {
       size: A4;
@@ -22,20 +22,24 @@
       padding: 10px;
     }
     .hospital-header {
-      text-align: center;
-      border-bottom: 2px solid #000;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 3px solid #1a5276;
       padding-bottom: 8px;
       margin-bottom: 10px;
     }
-    .hospital-header .name {
-      font-size: 13pt;
+    .hospital-header img { width: 80px; height: 80px; flex-shrink: 0; }
+    .hospital-header-text { flex: 1; text-align: center; }
+    .hospital-header-text .org { font-size: 9pt; font-style: italic; color: #333; }
+    .hospital-header-text .main-name {
+      font-size: 14pt;
       font-weight: bold;
+      color: #1a5276;
       text-transform: uppercase;
+      margin: 3px 0;
     }
-    .hospital-header .sub {
-      font-size: 9pt;
-      margin-top: 2px;
-    }
+    .hospital-header-text .address { font-size: 8.5pt; color: #444; }
     .result-title {
       text-align: center;
       margin: 10px 0;
@@ -121,13 +125,17 @@
 </head>
 <body>
 
-  <!-- Shifoxona boshliqi -->
+  <!-- Shifoxona shapkasi -->
   <div class="hospital-header">
-    <div class="name">O'zbekiston temir yo'llari AJ &mdash; Markaziy klinik kasalxona</div>
-    <div class="sub">
-      100047, Toshkent, Yashnobod t-n., 2-tor Taraqqiyot ko'chasi, 12a
-      &nbsp;&nbsp;|&nbsp;&nbsp;
-      Tel: (99871) 299-62-90
+    {% if logo_b64 %}<img src="data:image/png;base64,{{ logo_b64 }}" alt="logo">{% endif %}
+    <div class="hospital-header-text">
+      <div class="org">&ldquo;O&lsquo;ZBEKISTON TEMIR YO&lsquo;LLARI&rdquo; AJ</div>
+      <div class="org">&ldquo;TEMIR YO&lsquo;L IJTIMOIY XIZMATLAR&rdquo; MCHJ</div>
+      <div class="main-name">Markaziy klinik kasalxonasi filiali</div>
+      <div class="address">
+        100047 Toshkent sh., Yashnobod t-n., Cho&lsquo;lpon MFY Pahlavon Mahmud ko&lsquo;chasi 36 B-uy
+        &nbsp;|&nbsp; Tel: (99871) 299-62-90 &nbsp;|&nbsp; E-mail: mkk320@mail.ru
+      </div>
     </div>
   </div>
 
@@ -137,7 +145,7 @@
     <div class="date">
       № {{ result.pk }}
       &nbsp;&nbsp;&mdash;&nbsp;&nbsp;
-      {{ result.created_at|date:"d.m.Y H:i" }}
+      {{ result.created_at|date:"d.m.Y" }}
     </div>
   </div>
 
@@ -218,17 +226,8 @@
   <div class="conclusion-box">{{ result.conclusion }}</div>
   {% endif %}
 
-  <!-- Imzo qismi -->
   <div class="footer-line">
-    <div>
-      Laborant: <span class="footer-sign">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-    </div>
-    <div>
-      Mudiri: <span class="footer-sign">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-    </div>
-    <div>
-      Sana: {{ print_date|date:"d.m.Y" }}
-    </div>
+    <div>Sana: {{ print_date|date:"d.m.Y" }}</div>
   </div>
 
   <script>

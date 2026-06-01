@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: Arial, sans-serif; font-size: 11px; color: #212529; padding: 20px; }
+
+  .hospital-header {
+    display: flex;
+    align-items: center;
+    border-bottom: 3px solid #1a5276;
+    padding-bottom: 8px;
+    margin-bottom: 14px;
+    gap: 14px;
+  }
+  .hospital-header img { width: 72px; height: 72px; flex-shrink: 0; }
+  .hospital-header-text { flex: 1; text-align: center; }
+  .hospital-header-text .org1 { font-size: 9px; font-style: italic; color: #333; }
+  .hospital-header-text .org2 { font-size: 9px; font-style: italic; color: #333; margin-bottom: 2px; }
+  .hospital-header-text .main-name {
+    font-size: 15px; font-weight: bold; color: #1a5276;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .hospital-header-text .address { font-size: 8.5px; color: #555; }
+
+  .patient-info { background:#F0F4FF; border-radius:6px; padding:8px 12px;
+                  margin-bottom:12px; display:flex; gap:20px; flex-wrap:wrap; }
+  .patient-info span { white-space:nowrap; }
+  .patient-info b { color:#1565C0; }
+
+  h2 { font-size:13px; color:#1565C0; margin-bottom:8px; text-align:center; }
+
+  table { width:100%; border-collapse:collapse; margin-bottom:12px; font-size:10px; }
+  thead th { background:#1565C0; color:#fff; padding:5px 6px; text-align:left; }
+  tbody tr:nth-child(even) { background:#f9f9f9; }
+  tbody td { padding:4px 6px; border-bottom:1px solid #e0e0e0; }
+
+  .group-row td { background:#E3F2FD; font-weight:bold; color:#0D47A1;
+                  font-size:10px; padding:4px 6px; }
+
+  .status-high     { background:#FFF9C4; }
+  .status-low      { background:#E1F5FE; }
+  .status-critical { background:#FFEBEE; font-weight:bold; color:#B71C1C; }
+
+  .conclusion { border:1px solid #ccc; border-radius:4px; padding:8px;
+                margin-bottom:12px; background:#FAFAFA; }
+  .conclusion b { color:#1565C0; }
+
+  .footer { border-top:1px solid #ccc; padding-top:8px; margin-top:8px;
+            text-align:right; font-size:9px; color:#777; }
+
+  .qr-note { font-size:8px; color:#aaa; }
+</style>
+</head>
+<body>
+
+<!-- Shifoxona shapkasi -->
+<div class="hospital-header">
+  {% if logo_b64 %}
+  <img src="data:image/png;base64,{{ logo_b64 }}" alt="logo">
+  {% endif %}
+  <div class="hospital-header-text">
+    <div class="org1">&ldquo;O&lsquo;ZBEKISTON TEMIR YO&lsquo;LLARI&rdquo; AJ</div>
+    <div class="org2">&ldquo;TEMIR YO&lsquo;L IJTIMOIY XIZMATLAR&rdquo; MCHJ</div>
+    <div class="main-name">Markaziy klinik kasalxonasi filiali</div>
+    <div class="address">
+      100047 Toshkent sh., Yashnobod t-n., Cho&lsquo;lpon MFY Pahlavon Mahmud ko&lsquo;chasi 36 B-uy
+      &nbsp;|&nbsp; Tel: (99871) 299-62-90 &nbsp;|&nbsp; E-mail: mkk320@mail.ru
+    </div>
+  </div>
+</div>
+
+<!-- Bemor ma'lumotlari -->
+<div class="patient-info">
+  <span><b>Bemor:</b> {{ patient.full_name }}</span>
+  <span><b>Yosh:</b> {{ age }}</span>
+  <span><b>Jinsi:</b> {% if patient.gender == 'M' %}Erkak{% else %}Ayol{% endif %}</span>
+  <span><b>Karta &numero;:</b> {{ patient.medical_record_number }}</span>
+  {% if patient.department %}<span><b>Bo&lsquo;lim:</b> {{ patient.department }}</span>{% endif %}
+</div>
+
+<!-- Tahlil nomi -->
+<h2>{{ result.template.name }}</h2>
+
+<!-- Parametrlar -->
+<table>
+  <thead>
+    <tr>
+      <th style="width:40%">Parametr</th>
+      <th style="width:18%">Natija</th>
+      <th style="width:12%">Birlik</th>
+      <th style="width:20%">Me&lsquo;yor</th>
+      <th style="width:10%">Holat</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for group in groups %}
+    <tr class="group-row"><td colspan="5">{{ group.name }}</td></tr>
+    {% for e in group.params %}
+    <tr class="status-{{ e.value_status }}">
+      <td>{{ e.param.name }}{% if e.param.name_ru %} <span style="color:#888">({{ e.param.name_ru }})</span>{% endif %}</td>
+      <td><b>{{ e.value }}</b></td>
+      <td>{{ e.param.unit }}</td>
+      <td>{{ e.normal_display }}</td>
+      <td>
+        {% if e.value_status == 'high' %}&uarr; Yuqori
+        {% elif e.value_status == 'low' %}&darr; Past
+        {% elif e.value_status == 'critical' %}!! Kritik
+        {% else %}&mdash;{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    {% endfor %}
+
+    {% for e in ungrouped %}
+    <tr class="status-{{ e.value_status }}">
+      <td>{{ e.param.name }}</td>
+      <td><b>{{ e.value }}</b></td>
+      <td>{{ e.param.unit }}</td>
+      <td>{{ e.normal_display }}</td>
+      <td>
+        {% if e.value_status == 'high' %}&uarr;
+        {% elif e.value_status == 'low' %}&darr;
+        {% elif e.value_status == 'critical' %}!!
+        {% else %}&mdash;{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if result.conclusion %}
+<div class="conclusion">
+  <b>Xulosa:</b> {{ result.conclusion }}
+</div>
+{% endif %}
+
+<!-- Footer -->
+<div class="footer">
+  Chop etilgan: {{ print_date|date:"d.m.Y" }}<br>
+  <span class="qr-note">Token: {{ qr_token }}</span>
+</div>
+
+</body>
+</html>

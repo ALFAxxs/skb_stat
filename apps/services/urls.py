@@ -6,6 +6,7 @@ from . import views
 urlpatterns = [
     # Bemor xizmatlari
     path('patient/<int:patient_pk>/', views.patient_services, name='patient_services'),
+    path('patient/<int:patient_pk>/check/', views.patient_check, name='patient_check'),
     path('patient/<int:patient_pk>/add/', views.add_service, name='add_service'),
     path('<int:pk>/update/', views.update_service, name='update_service'),
     path('<int:pk>/delete/', views.delete_service, name='delete_service'),

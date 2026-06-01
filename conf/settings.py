@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
     #my_apps
     'apps.statistic',
     'apps.patients',
@@ -47,7 +48,31 @@ INSTALLED_APPS = [
     'apps.contracts',
     'apps.queue_app',
     'apps.laboratory',
+    'apps.telegram_bot',
 ]
+
+MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL  = '/media/'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [],
+    'DEFAULT_PERMISSION_CLASSES':     [],
+}
+
+# Telegram Bot
+TELEGRAM_BOT_TOKEN  = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+TELEGRAM_BOT_SECRET = os.environ.get('TELEGRAM_BOT_SECRET', 'change-me-in-production')
+
+# Redis
+REDIS_URL = os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/0')
+
+# Celery
+CELERY_BROKER_URL         = REDIS_URL
+CELERY_RESULT_BACKEND     = REDIS_URL
+CELERY_TASK_SERIALIZER    = 'json'
+CELERY_RESULT_SERIALIZER  = 'json'
+CELERY_ACCEPT_CONTENT     = ['json']
+CELERY_TIMEZONE           = 'Asia/Tashkent'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

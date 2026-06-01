@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<title>Check — {{ patient.full_name }}</title>
+<style>
+  @page {
+    size: 80mm auto;
+    margin: 4mm 3mm;
+  }
+  @media print {
+    body  { margin: 0; padding: 0; }
+    .no-print { display: none !important; }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 11px;
+    color: #000;
+    background: #fff;
+    width: 74mm;
+    padding: 3mm;
+  }
+
+  .center  { text-align: center; }
+  .right   { text-align: right; }
+  .bold    { font-weight: bold; }
+  .divider { border-top: 1px dashed #000; margin: 4px 0; }
+  .divider-solid { border-top: 1px solid #000; margin: 4px 0; }
+
+  .header-name {
+    font-size: 12px;
+    font-weight: bold;
+    text-align: center;
+    text-transform: uppercase;
+    line-height: 1.4;
+  }
+  .header-sub {
+    font-size: 9px;
+    text-align: center;
+    line-height: 1.4;
+    margin-bottom: 2px;
+  }
+
+  .patient-block {
+    margin: 5px 0;
+    font-size: 11px;
+  }
+  .patient-block .label { font-size: 9px; color: #444; }
+  .patient-block .value { font-weight: bold; }
+
+  table.services {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 4px 0;
+  }
+  table.services th {
+    font-size: 9px;
+    font-weight: bold;
+    border-bottom: 1px solid #000;
+    padding: 2px 0;
+  }
+  table.services th:last-child,
+  table.services td:last-child { text-align: right; }
+  table.services td {
+    font-size: 10px;
+    padding: 3px 0;
+    border-bottom: 1px dotted #ccc;
+    vertical-align: top;
+  }
+  table.services .svc-name { max-width: 42mm; word-break: break-word; }
+  table.services .qty-col  { text-align: center; width: 8mm; }
+  table.services .price-col { text-align: right; width: 18mm; white-space: nowrap; }
+
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 5px 0 3px;
+    font-size: 13px;
+    font-weight: bold;
+  }
+
+  .footer {
+    text-align: center;
+    font-size: 9px;
+    margin-top: 6px;
+    color: #444;
+    line-height: 1.5;
+  }
+
+  /* Ekran ko'rinishi uchun */
+  @media screen {
+    body {
+      width: 80mm;
+      margin: 20px auto;
+      border: 1px solid #ccc;
+      padding: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.15);
+    }
+    .no-print {
+      display: block;
+      text-align: center;
+      margin: 16px auto;
+      width: 80mm;
+    }
+    .no-print button {
+      padding: 8px 24px;
+      background: #185FA5;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Shifoxona boshlig'i -->
+<div class="header-name">
+  Markaziy klinik<br>kasalxonasi filiali
+</div>
+<div class="header-sub">
+  Yashnobod t-n., Pahlavon Mahmud ko'ch. 36B<br>
+  Tel: (99871) 299-62-90
+</div>
+
+<div class="divider-solid"></div>
+
+<!-- Bemor -->
+<div class="patient-block">
+  <div class="label">Bemor:</div>
+  <div class="value">{{ patient.full_name }}</div>
+  {% if patient.medical_record_number %}
+  <div class="label" style="margin-top:2px;">Karta №: <span style="font-weight:normal">{{ patient.medical_record_number }}</span></div>
+  {% endif %}
+</div>
+
+<div class="divider"></div>
+
+<!-- Sana -->
+<div style="font-size:9px; margin-bottom:3px;">
+  Sana: {{ now|date:"d.m.Y H:i" }}
+</div>
+
+<div class="divider"></div>
+
+<!-- Xizmatlar jadvali -->
+<table class="services">
+  <thead>
+    <tr>
+      <th class="svc-name">Xizmat</th>
+      <th class="qty-col">Son</th>
+      <th class="price-col">Summa</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in services %}
+    <tr>
+      <td class="svc-name">{{ s.service.name }}</td>
+      <td class="qty-col">{{ s.quantity }}</td>
+      <td class="price-col">{{ s.total_price|floatformat:0 }}</td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="3" style="text-align:center; color:#888; padding:6px 0;">
+        Xizmatlar yo'q
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="divider-solid"></div>
+
+<!-- Jami -->
+<div class="total-row">
+  <span>JAMI:</span>
+  <span>{{ total|floatformat:0 }} so'm</span>
+</div>
+
+<div class="divider"></div>
+
+<!-- Footer -->
+<div class="footer">
+  Xizmat uchun rahmat!<br>
+  {{ now|date:"d.m.Y" }}
+</div>
+
+</body>
+
+<!-- Ekran tugmasi -->
+<div class="no-print">
+  <button onclick="window.print()">🖨 Chop etish</button>
+</div>
+
+<script>
+  // Avtomatik print dialog
+  window.onload = function () { window.print(); };
+</script>
+</html>

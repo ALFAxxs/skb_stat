@@ -70,6 +70,25 @@ def service_search(request):
 # ==================== BEMOR XIZMATLARI ====================
 
 @login_required
+def patient_check(request, patient_pk):
+    """80mm check chop etish"""
+    patient = get_object_or_404(PatientCard, pk=patient_pk)
+
+    services = PatientService.objects.filter(
+        patient_card=patient,
+    ).exclude(status='cancelled').select_related('service').order_by('ordered_at')
+
+    total = sum(s.total_price for s in services)
+
+    return render(request, 'services/patient_check.html', {
+        'patient':  patient,
+        'services': services,
+        'total':    total,
+        'now':      timezone.now(),
+    })
+
+
+@login_required
 def patient_services(request, patient_pk):
     """Bemorning barcha xizmatlari"""
     patient = get_object_or_404(PatientCard, pk=patient_pk)

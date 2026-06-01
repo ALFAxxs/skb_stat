@@ -33,6 +33,9 @@
       </div>
     </div>
     <div class="d-flex gap-2">
+      <a href="{% url 'lab_result_pdf_download' result.pk %}" class="btn btn-danger btn-sm" target="_blank">
+        📄 PDF ko'rish
+      </a>
       <a href="{% url 'lab_result_print' result.pk %}" class="btn btn-outline-secondary btn-sm" target="_blank">
         🖨 Chop etish
       </a>
@@ -247,6 +250,9 @@
       🔒 Tasdiqlash
     </button>
     {% endif %}
+    <a href="{% url 'lab_result_pdf_download' result.pk %}" class="btn btn-danger" target="_blank">
+      📄 PDF ko'rish
+    </a>
     <a href="{% url 'lab_result_print' result.pk %}" class="btn btn-outline-secondary" target="_blank">
       🖨 Chop etish
     </a>

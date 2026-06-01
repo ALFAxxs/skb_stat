@@ -52,6 +52,8 @@
                 onclick="openServiceModal()"
                 ontouchend="openServiceModal()">➕ Xizmat qo'shish</button>
 
+        <a href="{% url 'patient_check' patient.pk %}" class="btn btn-outline-dark" target="_blank">🧾 Check</a>
+
         <a href="{% url 'patient_detail' patient.pk %}" class="btn btn-outline-secondary">← Bemor kartasi</a>
     </div>
 </div>
