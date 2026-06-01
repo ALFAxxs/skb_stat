@@ -86,6 +86,14 @@
     page-break-inside: avoid;
     break-inside: avoid;
   }
+  .no-break-after {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+  .no-break-before {
+    page-break-before: avoid;
+    break-before: avoid;
+  }
 </style>
 </head>
 <body>
@@ -178,11 +186,10 @@
 <p class="indent">7.6. Xizmatlar Ijrochi va Bemor tomonidan xizmatga qabul qilish dalolatnomasi imzolanganidan keyin ko'rsatilgan hisoblanadi.</p>
 
 <!-- IMZOLAR -->
-<div class="parties-section">
-<hr class="divider" style="margin-top:8px;">
-<p class="section-title">8. TOMONLARNING HUQUQIY MANZILLARI</p>
+<hr class="divider no-break-after" style="margin-top:8px;">
+<p class="section-title no-break-after">8. TOMONLARNING HUQUQIY MANZILLARI</p>
 
-<table class="parties-table">
+<table class="parties-table no-break-before">
   <tr>
     <td>
       <p class="bold">IJROCHI</p>
@@ -213,7 +220,6 @@
     </td>
   </tr>
 </table>
-</div>
 
 <!-- QR KOD -->
 <div class="qr-block">
