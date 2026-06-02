@@ -17,39 +17,44 @@
 
   body {
     font-family: 'Courier New', Courier, monospace;
-    font-size: 11px;
+    font-size: 12px;
+    font-weight: 600;
     color: #000;
     background: #fff;
     width: 74mm;
     padding: 3mm;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   .center  { text-align: center; }
   .right   { text-align: right; }
-  .bold    { font-weight: bold; }
-  .divider { border-top: 1px dashed #000; margin: 4px 0; }
-  .divider-solid { border-top: 1px solid #000; margin: 4px 0; }
+  .bold    { font-weight: 900; }
+  .divider { border-top: 2px dashed #000; margin: 5px 0; }
+  .divider-solid { border-top: 2px solid #000; margin: 5px 0; }
 
   .header-name {
-    font-size: 12px;
-    font-weight: bold;
+    font-size: 13px;
+    font-weight: 900;
     text-align: center;
     text-transform: uppercase;
-    line-height: 1.4;
+    line-height: 1.5;
+    letter-spacing: 0.3px;
   }
   .header-sub {
-    font-size: 9px;
+    font-size: 10px;
+    font-weight: 600;
     text-align: center;
-    line-height: 1.4;
+    line-height: 1.5;
     margin-bottom: 2px;
   }
 
   .patient-block {
     margin: 5px 0;
-    font-size: 11px;
+    font-size: 12px;
   }
-  .patient-block .label { font-size: 9px; color: #444; }
-  .patient-block .value { font-weight: bold; }
+  .patient-block .label { font-size: 10px; font-weight: 600; color: #000; }
+  .patient-block .value { font-weight: 900; font-size: 13px; }
 
   table.services {
     width: 100%;
@@ -57,17 +62,18 @@
     margin: 4px 0;
   }
   table.services th {
-    font-size: 9px;
-    font-weight: bold;
-    border-bottom: 1px solid #000;
-    padding: 2px 0;
+    font-size: 10px;
+    font-weight: 900;
+    border-bottom: 2px solid #000;
+    padding: 3px 0;
   }
   table.services th:last-child,
   table.services td:last-child { text-align: right; }
   table.services td {
-    font-size: 10px;
-    padding: 3px 0;
-    border-bottom: 1px dotted #ccc;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 0;
+    border-bottom: 1px solid #000;
     vertical-align: top;
   }
   table.services .svc-name { max-width: 42mm; word-break: break-word; }
@@ -78,17 +84,19 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 5px 0 3px;
-    font-size: 13px;
-    font-weight: bold;
+    margin: 6px 0 4px;
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 0.3px;
   }
 
   .footer {
     text-align: center;
-    font-size: 9px;
+    font-size: 10px;
+    font-weight: 600;
     margin-top: 6px;
-    color: #444;
-    line-height: 1.5;
+    color: #000;
+    line-height: 1.6;
   }
 
   /* Ekran ko'rinishi uchun */

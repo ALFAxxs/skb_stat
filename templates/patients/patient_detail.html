@@ -20,7 +20,9 @@
             {% endwith %}
         </a>
         {% endif %}
+        {% if request.user.is_superuser or request.user.role == 'admin' %}
         <a href="{% url 'patient_edit' patient.pk %}" class="btn btn-warning">✏️ Tahrirlash</a>
+        {% endif %}
         {% if patient.visit_type != 'ambulatory' %}
           {% if request.user.role != 'reception' or request.user.is_superuser %}
           <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#transferModal">🔄 Ko'chirish</button>
