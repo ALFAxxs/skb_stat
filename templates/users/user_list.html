@@ -34,7 +34,11 @@
                         {{ user.get_role_display }}
                     </span>
                 </td>
-                <td>{{ user.department|default:"—" }}</td>
+                <td>
+                    {% for d in user.departments.all %}
+                        <span class="badge bg-light text-dark border">{{ d.name }}</span>
+                    {% empty %}—{% endfor %}
+                </td>
                 <td>{{ user.phone|default:"—" }}</td>
                 <td>
                     <span class="badge {% if user.is_active %}bg-success{% else %}bg-danger{% endif %}">

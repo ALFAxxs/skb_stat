@@ -39,7 +39,7 @@ def logout_view(request):
 @login_required
 @role_required('admin')
 def user_list(request):
-    users = CustomUser.objects.select_related('department').order_by('role', 'last_name')
+    users = CustomUser.objects.prefetch_related('departments').order_by('role', 'last_name')
     return render(request, 'users/user_list.html', {'users': users})
 
 
@@ -62,11 +62,14 @@ def user_create(request):
 def user_edit(request, pk):
     user = get_object_or_404(CustomUser, pk=pk)
 
-    class EditForm(django_forms.ModelForm):  # ← django_forms ishlatiladi
+    class EditForm(django_forms.ModelForm):
         class Meta:
             model = CustomUser
             fields = ['username', 'first_name', 'last_name',
-                      'email', 'role', 'department', 'phone']
+                      'email', 'role', 'departments', 'phone']
+            widgets = {
+                'departments': django_forms.CheckboxSelectMultiple(),
+            }
 
     form = EditForm(request.POST or None, instance=user)
     if request.method == 'POST' and form.is_valid():

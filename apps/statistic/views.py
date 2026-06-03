@@ -254,13 +254,11 @@ def statistics_dashboard(request):
         departments = Department.objects.filter(is_active=True)
         doctors = Doctor.objects.filter(is_active=True).select_related('department')
     else:
-        departments = Department.objects.filter(
-            pk=request.user.department.pk
-        ) if request.user.department else Department.objects.none()
+        dept_ids = request.user.get_all_department_ids()
+        departments = Department.objects.filter(pk__in=dept_ids) if dept_ids else Department.objects.none()
         doctors = Doctor.objects.filter(
-            is_active=True,
-            department=request.user.department
-        ) if request.user.department else Doctor.objects.none()
+            is_active=True, department_id__in=dept_ids
+        ) if dept_ids else Doctor.objects.none()
 
     # Joriy filter parametrlarini saqlash (Excel uchun)
     current_filters = request.GET.urlencode()

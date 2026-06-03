@@ -535,16 +535,16 @@ def export_excel(request):
         # Xizmatlar
         svc_by_cat = {}
         _pxq_s5 = ExpressionWrapper(F('price') * F('quantity'), output_field=DecimalField())
-        for row in PatientService.objects.filter(patient_card=patient).annotate(_pxq=_pxq_s5).values(
+        for row in PatientService.objects.filter(patient_card=patient).values(
             'service__category__name'
-        ).annotate(total=Sum('_pxq')):
+        ).annotate(total=Sum(_pxq_s5)):
             svc_by_cat[row['service__category__name']] = float(row['total'] or 0)
 
         # Dorilar jami
         _pxq_m5 = ExpressionWrapper(F('price') * F('quantity'), output_field=DecimalField())
         med_total = float(
             PatientMedicine.objects.filter(patient_card=patient)
-            .annotate(_pxq=_pxq_m5).aggregate(t=Sum('_pxq'))['t'] or 0
+            .aggregate(t=Sum(_pxq_m5))['t'] or 0
         )
 
         patient_svc_total = sum(svc_by_cat.values())
@@ -690,7 +690,7 @@ def export_excel(request):
             patient_card__workplace_org_id=org_id
         ).filter(
             patient_card__in=qs
-        ).annotate(_pxq=_pxq_s6).aggregate(t=Sum('_pxq'))['t'] or 0
+        ).aggregate(t=Sum(_pxq_s6))['t'] or 0
         svc_total = float(svc_total)
         grand_svc_total += svc_total
 
@@ -789,12 +789,12 @@ def export_excel(request):
         c.alignment = center; c.border = border
     ws_med.row_dimensions[2].height = 24
 
+    _pxq_med = ExpressionWrapper(F('price') * F('quantity'), output_field=DecimalField())
     top_meds = (
         PatientMedicine.objects
         .filter(patient_card__in=qs)
         .values('medicine__name', 'medicine__unit')
-        .annotate(_pxq=ExpressionWrapper(F('price') * F('quantity'), output_field=DecimalField()))
-        .annotate(total_qty=MSum('quantity'), total_sum=MSum('_pxq'), cnt=Count('patient_card', distinct=True))
+        .annotate(total_qty=MSum('quantity'), total_sum=MSum(_pxq_med), cnt=Count('patient_card', distinct=True))
         .order_by('-total_sum')
     )
 

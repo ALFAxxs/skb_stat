@@ -7,21 +7,22 @@ from .models import CustomUser
 
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
-    list_display = ['username', 'get_full_name', 'role', 'department', 'phone', 'is_active']
-    list_filter = ['role', 'department', 'is_active']
+    list_display  = ['username', 'get_full_name', 'role', 'get_departments', 'phone', 'is_active']
+    list_filter   = ['role', 'departments', 'is_active']
     search_fields = ['username', 'first_name', 'last_name', 'phone']
 
     fieldsets = UserAdmin.fieldsets + (
         ("Qo'shimcha ma'lumotlar", {
-            'fields': ('role', 'department', 'phone')
+            'fields': ('role', 'departments', 'phone')
         }),
     )
 
     add_fieldsets = UserAdmin.add_fieldsets + (
         ("Qo'shimcha ma'lumotlar", {
-            'fields': ('role', 'department', 'phone')
+            'fields': ('role', 'departments', 'phone')
         }),
     )
 
-    # get_full_name ustun nomi
-    admin.short_description = "Ism-familiya"
+    @admin.display(description="Bo'limlar")
+    def get_departments(self, obj):
+        return ", ".join(obj.departments.values_list('name', flat=True)) or "—"

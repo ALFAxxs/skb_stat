@@ -42,8 +42,23 @@
                         <div class="text-danger small">{{ form.role.errors }}</div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Bo'lim</label>
-                        {{ form.department }}
+                        <label class="form-label fw-semibold">Bo'limlar</label>
+                        <div class="border rounded p-2" style="max-height:220px; overflow-y:auto;">
+                            {% for widget in form.departments %}
+                            <div class="form-check">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       name="{{ widget.data.name }}"
+                                       value="{{ widget.data.value }}"
+                                       id="{{ widget.id_for_label }}"
+                                       {% if widget.data.selected %}checked{% endif %}>
+                                <label class="form-check-label" for="{{ widget.id_for_label }}">
+                                    {{ widget.choice_label }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="text-muted small mt-1">Bir nechta bo'lim tanlash mumkin</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Telefon</label>
@@ -75,8 +90,9 @@
 
 {% block scripts %}
 <script>
-document.querySelectorAll('input, select, textarea').forEach(el => {
-    if (!el.classList.contains('form-check-input')) {
+document.querySelectorAll('input, textarea').forEach(el => {
+    if (el.type === 'checkbox' || el.type === 'radio') return;
+    if (!el.classList.contains('form-check-input') && !el.classList.contains('form-control')) {
         el.classList.add('form-control');
     }
 });

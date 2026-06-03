@@ -42,27 +42,26 @@ class CustomUserCreationForm(UserCreationForm):
         model = CustomUser
         fields = [
             'username', 'first_name', 'last_name',
-            'email', 'role', 'department', 'phone',
-            # password1, password2 bu yerda bo'lmaydi — ← o'chirildi
+            'email', 'role', 'departments', 'phone',
         ]
         widgets = {
-            'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'username':   forms.TextInput(attrs={'class': 'form-control'}),
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'role': forms.Select(attrs={'class': 'form-select'}),
-            'department': forms.Select(attrs={'class': 'form-select'}),
+            'last_name':  forms.TextInput(attrs={'class': 'form-control'}),
+            'email':      forms.EmailInput(attrs={'class': 'form-control'}),
+            'role':       forms.Select(attrs={'class': 'form-select'}),
+            'departments': forms.CheckboxSelectMultiple(),
             'phone': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': '+998901234567'
             }),
         }
         labels = {
-            'username': 'Login',
-            'first_name': 'Ism',
-            'last_name': 'Familiya',
-            'email': 'Email',
-            'role': 'Rol',
-            'department': "Bo'lim",
-            'phone': 'Telefon',
+            'username':    'Login',
+            'first_name':  'Ism',
+            'last_name':   'Familiya',
+            'email':       'Email',
+            'role':        'Rol',
+            'departments': "Bo'limlar",
+            'phone':       'Telefon',
         }

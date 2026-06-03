@@ -20,6 +20,7 @@ def role_required(*roles):
 def department_filter(queryset, user):
     if user.is_superuser or user.role in ('admin', 'reception', 'statistician'):
         return queryset
-    if user.department:
-        return queryset.filter(department=user.department)
+    dept_ids = user.get_all_department_ids()
+    if dept_ids:
+        return queryset.filter(department_id__in=dept_ids)
     return queryset.none()

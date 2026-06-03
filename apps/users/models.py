@@ -19,9 +19,23 @@ class CustomUser(AbstractUser):
     department = models.ForeignKey(
         'patients.Department',
         on_delete=models.SET_NULL,
-        null=True, blank=True
+        null=True, blank=True,
+        verbose_name="Asosiy bo'lim"
+    )
+    departments = models.ManyToManyField(
+        'patients.Department',
+        blank=True,
+        related_name='staff_users',
+        verbose_name="Bo'limlar"
     )
     phone = models.CharField(max_length=20, blank=True)
+
+    def get_all_department_ids(self):
+        """Asosiy + qo'shimcha barcha bo'lim IDlari."""
+        ids = set(self.departments.values_list('pk', flat=True))
+        if self.department_id:
+            ids.add(self.department_id)
+        return ids
 
     def is_admin(self):
         return self.role == 'admin'

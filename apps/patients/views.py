@@ -179,14 +179,14 @@ def patient_list(request):
     if request.user.is_superuser or request.user.role in ('admin', 'reception', 'statistician'):
         departments = Department.objects.filter(is_active=True)
     else:
-        departments = Department.objects.filter(
-            pk=request.user.department.pk
-        ) if request.user.department else Department.objects.none()
+        dept_ids = request.user.get_all_department_ids()
+        departments = Department.objects.filter(pk__in=dept_ids) if dept_ids else Department.objects.none()
 
     doctors = Doctor.objects.filter(is_active=True).select_related('department')
     if not request.user.is_superuser and request.user.role not in ('admin', 'reception', 'statistician'):
-        if request.user.department:
-            doctors = doctors.filter(department=request.user.department)
+        dept_ids = request.user.get_all_department_ids()
+        if dept_ids:
+            doctors = doctors.filter(department_id__in=dept_ids)
 
     # Sahifa o'lchami
     per_page = request.GET.get('per_page', '20')
@@ -236,9 +236,11 @@ def patient_detail(request, pk):
             if patient.registered_by != request.user:
                 messages.error(request, "Siz bu bemorni ko'rishga ruxsatingiz yo'q.")
                 return redirect('patient_list')
-        elif request.user.department and patient.department != request.user.department:
-            messages.error(request, "Siz bu bemorni ko'rishga ruxsatingiz yo'q.")
-            return redirect('patient_list')
+        else:
+            dept_ids = request.user.get_all_department_ids()
+            if dept_ids and patient.department_id not in dept_ids:
+                messages.error(request, "Siz bu bemorni ko'rishga ruxsatingiz yo'q.")
+                return redirect('patient_list')
 
     death_cause = getattr(patient, 'death_cause', None)
     address_parts = filter(None, [
@@ -392,6 +394,8 @@ def patient_card_create(request):
             if not request.user.is_superuser and request.user.role != 'admin':
                 if request.user.department:
                     patient.department = request.user.department
+                elif request.user.departments.exists():
+                    patient.department = request.user.departments.first()
             patient.save()
             form.save_m2m()
 
@@ -414,8 +418,9 @@ def patient_card_create(request):
     else:
         form = PatientCardForm()
         if not request.user.is_superuser and request.user.role != 'admin':
-            if request.user.department:
-                form.initial['department'] = request.user.department
+            primary = request.user.department or request.user.departments.first()
+            if primary:
+                form.initial['department'] = primary
         death_form = DeathCauseForm()
         surgery_formset = SurgicalOperationFormSet()
 
@@ -619,6 +624,8 @@ def reception_create(request):
             if not request.user.is_superuser and request.user.role != 'admin':
                 if request.user.department:
                     patient.department = request.user.department
+                elif request.user.departments.exists():
+                    patient.department = request.user.departments.first()
 
             # Avtomatik bayonnoma raqami
             year = timezone.now().year
@@ -648,8 +655,9 @@ def reception_create(request):
             messages.error(request, "Formada xatoliklar bor.")
     else:
         form = ReceptionForm()
-        if request.user.department:
-            form.initial['department'] = request.user.department
+        primary = request.user.department or request.user.departments.first()
+        if primary:
+            form.initial['department'] = primary
 
     return render(request, 'patients/reception_form.html', {
         'form': form,
