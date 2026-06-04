@@ -26,8 +26,13 @@ SECRET_KEY = 'django-insecure-0n=^kv0l%nu2dq)+=@y!qdgzvoonh+n3x0cby61^1z(7n_6jb*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-# ALLOWED_HOSTS = ['www.markaziyklinikkasalxona-statistika.uz', 'markaziyklinikkasalxona-statistika.uz']
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    '164.92.130.93',
+    'markaziyklinikkasalxona-statistika.uz',
+    'www.markaziyklinikkasalxona-statistika.uz',
+    'localhost',
+    '127.0.0.1',
+]
 CSRF_FAILURE_VIEW = 'django.views.csrf.csrf_failure'
 
 # Application definition

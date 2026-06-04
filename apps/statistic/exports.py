@@ -332,7 +332,10 @@ def export_excel(request):
     from datetime import date as _date
     year_start = _date(_date.today().year, 1, 1)
 
-    # JSHSHIR bo'yicha tashriflarni oldindan hisoblash — N+1 ni oldini oladi
+    # Barcha bemorlar uchun oldindan hisoblash — N+1 ni butunlay yo'q qiladi
+    _patient_ids = [p.pk for p in qs]  # qs keshini to'ldiradi
+
+    # JSHSHIR tashriflari
     _jshshir_vals = [p.JSHSHIR for p in qs if p.JSHSHIR]
     if _jshshir_vals:
         _visits_yr = dict(
@@ -348,15 +351,30 @@ def export_excel(request):
     else:
         _visits_yr = _visits_tot = {}
 
-    for patient in qs:
-        p_svcs = PatientService.objects.filter(
-            patient_card=patient
-        ).select_related('service__category').order_by('service__category__name')
-        p_meds = PatientMedicine.objects.filter(
-            patient_card=patient
-        ).select_related('medicine').order_by('medicine__name')
+    # Xizmatlar: {patient_id: {category_name: summa}}
+    _pxq_pre = ExpressionWrapper(F('price') * F('quantity'), output_field=DecimalField())
+    _svc_by_patient = {}
+    for _row in (PatientService.objects
+                 .filter(patient_card_id__in=_patient_ids)
+                 .values('patient_card_id', 'service__category__name')
+                 .annotate(_t=Sum(_pxq_pre))):
+        _svc_by_patient.setdefault(_row['patient_card_id'], {})[
+            _row['service__category__name']] = float(_row['_t'] or 0)
 
-        if not p_svcs.exists() and not p_meds.exists():
+    # Dorilar: {patient_id: {medicine_name: summa}}
+    _med_by_patient = {}
+    for _row in (PatientMedicine.objects
+                 .filter(patient_card_id__in=_patient_ids)
+                 .values('patient_card_id', 'medicine__name')
+                 .annotate(_t=Sum(ExpressionWrapper(F('price') * F('quantity'), output_field=DecimalField())))):
+        _med_by_patient.setdefault(_row['patient_card_id'], {})[
+            _row['medicine__name']] = float(_row['_t'] or 0)
+
+    for patient in qs:
+        cat_groups = _svc_by_patient.get(patient.pk, {})
+        med_groups = _med_by_patient.get(patient.pk, {})
+
+        if not cat_groups and not med_groups:
             continue
 
         patient_num += 1
@@ -384,17 +402,6 @@ def export_excel(request):
             visits_total = _visits_tot.get(patient.JSHSHIR, 1)
         else:
             visits_year = visits_total = 1
-
-        # Xizmatlar kategoriya bo'yicha
-        cat_groups = {}
-        for svc in p_svcs:
-            cat = svc.service.category.name
-            cat_groups[cat] = cat_groups.get(cat, 0) + float(svc.price * svc.quantity)
-
-        # Dorilar
-        med_groups = {}
-        for med in p_meds:
-            med_groups[med.medicine.name] = med_groups.get(med.medicine.name, 0) + float(med.total_price)
 
         svc_items = list(cat_groups.items())
         med_items = list(med_groups.items())
@@ -547,21 +554,20 @@ def export_excel(request):
     overall_total5   = 0
     med_grand_total  = 0
 
-    for num, patient in enumerate(qs, 1):
-        # Xizmatlar
-        svc_by_cat = {}
-        _pxq_s5 = ExpressionWrapper(F('price') * F('quantity'), output_field=DecimalField())
-        for row in PatientService.objects.filter(patient_card=patient).values(
-            'service__category__name'
-        ).annotate(total=Sum(_pxq_s5)):
-            svc_by_cat[row['service__category__name']] = float(row['total'] or 0)
+    # ws5 uchun dori jamilarini oldindan hisoblash: {patient_id: summa}
+    _ws5_med_total = {}
+    for _row in (PatientMedicine.objects
+                 .filter(patient_card_id__in=_patient_ids)
+                 .values('patient_card_id')
+                 .annotate(_t=Sum(ExpressionWrapper(F('price') * F('quantity'), output_field=DecimalField())))):
+        _ws5_med_total[_row['patient_card_id']] = float(_row['_t'] or 0)
 
-        # Dorilar jami
-        _pxq_m5 = ExpressionWrapper(F('price') * F('quantity'), output_field=DecimalField())
-        med_total = float(
-            PatientMedicine.objects.filter(patient_card=patient)
-            .aggregate(t=Sum(_pxq_m5))['t'] or 0
-        )
+    for num, patient in enumerate(qs, 1):
+        # Xizmatlar (pre-fetched)
+        svc_by_cat = _svc_by_patient.get(patient.pk, {})
+
+        # Dorilar jami (pre-fetched)
+        med_total = _ws5_med_total.get(patient.pk, 0)
 
         patient_svc_total = sum(svc_by_cat.values())
         patient_total     = patient_svc_total + med_total
