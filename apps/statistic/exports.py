@@ -332,6 +332,22 @@ def export_excel(request):
     from datetime import date as _date
     year_start = _date(_date.today().year, 1, 1)
 
+    # JSHSHIR bo'yicha tashriflarni oldindan hisoblash — N+1 ni oldini oladi
+    _jshshir_vals = [p.JSHSHIR for p in qs if p.JSHSHIR]
+    if _jshshir_vals:
+        _visits_yr = dict(
+            PatientCard.objects
+            .filter(JSHSHIR__in=_jshshir_vals, admission_date__date__gte=year_start)
+            .values('JSHSHIR').annotate(_c=Count('id')).values_list('JSHSHIR', '_c')
+        )
+        _visits_tot = dict(
+            PatientCard.objects
+            .filter(JSHSHIR__in=_jshshir_vals)
+            .values('JSHSHIR').annotate(_c=Count('id')).values_list('JSHSHIR', '_c')
+        )
+    else:
+        _visits_yr = _visits_tot = {}
+
     for patient in qs:
         p_svcs = PatientService.objects.filter(
             patient_card=patient
@@ -362,10 +378,10 @@ def export_excel(request):
         parent_jshshir_val = patient.parent_jshshir or '—'
         parent_org_val     = str(patient.parent_workplace_org) if getattr(patient, 'parent_workplace_org', None) else '—'
 
-        # Tashriflar
+        # Tashriflar (oldindan hisoblangan lug'atdan)
         if patient.JSHSHIR:
-            visits_year  = PatientCard.objects.filter(JSHSHIR=patient.JSHSHIR, admission_date__date__gte=year_start).count()
-            visits_total = PatientCard.objects.filter(JSHSHIR=patient.JSHSHIR).count()
+            visits_year  = _visits_yr.get(patient.JSHSHIR, 1)
+            visits_total = _visits_tot.get(patient.JSHSHIR, 1)
         else:
             visits_year = visits_total = 1
 
@@ -564,8 +580,8 @@ def export_excel(request):
         workplace = str(patient.workplace_org) if patient.workplace_org else (patient.workplace or '—')
 
         if patient.JSHSHIR:
-            vis_year  = PatientCard.objects.filter(JSHSHIR=patient.JSHSHIR, admission_date__date__gte=year_start).count()
-            vis_total = PatientCard.objects.filter(JSHSHIR=patient.JSHSHIR).count()
+            vis_year  = _visits_yr.get(patient.JSHSHIR, 1)
+            vis_total = _visits_tot.get(patient.JSHSHIR, 1)
         else:
             vis_year = vis_total = 1
 
