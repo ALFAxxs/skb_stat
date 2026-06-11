@@ -36,11 +36,12 @@ def create_contract_on_admission(sender, instance, created, **kwargs):
         contract_number = manual_number
     else:
         # Avtomatik yaratish
+        count = Contract.objects.filter(contract_number__startswith=f"SHA-{year}-").count() + 1
         while True:
-            count = Contract.objects.filter(contract_number__startswith=f"SHA-{year}-").count() + 1
             contract_number = f"SHA-{year}-{count:04d}"
             if not Contract.objects.filter(contract_number=contract_number).exists():
                 break
+            count += 1
 
     # Shartnoma yaratish
     contract = Contract.objects.create(
