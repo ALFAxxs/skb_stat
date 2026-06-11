@@ -94,6 +94,8 @@ def generate_contract_pdf(contract) -> bytes:
     sBs = S('bs', fontName=FB, fontSize=9.5, spaceBefore=3)
     sSc = S('sc', fontSize=8, alignment=TA_CENTER, textColor=colors.HexColor('#555'))
     sQ  = S('q',  fontSize=8.5, leading=12)
+    sJ1 = S('j1', alignment=TA_JUSTIFY, leftIndent=4*mm)
+    sJ2 = S('j2', alignment=TA_JUSTIFY, leftIndent=8*mm)
 
     def p(text, st=None): return Paragraph(text, st or sJ)
     def sp(h=3): return Spacer(1, h*mm)
@@ -111,9 +113,10 @@ def generate_contract_pdf(contract) -> bytes:
         sp(2),
         p(f"Toshkent sh. {'&nbsp;'*80} <u>{cd}</u>", sL),
         sp(2),
-        p(f'<b>"Temir yo`l ijtimoiy xizmatlar" MCHJ Markaziy klinik kasalxona filiali</b> '
-          f'Ishonchnoma asosida ish yurituvchi direktor I.K.Yangiboyev nomidan '
-          f'keyingi o`rinlarda <b>"Ijrochi"</b> deb ataladi, va'),
+        p(f'<b>"Temir yo`l ijtimoiy xizmatlar" MCHJ Markaziy klinik kasalxona filiali nomidan</b> '
+          f'Ishonchnoma asosida ish yurituvchi direktor I.K.Yangiboyev '
+          f'keyingi o`rinlarda <b>"Ijrochi"</b> deb ataladi, va '
+          f'{patient.full_name}'),
         sp(1),
         p(f'<u>{full_address}</u>', sC),
         p('(yashash joyi)', sSc),
@@ -127,71 +130,72 @@ def generate_contract_pdf(contract) -> bytes:
     # 1-2 bandlar
     story += [
         p('<b>1. SHARTNOMA MAVZUSI.</b>', sBs),
-        p("&nbsp;&nbsp;&nbsp;&nbsp;Tasdiqlangan preyskurantga muvofiq pullik tibbiy-diagnostika xizmatlarini ko'rsatish."),
+        p("&nbsp;&nbsp;&nbsp;&nbsp;1.1 Tasdiqlangan preyskurantga muvofiq pullik tibbiy-diagnostika xizmatlarini ko'rsatish."),
         sp(1),
         p('<b>2. SHARTNOMANING BAHOSI VA HISOB-KITOB TARTIBI.</b>', sBs),
-        p("&nbsp;&nbsp;&nbsp;&nbsp;Joriy shartnoma narxi pullik tibbiy diagnostic xizmatlarni ko'rsatish iborat <b>QQS bilan</b>."),
-        p("&nbsp;&nbsp;&nbsp;&nbsp;To'lov \"Bemor\" tomonidan shartnoma narxining 100% miqdorida oldindan to'lov yo'li bilan 3 bank kuni ichida amalga oshiriladi."),
+        p("&nbsp;&nbsp;&nbsp;&nbsp;2.1 Joriy shartnoma narxi pullik tibbiy diagnostik xizmatlarni ko'rsatish iborat <b>QQS bilan</b>."),
+        p("&nbsp;&nbsp;&nbsp;&nbsp;2.2 To'lov \"Bemor\" tomonidan shartnoma narxining 100% miqdorida oldindan to'lov yo'li bilan 3 bank ish kuni ichida amalga oshiriladi."),
         sp(1),
     ]
 
     # 3-band
     story.append(p('<b>3. TOMONLARNING HUQUQ VA MAJBURIYATLARI.</b>', sBs))
     for side, items in [
-        ('"Ijrochi"ning majburiyatlari:', [
-            "Shartnoma tuzilgan kundan qat'iy nazar, bo'sh joylar mavjud bo'lgan taqdirda tibbiy amaliyotni yuqori saviyada amalga oshirish.",
-            "Foydalanilmagan mablag'larni bemorga qaytarish.",
-            "Tibbiy xizmatlar, dori-darmonlar uchun hisob-fakturani taqdim etish.",
-            "Xizmatlarni qabul qilish dalolatnomasini o'z vaqtida tuzish va imzolash.",
-            "Bemorning sog'ligi haqidagi tibbiy sirlarni oshkor qilmaslik.",
+        ('3.1. "Ijrochi"ning majburiyatlari:', [
+            "3.1.1. Shartnoma tuzilgan kundan qatʼiy nazar, bo'sh joylar mavjud bo'lgan taqdirda va tibbiy amaliyotning yuqori saviyada, O'zbekiston Respublikasida, texnologiya va kasbiy etika hamda ushbu shartnomada belgilangan miqdorlarda va muddatlarda tibbiy xizmatlar ko'rsatish.",
+            "3.1.2. Hisob-faktura bilan rasmiylashtirilgan xaqiqiy xarajatlar natijalari bo'yicha foydalanilmagan mablag'larni bemorga/homiyga (kerak emasini chizib tashlang) qaytarib berish.",
+            "3.1.3. Bemorga taqdim etilgan tibbiy xizmatlar, dori-darmonlar va oziq-ovqat uchun hisob-fakturani bemorga/homiyga (kerak emasini chizib tashlang) taqdim etish.",
+            "3.1.4. Xizmatlarni yetkazib berishni qabul qilish to`g'risidagi dalolatnomani o'z vaqtida tuzish va imzolash.",
+            "3.1.5. Bemorning sog'ligi haqidagi tibbiy sirlarni oshkor qilmaslik.",
         ]),
-        ('"Ijrochi" quyidagi huquqlarga ega:', [
-            "Bemor majburiyatlariga rioya qilmagan holda shartnomani bir tomonlama bekor qilish.",
-            "Bemordan yetkazilgan zararlarni to'liq hajmda qoplashni talab qilish.",
+        ('3.2. "Ijrochi" quyidagi huquqlarga ega:', [
+            "3.2.1. Bemor majburiyatlariga rioya qilmagan holda ushbu shartnomani bir tomonlama bekor qilish.",
+            "3.2.2. Bemordan moddiy zarar, bemorning aybi bilan yetkazilgan zararlarni to'liq hajmda qoplashni talab qilish va olish.",
         ]),
-        ('"Bemor"ning majburiyatlari:', [
-            "Ijrochining ichki tartib-qoidalariga va tibbiy xodimlarning tayinlashlariga rioya qilish.",
-            "Xizmatlarning to'liq narxini o'z vaqtida to'lash.",
-            "Yetkazilgan zararlarni to'liq qoplash.",
+        ('3.3. "Bemor"ning majburiyatlari:', [
+            "3.3.1. Ijrochining ichki tartib-qoidalariga, tibbiy xodimlarining davolash rejimiga va tayinlashlariga rioya qilish.",
+            "3.3.2. Ijrochiga xizmatlarning to'liq narxini ushbu Shartnomaning 2.2. bandlarida nazarda tutilgan shartlarda o'z vaqtida to'lash.",
+            "3.3.3. Ularga yetkazilgan zararlarni to'liq qoplash.",
         ]),
-        ('"Bemor" quyidagi huquqlarga ega:', [
-            "Tartib-qoidalar, diagnostika va davolash standartlari hamda tariflar bilan tanishish.",
-            "Foydalanilmagan mablag'larning qaytarilishi.",
-            "Ushbu shartnomani bir tomonlama bekor qilish.",
+        ('3.4. "Bemor" quyidagi huquqlarga ega:', [
+            "3.4.1. Tibbiy yordam ko'rsatish bo'yicha tasdiqlangan tartib-qoidalar, diagnostika va davolash standartlari hamda tariflar bilan tanishib chiqish.",
+            "3.4.2. Hisob-faktura bo'yicha berilgan xaqiqiy xarajatlar natijalari asosida qolgan foydalanilmagan mablag'larning qaytarilishini talab qilish.",
+            "3.4.3. Xizmatlarni yetkazib berishni qabul qilish dalolatnomasi mazmuni bilan kelishmovchilik yuzaga kelgan taqdirda, ushbu dalolatnomani mavjud izoxlar yozilgan xolda imzolash.",
+            "3.4.4. Ushbu shartnomani bir tomonlama bekor qilish. Shartnoma bir tomonlama bekor qilingan taqdirda, bemorga ko'rsatilgan xizmatlarning haqiqiy xarajatlari olib qolinadi va qolgan qismi qaytarib beriladi",
         ]),
     ]:
-        story.append(p(f'&nbsp;&nbsp;&nbsp;&nbsp;<b>{side}</b>'))
+        story.append(p(f'<b>{side}</b>', sJ1))
         for item in items:
-            story.append(p(f'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- {item}'))
+            story.append(p(item, sJ2))
         story.append(sp(1))
 
     # 4-7 bandlar
     for title, items in [
-        ("4. TOMONLARNING KORRUPSIYAGA QARSHI KURASHISH BO'YICHA MAJBURIYATLARI", [
-            "4.1. Tomonlar korrupsiyaga qarshi kurashish bo'yicha qoidalarga rioya qilish majburiyatini oladilar.",
-            "4.2. Tomonlar bir-birini ishonch telefoni orqali xabardor qilish majburiyatini oladi.",
-            "4.3. Talablar bajarilmaganda shartnoma bir tomonlama bekor qilinishi mumkin.",
+        ("4. TOMONLARNING KORRUPSIYAGA QARSHI KURASHISH BO`YICHA MAJBURIYATLARI", [
+            "4.1. Shartnoma bo`yicha o'z majburiyatlarini bajarishda tomonlar korrupsiyaga qarshi kurashish bo`yicha qoidalarga, shu jumladan amaldagi qonunlarga rioya etilishini ta`minlaydi, ya`ni tomonlar bir-biriga yoki davlat ishtirokidagi davlat xodimiga pora berish yoki pora berishda vositachilik qilish, moddiy yoki nomoddiy naf olishdan tiyilishi lozim. Tomonlar ushbu harakatlarning olidini olish bo`yicha chora-tadbirlar qabul qilinishini kafolatlaydi.",
+            "4.2. Yoki ishonch telefoni orqali bir-birini xabardor qilish majburiyatini oladi. Bunda tomonlar yuzaga kelgan holatga oydinlik kiritish maqsadida yozma izoh talab qilish huquqiga ega va murojaatni olgan tomon 10 (o`n) ish kuni mobaynida tushuntirish berishi yoki o'z fikrini bildirishi mumkin.",
+            "4.3. Mazkur bobning talablari bajarilmaganda, shu jumladan belgilangan muddatda korrupsion xavf-xatar bartaraf etilmasa, tomonlar amalaga oshirgan choralar korrupsion holatni pasayishiga olib kelmasa, boshqa tomon shartnomani bekor qilish huquqiga ega yoki uni ijrosini to`xtatib turish huquqiga ega.",
         ]),
         ("5. TOMONLARNING JAVOBGARLIGI.", [
-            "5.1. Tomonlar o'z vazifalarini lozim darajada bajarmagan taqdirda O'zbekiston Respublikasi qonunchiligiga muvofiq javobgar bo'ladilar.",
-            "Favqulotda vaziyatlarda (tabiiy ofatlar, harbiy harakatlar) tomonlar javobgarlikdan ozod etiladi.",
+            "5.1 Tomonlar ushbu shartnoma bo'yicha o'z vazifalarini lozim darajada bajarmagan taqdirda ular O'zbekiston Respublikasi qonun xujjatlariga muvofiq javobgar bo'ladilar.",
+            "5.2 Shartnoma imzolangandan so'ng favqulotda vaziyat yuz berganida: tabiy ofatlar, xarbiy xarakatlar, terroristik aktlar, ommaviy tartibsizliklar va shu kabi favqulotda xolatlarning oqibatida shifoxonaning kunlik ish jarayoni buzilganda, tomonlar o'z majburiyatini bajarmaganligi uchun javobgarlikga tortilmaydi.",
         ]),
-        ("6. NIZOLARNI HAL ETISH TARTIBI.", [
-            "Nizolar, iloji bo'lsa, tomonlar o'rtasidagi muzokaralar orqali hal qilinadi.",
-            "Agar muzokaralar yo'li bilan hal qilishning iloji bo'lmasa, ular sudda hal qilinadi.",
+        ("6. NIZOLАRNI HAL ETISH TАRTIBI.", [
+            "6.1. Ushbu shartnomani bajarishda yuzaga kelishi mumkin bo'lgan nizo va kelishmovchiliklar, iloji bo'lsa, tomonlar o'rtasidagi muzokaralar orqali xal qilinadi.",
+            "6.2. Аgar nizolarni muzokaralar yo'li bilan hal qilishning iloji bo'lmasa, ular O'zbekiston Respublikasi qonunchiligiga muvofiq sudda ko'rib chiqiladi.",
         ]),
-        ("7. SHARTNOMANING BOSHQA SHARTLARI.", [
-            "7.1. Qo'shimcha xarajatlar alohida haq to'lanadi.",
-            "7.2. Tartibga solinmagan masalalarda O'zbekiston Respublikasi qonunchiligiga amal qilinadi.",
-            "7.3. O'zgartishlar ikkala tomon imzolagan taqdirda amal qiladi.",
-            "7.4. Shartnoma imzolangan paytdan boshlab kuchga kiradi.",
-            "7.5. Shartnoma har bir tomon uchun ikki nusxada tuziladi.",
-            "7.6. Xizmatlar qabul qilish dalolatnomasi imzolanganidan keyin ko'rsatilgan hisoblanadi.",
+        ("7. SHАRTNOMАNING BOSHQА SHARTLАRI.", [
+            "7.1. Bemorga qo'shimcha diagnostik va terapevtik yordam, dori-darmonlar va oziq-ovqat bilan taʼminlash xarajatlari, agar bemordagi yondosh kasalliklarni aniqlash munosabati bilan yuqorida aytib o'tilganlar talab qilingan bo'lsa, Bemor yoki Xomiy tomonidan ushbu shartnomaga qo'shimcha shartnoma asosida to'lanadi.",
+            "7.2. Ushbu shartnoma bilan tartibga solinmagan masalalarda tomonlar O'zbekiston Respublikasi qonunchiligiga amal qiladilar.",
+            "7.3. Ushbu shartnomaga kiritilgan har qanday o'zgartirish va qo'shimchalar amal qiladi va shartnomaning ajralmas qismini faqat ular yozma shaklda tuzilgan va vakolatli taraflarning vakillari tomonidan imzolangan taqdirda tashkil etadi.",
+            "7.4. Bu shartnoma barcha tomonlar tomonidan imzolangan paytdan boshlab kuchga kiradi va davolanish tugagunga qadar amal qiladi.",
+            "7.5. Bu shartnoma tomonlarning xar biri uchun bittadan ikki nusxada tuziladi. Barcha nusxalar bir xil va bir xil qonuniy kuchga ega.",
+            "7.6. Xizmatlar Ijrochi va Bemor tomonidan xizmatga qabul qilish dalolatnomasi imzolanganidan keyin ko'rsatilgan hisoblanadi.",
         ]),
     ]:
         story.append(p(f'<b>{title}</b>', sBs))
         for item in items:
-            story.append(p(f'&nbsp;&nbsp;&nbsp;&nbsp;{item}'))
+            story.append(p(item, sJ1))
         story.append(sp(1))
 
     # ── Imzo jadvali ──
