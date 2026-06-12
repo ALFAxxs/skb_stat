@@ -43,10 +43,13 @@ def create_contract_on_admission(sender, instance, created, **kwargs):
                 break
             count += 1
 
-    # Shartnoma yaratish
+    # Shartnoma yaratish — shartnoma sanasi bemorning kelgan sanasiga teng
+    from django.utils import timezone
+    contract_date = instance.admission_date.date() if instance.admission_date else timezone.now().date()
     contract = Contract.objects.create(
         patient_card=instance,
         contract_number=contract_number,
+        contract_date=contract_date,
         contract_type=instance.patient_category,
         status='active',
     )

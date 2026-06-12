@@ -21,7 +21,7 @@ class Contract(models.Model):
         related_name='contract', verbose_name="Bemor kartasi"
     )
     contract_number  = models.CharField(max_length=30, unique=True, verbose_name="Shartnoma raqami")
-    contract_date    = models.DateField(auto_now_add=True, verbose_name="Shartnoma sanasi")
+    contract_date    = models.DateField(verbose_name="Shartnoma sanasi")
     contract_type    = models.CharField(max_length=20, choices=TYPE_CHOICES, verbose_name="Turi")
     status           = models.CharField(max_length=20, choices=STATUS_CHOICES,
                                         default='active', verbose_name="Holati")
