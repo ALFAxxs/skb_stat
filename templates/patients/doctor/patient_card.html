@@ -1,0 +1,1551 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}{% blocktrans with name=patient.full_name %}{{ name }} — bemor kartasi{% endblocktrans %}{% endblock %}
+
+{% block content %}
+{% include 'patients/doctor/_nav.html' with active='' %}
+
+<style>
+    .card-tabs .nav-link { color: #495057; border-radius: 8px 8px 0 0; }
+    .card-tabs .nav-link.active { color: #0d6efd; font-weight: 600; border-bottom: 3px solid #0d6efd; background: #f8f9fa; }
+    .info-row { display: flex; padding: 6px 0; border-bottom: 1px dashed #e9ecef; }
+    .info-row .label { width: 230px; flex-shrink: 0; color: #6c757d; font-size: .9rem; }
+    .info-row .value { font-weight: 500; }
+    .section-title { color: #0d6efd; font-weight: 600; margin: 16px 0 8px; }
+
+    /* ===== RX BLOCK ===== */
+    .rx-card { border-radius: 8px; border: 1px solid #dee2e6; margin-bottom: 14px; overflow: hidden; }
+    .rx-card-header { background: #f0f4ff; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #d0dcf5; }
+    .rx-card-title { font-weight: 600; color: #2c4fa3; font-size: .95rem; }
+    .rx-label { font-size: 0.81rem; color: #495057; font-weight: 500; margin-bottom: 4px; display: block; }
+    .rx-required::after { content: ' *'; color: #dc3545; }
+    .rx-input { border-radius: 6px; border: 1px solid #ced4da; padding: 7px 11px; width: 100%; font-size: .875rem; transition: border-color .15s ease, box-shadow .15s ease; background: #fff; }
+    .rx-input:hover:not(:disabled):not(:focus) { border-color: #86b7fe; }
+    .rx-input:focus { border-color: #0d6efd; box-shadow: 0 0 0 .2rem rgba(13,110,253,.15); outline: none; }
+    .rx-select { border-radius: 6px; border: 1px solid #ced4da; padding: 7px 10px; font-size: .875rem; background: #fff; transition: border-color .15s; cursor: pointer; }
+    .rx-select:hover { border-color: #86b7fe; }
+    .rx-select:focus { border-color: #0d6efd; box-shadow: 0 0 0 .2rem rgba(13,110,253,.15); outline: none; }
+    .rx-search-wrap { position: relative; }
+    .rx-search-icon { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: #adb5bd; font-size: 13px; pointer-events: none; }
+    .rx-search-wrap .rx-input { padding-left: 30px; }
+    .rx-ac-list { position: absolute; top: 100%; left: 0; right: 0; z-index: 1070; background: #fff; border: 1px solid #ced4da; border-top: none; border-radius: 0 0 6px 6px; max-height: 190px; overflow-y: auto; box-shadow: 0 6px 16px rgba(0,0,0,.1); display: none; }
+    .rx-ac-item { padding: 8px 12px; cursor: pointer; font-size: 0.84rem; border-bottom: 1px solid #f4f4f4; }
+    .rx-ac-item:hover, .rx-ac-item.hlt { background: #e8f0fe; color: #1a56db; }
+    .rx-freq-wrap { display: flex; gap: 5px; align-items: center; }
+    .rx-freq-wrap .rx-input { width: 68px; text-align: center; flex-shrink: 0; }
+    .rx-freq-wrap .rx-label-in { font-size: .8rem; color: #6c757d; white-space: nowrap; }
+    .rx-freq-wrap .rx-select { flex: 1; }
+    .rx-dur-wrap { display: flex; gap: 6px; align-items: center; }
+    .rx-dur-wrap .rx-input { flex: 1; }
+    .rx-dur-wrap .rx-postfix { font-size: .85rem; color: #6c757d; white-space: nowrap; }
+    .rx-time-wrap { display: flex; gap: 5px; align-items: center; }
+    .rx-time-wrap .rx-select { flex: 1; }
+    .rx-time-wrap .rx-colon { color: #6c757d; font-weight: 600; }
+    .rx-daterange-wrap { display: flex; align-items: center; gap: 6px; }
+    .rx-daterange-wrap .rx-input { flex: 1; }
+    .rx-daterange-wrap .rx-sep { color: #6c757d; font-size: 1.1rem; line-height: 1; }
+    .rx-daterange-wrap .rx-cal-icon { color: #6c757d; font-size: 14px; }
+    .rx-chevron { display: inline-block; transition: transform .2s; }
+    .rx-chevron.open { transform: rotate(0deg); }
+    .rx-chevron.closed { transform: rotate(-90deg); }
+    .rx-body { padding: 16px; }
+    .rx-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    @media (max-width: 900px) { .rx-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 600px) { .rx-grid { grid-template-columns: 1fr; } }
+
+    /* ===== YOZUV QO'SHISH MODAL ===== */
+    .assign-svc-row { border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px; transition: border-color .15s, background .15s; }
+    .assign-svc-row:hover { border-color: #93c5fd; background: #f8fafc; }
+    .assign-svc-row.checked { border-color: #2563eb; background: #eff6ff; }
+    .assign-svc-star { cursor: pointer; font-size: 15px; flex-shrink: 0; user-select: none; }
+    .assign-svc-name { font-size: 13px; font-weight: 600; color: #1f2937; }
+    .assign-svc-cat { font-size: 11px; color: #6b7280; }
+    .assign-row-toggle { transition: transform .2s; }
+    .assign-row-toggle.open { transform: rotate(180deg); }
+    .assign-row-detail { border-top: 1px dashed #d1d5db; margin-top: 8px; padding-top: 8px; }
+    .assign-doctor-pick { font-size: 12.5px; padding: 3px 0; }
+</style>
+
+<div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+    <div>
+        <h4 class="mb-1">{{ patient.full_name }}</h4>
+        <div class="text-muted small">
+            📋 {{ patient.medical_record_number }} ·
+            {% if patient.visit_type == 'inpatient' %}🛏 {% trans "Statsionar" %}{% else %}🚶 {% trans "Ambulator" %}{% endif %} ·
+            <span class="badge bg-{% if patient.status == 'completed' %}secondary{% elif patient.status == 'admitted' %}info{% else %}warning{% endif %}">{{ patient.get_status_display }}</span>
+        </div>
+    </div>
+    <div class="text-end">
+        <a href="{% if patient.visit_type == 'inpatient' %}{% url 'doctor_inpatients' %}{% else %}{% url 'doctor_outpatients' %}{% endif %}" class="btn btn-outline-secondary btn-sm">← {% trans "Ro'yxatga qaytish" %}</a>
+        {% if patient.visit_type == 'ambulatory' and ambulatory_consultation.status != 'completed' %}
+        <a href="{% url 'ambulatory_consultation_form' patient.pk %}" class="btn btn-success btn-sm">
+            🩺 {% if ambulatory_consultation %}{% trans "Qabulni davom ettirish" %}{% else %}{% trans "Qabulni boshlash" %}{% endif %}
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<ul class="nav nav-tabs card-tabs mb-3" id="cardTabs" role="tablist">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-personal" type="button">👤 {% trans "Shaxsiy" %}</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-exam" type="button">🩺 {% trans "Shifokor ko'rigi" %} <span class="badge bg-secondary">{{ examinations.count }}</span></button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-procedures" type="button">💉 {% trans "Tibbiy muolajalar" %} <span class="badge bg-secondary">{{ procedures_badge_count }}</span></button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-consult" type="button">🤝 {% trans "Konsultatsiyalar" %} <span class="badge bg-secondary">{{ consultation_requests|length|add:consultations.count }}</span></button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-prescription" type="button">📄 {% trans "Рецепт" %}</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-completion" type="button">✅ {% trans "Davolash yakuni" %}</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-invoice" type="button">🧾 {% trans "Hisob-faktura" %}</button></li>
+</ul>
+
+<div class="tab-content">
+
+    <!-- 1. SHAXSIY -->
+    <div class="tab-pane fade show active" id="tab-personal">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="section-title">{% trans "Asosiy ma'lumotlar" %}</div>
+                        <div class="info-row"><div class="label">{% trans "F.I.Sh." %}</div><div class="value">{{ patient.full_name }}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Jinsi" %}</div><div class="value">{{ patient.get_gender_display }}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Tug'ilgan sana" %}</div><div class="value">{{ patient.birth_date|date:"d.m.Y" }}</div></div>
+                        <div class="info-row"><div class="label">JSHSHIR</div><div class="value">{{ patient.JSHSHIR|default:'—' }}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Pasport" %}</div><div class="value">{{ patient.passport_serial|default:'—' }}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Telefon" %}</div><div class="value">{{ patient.phone|default:'—' }}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Manzil" %}</div><div class="value">{{ full_address }}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Kategoriya" %}</div><div class="value">{{ patient.get_patient_category_display }}</div></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="section-title">{% trans "Tashrif ma'lumotlari" %}</div>
+                        <div class="info-row"><div class="label">{% trans "Bayonnoma raqami" %}</div><div class="value">{{ patient.medical_record_number }}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Tashrif turi" %}</div><div class="value">{% if patient.visit_type == 'inpatient' %}{% trans "Statsionar" %}{% else %}{% trans "Ambulator" %}{% endif %}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Qabul sanasi" %}</div><div class="value">{{ patient.admission_date|date:"d.m.Y H:i" }}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Bo'lim" %}</div><div class="value">{{ patient.department.name|default:'—' }}{% if patient.room_number %} / {% blocktrans with room=patient.room_number %}{{ room }}-xona{% endblocktrans %}{% endif %}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Yo'naltirilgan tashxis" %}</div><div class="value">{{ patient.admission_diagnosis|default:'—' }}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Davolovchi shifokor" %}</div><div class="value">{{ patient.attending_doctor.full_name|default:'—' }}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Bo'lim mudiri" %}</div><div class="value">{{ patient.department_head.full_name|default:'—' }}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Registratsiya qilgan" %}</div><div class="value">{{ patient.registered_by.get_full_name|default:'—' }}</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. SHIFOKOR KO'RIGI -->
+    <div class="tab-pane fade" id="tab-exam">
+        <div class="d-flex justify-content-end mb-2">
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#examTypeModal">+ {% trans "Yangi ko'rik qo'shish" %}</button>
+        </div>
+        {% if initial_exam %}
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-light"><strong>📝 {% trans "Boshlang'ich ko'rik" %}</strong></div>
+            <div class="card-body">
+                <div class="info-row"><div class="label">{% trans "Shikoyatlar" %}</div><div class="value">{{ initial_exam.complaints|default:'—' }}</div></div>
+                <div class="info-row"><div class="label">{% trans "Kasallik tarixi" %}</div><div class="value">{{ initial_exam.anamnesis_morbi|default:'—' }}</div></div>
+                <div class="info-row"><div class="label">{% trans "Hayot tarixi" %}</div><div class="value">{{ initial_exam.anamnesis_vitae|default:'—' }}</div></div>
+                <div class="info-row"><div class="label">{% trans "Hozirgi holat" %}</div><div class="value">{{ initial_exam.status_praesens|default:'—' }}</div></div>
+            </div>
+        </div>
+        {% endif %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light"><strong>🩺 {% trans "Ko'riklar tarixi" %}</strong></div>
+            <div class="list-group list-group-flush">
+                {% if ambulatory_consultation %}
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <span class="badge bg-success">🩺 {% trans "Ambulator qabul" %}</span>
+                            <span class="badge bg-{% if ambulatory_consultation.status == 'completed' %}secondary{% else %}warning text-dark{% endif %}">{{ ambulatory_consultation.get_status_display }}</span>
+                            <span class="text-muted small ms-2">{{ ambulatory_consultation.started_at|date:"d.m.Y H:i" }}</span>
+                            {% if ambulatory_consultation.doctor %}<span class="text-muted small">· {{ ambulatory_consultation.doctor.full_name }}</span>{% endif %}
+                        </div>
+                        <div class="d-flex gap-1">
+                            <a href="{% url 'ambulatory_consultation_form' patient.pk %}" class="btn btn-sm btn-outline-secondary">{% trans "Ko'rish" %}</a>
+                            <a href="{% url 'ambulatory_consultation_print' ambulatory_consultation.pk %}" class="btn btn-sm btn-outline-secondary" target="_blank">🖨 {% trans "Chop etish" %}</a>
+                        </div>
+                    </div>
+                    {% if ambulatory_consultation.result %}<div class="small text-muted mt-1">{% blocktrans with text=ambulatory_consultation.result|truncatechars:160 %}Natija: {{ text }}{% endblocktrans %}</div>{% endif %}
+                    {% if ambulatory_consultation.conclusion %}<div class="small mt-1"><b>{% trans "Xulosa:" %}</b> {{ ambulatory_consultation.conclusion|truncatechars:200 }}</div>{% endif %}
+                </div>
+                {% endif %}
+                {% for exam in examinations %}
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <span class="badge bg-primary">{{ exam.get_examination_type_display }}</span>
+                            <span class="text-muted small ms-2">{{ exam.examination_datetime|date:"d.m.Y H:i"|default:exam.created_at|date:"d.m.Y H:i" }}</span>
+                            {% if exam.created_by %}<span class="text-muted small">· {{ exam.created_by.get_full_name }}</span>{% endif %}
+                        </div>
+                        <div class="d-flex gap-1">
+                            <a href="{% url 'examination_edit' patient.pk exam.pk %}?next={% url 'doctor_patient_card' patient.pk %}" class="btn btn-sm btn-outline-secondary">{% trans "Ko'rish / tahrirlash" %}</a>
+                            <a href="{% url 'examination_print' patient.pk exam.pk %}" class="btn btn-sm btn-outline-secondary" target="_blank">🖨 {% trans "Chop etish" %}</a>
+                        </div>
+                    </div>
+                    {% if exam.complaints %}<div class="small text-muted mt-1">{% blocktrans with text=exam.complaints|truncatechars:160 %}Shikoyatlar: {{ text }}{% endblocktrans %}</div>{% endif %}
+                    {% if exam.conclusion %}<div class="small mt-1"><b>{% trans "Xulosa:" %}</b> {{ exam.conclusion|truncatechars:200 }}</div>{% endif %}
+                </div>
+                {% empty %}
+                {% if not ambulatory_consultation %}
+                <div class="list-group-item text-center text-muted py-4">{% trans "Hozircha ko'rik yozuvlari yo'q" %}</div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- KO'RIK TURI TANLASH MODAL -->
+    <div class="modal fade" id="examTypeModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">🩺 {% trans "Ko'rik turini tanlang" %}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for val, label in exam_type_choices %}
+                        <a href="{% url 'examination_new' patient.pk %}?type={{ val }}&next={% url 'doctor_patient_card' patient.pk %}"
+                           class="list-group-item list-group-item-action">{{ label }}</a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- YOZUV QO'SHISH MODAL (Tibbiy muolajalar / Laboratoriya / Diagnostika uchun umumiy) -->
+    <div class="modal fade" id="assignModal" tabindex="-1">
+        <div class="modal-dialog modal-fullscreen-lg-down" style="max-width:1300px;">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">➕ {% trans "Yozuv qo'shish" %}</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex flex-wrap gap-2 mb-3" id="assign-cat-btns">
+                        <button type="button" class="btn btn-primary assign-cat-btn rounded-pill py-1 px-3" data-cat="">{% trans "Barchasi" %}</button>
+                        <button type="button" class="btn btn-outline-warning assign-cat-btn rounded-pill py-1 px-3" data-cat="__my_packages__">⭐ {% trans "Mening paketim" %}</button>
+                        <button type="button" class="btn btn-outline-primary assign-cat-btn rounded-pill py-1 px-3" data-cat="surgery">🛏️ {% trans "Operatsiya" %}</button>
+                        <button type="button" class="btn btn-outline-primary assign-cat-btn rounded-pill py-1 px-3" data-cat="radiology">🔬 {% trans "Diagnostika" %}</button>
+                        <button type="button" class="btn btn-outline-primary assign-cat-btn rounded-pill py-1 px-3" data-cat="consultation">🩺 {% trans "Konsultatsiya" %}</button>
+                        <button type="button" class="btn btn-outline-primary assign-cat-btn rounded-pill py-1 px-3" data-cat="lab">🧪 {% trans "Laboratoriya" %}</button>
+                        <button type="button" class="btn btn-outline-primary assign-cat-btn rounded-pill py-1 px-3" data-cat="physio">🚹 {% trans "Fizioterapiya" %}</button>
+                        <button type="button" class="btn btn-outline-primary assign-cat-btn rounded-pill py-1 px-3" data-cat="other">⚕️ {% trans "Boshqa xizmatlar" %}</button>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2 mb-3" id="assign-subcat-btns" style="display:none;"></div>
+
+                    {{ service_categories|json_script:"service-categories-data" }}
+
+                    <div class="mb-3 position-relative">
+                        <input type="text" id="assign-search" class="form-control" placeholder="🔍 {% trans "Xizmat nomi yoki kodi bo'yicha qidirish..." %}" autocomplete="off">
+                    </div>
+
+                    <div id="assign-grid" class="row g-2" style="max-height:50vh; overflow-y:auto;"></div>
+                    <div id="assign-grid-empty" class="text-center text-muted py-5" style="display:none;">🔍 {% trans "Xizmat topilmadi" %}</div>
+
+                    <div id="assign-error" class="alert alert-danger mt-3" style="display:none;"></div>
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <span class="text-muted small">{% trans "Tanlandi:" %} <strong id="assign-count">0</strong> {% trans "ta xizmat" %}</span>
+                    <div>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Bekor" %}</button>
+                        <button type="button" class="btn btn-primary px-4" id="btn-assign-save" disabled>✅ {% trans "Saqlash" %} (<span id="assign-save-count">0</span> {% trans "ta" %})</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. TIBBIY MUOLAJALAR -->
+    <div class="tab-pane fade" id="tab-procedures">
+
+        <div class="alert alert-info d-flex justify-content-between align-items-center mb-3">
+            <span>💊 {% blocktrans %}Dori-darmon tayinlash endi <strong>«Рецепт»</strong> bo'limi orqali amalga oshiriladi.{% endblocktrans %}</span>
+            <button type="button" class="btn btn-sm btn-primary" onclick="document.querySelector('[data-bs-target=\'#tab-prescription\']').click()">📄 {% trans "Retsept yozish" %}</button>
+        </div>
+        <div class="d-flex justify-content-end mb-3">
+            <button type="button" class="btn btn-primary btn-sm" onclick="openAssignModal()">💉 + {% trans "Yozuv qo'shish" %}</button>
+        </div>
+
+        <!-- Barcha tayinlangan muolaja, dori, tahlil/laboratoriya va diagnostika tekshiruvlari — bitta ro'yxatda -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-light"><strong>📋 {% trans "Tayinlangan muolajalar" %}</strong> <span class="badge bg-secondary">{{ assigned_activity|length }}</span></div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr><th>{% trans "Sana" %}</th><th>{% trans "Turi" %}</th><th>{% trans "Nomi" %}</th><th>{% trans "Tafsilot" %}</th><th>{% trans "Holati" %}</th><th>{% trans "Amal" %}</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for item in assigned_activity %}
+                        <tr>
+                            <td>{{ item.date|date:"d.m.Y H:i" }}</td>
+                            <td><span class="badge bg-light text-dark">{{ item.category }}</span></td>
+                            <td class="fw-semibold">{{ item.name }}</td>
+                            <td class="small text-muted">{{ item.detail|default:'—'|truncatechars:60 }}</td>
+                            <td><span class="badge bg-{{ item.badge_class }}">{{ item.status_display }}</span></td>
+                            <td class="text-nowrap">
+                                {% if item.view_url %}
+                                <a href="{{ item.view_url }}" class="btn btn-sm btn-outline-secondary">{% trans "Ko'rish" %}</a>
+                                {% endif %}
+                                {% if item.print_url and item.print_url != item.view_url %}
+                                <a href="{{ item.print_url }}" class="btn btn-sm btn-outline-secondary" target="_blank">🖨 {% trans "Chop etish" %}</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-center text-muted py-4">{% trans "Hali muolaja/tahlil tayinlanmagan" %}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-light"><strong>🔪 {% trans "Jarrohlik amaliyotlari" %}</strong></div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0 align-middle">
+                    <thead class="table-light"><tr><th>{% trans "Sana" %}</th><th>{% trans "Nomi" %}</th><th>{% trans "Behushlik turi" %}</th><th>{% trans "Asoratlar" %}</th></tr></thead>
+                    <tbody>
+                        {% for op in operations %}
+                        <tr>
+                            <td>{{ op.operation_date|date:"d.m.Y"|default:'—' }}</td>
+                            <td>{{ op.operation_type.name|default:op.operation_name|default:'—' }}</td>
+                            <td>{{ op.get_anesthesia_display|default:'—' }}</td>
+                            <td>{{ op.complication|default:'—'|truncatechars:80 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="text-center text-muted py-4">{% trans "Amaliyot yozuvlari yo'q" %}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light"><strong>🧬 {% trans "Epizod tashxislari" %}</strong></div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0 align-middle">
+                    <thead class="table-light"><tr><th>MKB-10</th><th>{% trans "Turi" %}</th><th>{% trans "Roli" %}</th><th>{% trans "Kechishi" %}</th><th>{% trans "Klinik matn" %}</th></tr></thead>
+                    <tbody>
+                        {% for d in diagnoses %}
+                        <tr>
+                            <td><span class="badge bg-primary">{{ d.icd10_code.code|default:'—' }}</span> {{ d.icd10_code.title_uz|default:'' }}</td>
+                            <td>{{ d.get_diagnosis_type_display }}</td>
+                            <td>{{ d.get_diagnosis_role_display }}</td>
+                            <td>{{ d.get_disease_course_display|default:'—' }}</td>
+                            <td>{{ d.clinical_text|default:'—'|truncatechars:120 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center text-muted py-4">{% trans "Tashxis yozuvlari yo'q" %}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. KONSULTATSIYALAR -->
+    <div class="tab-pane fade" id="tab-consult">
+
+        <!-- Yangi konsultatsiya so'rovi -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-light"><strong>➕ {% trans "Konsultatsiya so'rash" %}</strong></div>
+            <div class="card-body">
+                <form method="post" action="{% url 'consultation_request_create' patient.pk %}" id="consult-form">
+                    {% csrf_token %}
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label small">{% trans "Konsultatsiya xizmati" %} *</label>
+                            <div class="position-relative">
+                                <input type="text" id="consult-svc-search" class="form-control form-control-sm"
+                                       placeholder="🔍 {% trans "Konsultatsiya turini qidirish..." %}" autocomplete="off">
+                                <div id="consult-svc-dropdown" style="display:none; position:absolute; top:100%; left:0; right:0;
+                                     z-index:1050; background:#fff; border:1px solid #dee2e6; border-radius:6px;
+                                     max-height:240px; overflow-y:auto; box-shadow:0 4px 12px rgba(0,0,0,.12);"></div>
+                            </div>
+                            <input type="hidden" name="service_id" id="consult-svc-id">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small">{% trans "So'rov sababi / klinik savol" %}</label>
+                            <input type="text" name="reason" class="form-control form-control-sm" placeholder="{% trans "ixtiyoriy" %}">
+                        </div>
+                    </div>
+                    <div class="mt-2" id="consult-doctors-block" style="display:none;">
+                        <label class="form-label small">{% trans "Shu konsultatsiyani ko'radigan shifokor(lar)ni tanlang" %} *</label>
+                        <div class="border rounded p-2" id="consult-doctors-list" style="max-height:180px; overflow-y:auto;">
+                        </div>
+                    </div>
+                    <div class="mt-2 text-end">
+                        <button type="submit" class="btn btn-primary btn-sm" id="consult-submit-btn" disabled>🤝 {% trans "So'rov yuborish" %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Yuborilgan konsultatsiya so'rovlari -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-light"><strong>📋 {% trans "Yuborilgan konsultatsiya so'rovlari" %}</strong> <span class="badge bg-secondary">{{ consultation_requests|length }}</span></div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0 align-middle">
+                    <thead class="table-light"><tr><th>{% trans "Sana" %}</th><th>{% trans "Yo'nalish" %}</th><th>{% trans "Mutaxassislar" %}</th><th>{% trans "Holati" %}</th><th>{% trans "Javoblar" %}</th><th>{% trans "Amal" %}</th></tr></thead>
+                    <tbody>
+                        {% for c in consultation_requests %}
+                        <tr>
+                            <td class="small">{{ c.created_at|date:"d.m.Y H:i" }}</td>
+                            <td><span class="badge bg-info text-dark">{{ c.display_label }}</span>
+                                {% if c.reason %}<div class="text-muted small">{{ c.reason|truncatechars:60 }}</div>{% endif %}
+                                {% with occs=c.schedule_occurrences.all %}
+                                {% if occs %}
+                                <div class="text-muted small mt-1">📅
+                                    {% for o in occs %}{{ o.scheduled_at|date:"d.m H:i" }} <span class="badge bg-{% if o.status == 'done' %}success{% elif o.status == 'cancelled' or o.status == 'missed' %}secondary{% else %}warning{% endif %}">{{ o.get_status_display }}</span>{% if not forloop.last %}, {% endif %}{% endfor %}
+                                </div>
+                                {% endif %}
+                                {% endwith %}
+                            </td>
+                            <td class="small">{% for cons in c.consultants.all %}{{ cons.full_name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+                            <td><span class="badge bg-{% if c.status == 'done' %}success{% elif c.status == 'in_progress' %}info{% elif c.status == 'cancelled' %}secondary{% else %}warning{% endif %}">{{ c.get_status_display }}</span></td>
+                            <td>
+                                {% with responses=c.responses.all %}
+                                {% if responses %}
+                                <ul class="list-unstyled small mb-0">
+                                    {% for r in responses %}
+                                    <li class="border-bottom py-1">
+                                        📅 {{ r.responded_at|date:"d.m.Y H:i" }} — {{ r.responded_by.get_full_name|default:'—' }}
+                                        <div>{{ r.conclusion|truncatechars:100 }}</div>
+                                        {% if r.comment %}<div class="text-muted">{{ r.comment }}</div>{% endif %}
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <span class="text-muted small">{% trans "Hali javob yo'q" %}</span>
+                                {% endif %}
+                                {% endwith %}
+                            </td>
+                            <td>
+                                {% if c.status == 'done' and c.patient_card.ambulatory_consultation %}
+                                <div class="d-flex gap-1">
+                                    <a href="{% url 'ambulatory_consultation_form' c.patient_card.pk %}" class="btn btn-sm btn-outline-secondary">{% trans "Ko'rish" %}</a>
+                                    <a href="{% url 'ambulatory_consultation_print' c.patient_card.ambulatory_consultation.pk %}" class="btn btn-sm btn-outline-secondary" target="_blank">🖨 {% trans "Chop etish" %}</a>
+                                </div>
+                                {% elif c.status != 'done' and c.status != 'cancelled' %}
+                                <form method="post" action="{% url 'consultation_update_status' c.pk %}" class="d-flex gap-1">
+                                    {% csrf_token %}
+                                    <select name="status" class="form-select form-select-sm">
+                                        <option value="">{% trans "— holat —" %}</option>
+                                        <option value="done">{% trans "Yakunlash" %}</option>
+                                        <option value="cancelled">{% trans "Bekor qilish" %}</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">OK</button>
+                                </form>
+                                {% else %}
+                                <span class="text-muted small">{% trans "Yakunlangan" %}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-center text-muted py-4">{% trans "Hali konsultatsiya so'rovi yuborilmagan" %}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light"><strong>🤝 {% trans "Mutaxassis maslahatlari va konsiliumlar" %}</strong></div>
+            <div class="list-group list-group-flush">
+                {% for c in consultations %}
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <span class="badge bg-info text-dark">{{ c.get_examination_type_display }}</span>
+                            <span class="text-muted small ms-2">{{ c.examination_datetime|date:"d.m.Y H:i"|default:c.created_at|date:"d.m.Y H:i" }}</span>
+                        </div>
+                        <div class="d-flex gap-1">
+                            <a href="{% url 'examination_edit' patient.pk c.pk %}?next={% url 'doctor_patient_card' patient.pk %}" class="btn btn-sm btn-outline-secondary">Ko'rish</a>
+                            <a href="{% url 'examination_print' patient.pk c.pk %}" class="btn btn-sm btn-outline-secondary" target="_blank">🖨 {% trans "Chop etish" %}</a>
+                        </div>
+                    </div>
+                    {% if c.specialist_consultations %}<div class="small mt-1">{{ c.specialist_consultations|truncatechars:200 }}</div>{% endif %}
+                    {% if c.conclusion %}<div class="small mt-1"><b>Xulosa:</b> {{ c.conclusion|truncatechars:200 }}</div>{% endif %}
+                </div>
+                {% empty %}
+                <div class="list-group-item text-center text-muted py-4">Konsultatsiya yozuvlari yo'q</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. DAVOLASH YAKUNI -->
+    <div class="tab-pane fade" id="tab-completion">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="info-row"><div class="label">Status</div><div class="value"><span class="badge bg-{% if patient.status == 'completed' %}secondary{% else %}warning{% endif %}">{{ patient.get_status_display }}</span></div></div>
+                <div class="info-row"><div class="label">Natija (исход)</div><div class="value">{{ patient.get_outcome_display|default:'— hali belgilanmagan —' }}</div></div>
+                <div class="info-row"><div class="label">Chiqarilgan sana</div><div class="value">{{ patient.discharge_date|date:"d.m.Y H:i"|default:'—' }}</div></div>
+                <div class="info-row"><div class="label">Chiqarish xulosasi</div><div class="value">{{ patient.discharge_conclusion|default:'—' }}</div></div>
+                {% if discharge_exam %}
+                <div class="section-title">📤 Chiqarish epikrizi</div>
+                <div class="info-row"><div class="label">Sana</div><div class="value">{{ discharge_exam.examination_datetime|date:"d.m.Y H:i"|default:'—' }}</div></div>
+                <div class="info-row"><div class="label">Xulosa / tavsiya</div><div class="value">{{ discharge_exam.conclusion|default:'—' }}</div></div>
+                {% endif %}
+                {% if patient.visit_type != 'ambulatory' %}
+                <button type="button" class="btn btn-sm btn-danger mt-2" data-bs-toggle="modal" data-bs-target="#dischargeModal">
+                    🏥 {% trans "Bemorni chiqarish" %}
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. HISOB-FAKTURA -->
+    <div class="tab-pane fade" id="tab-invoice">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-light"><strong>🧾 Ko'rsatilgan xizmatlar</strong></div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0 align-middle">
+                    <thead class="table-light"><tr><th>{% trans "Xizmat" %}</th><th>{% trans "Soni" %}</th><th>{% trans "Narxi" %}</th><th>{% trans "Jami" %}</th><th>{% trans "Buyurtma bergan" %}</th><th>{% trans "Sana" %}</th></tr></thead>
+                    <tbody>
+                        {% for s in patient_services %}
+                        <tr>
+                            <td>{{ s.service.display_name }}</td>
+                            <td>{{ s.quantity }}</td>
+                            <td>{{ s.price|floatformat:0 }}</td>
+                            <td>{{ s.total_price|floatformat:0 }}</td>
+                            <td>{{ s.ordered_by.get_full_name|default:'—' }}</td>
+                            <td>{{ s.ordered_at|date:"d.m.Y H:i" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-center text-muted py-3">Xizmatlar yo'q</td></tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-light"><td colspan="3" class="text-end fw-bold">Xizmatlar jami:</td><td colspan="3" class="fw-bold">{{ services_total|floatformat:0 }} so'm</td></tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-light"><strong>💊 Dorilar</strong></div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0 align-middle">
+                    <thead class="table-light"><tr><th>Dori</th><th>Soni</th><th>Jami narx</th><th>Buyurtma bergan</th><th>Sana</th></tr></thead>
+                    <tbody>
+                        {% for m in patient_medicines %}
+                        <tr>
+                            <td>{{ m.medicine.name }}</td>
+                            <td>{{ m.quantity }}</td>
+                            <td>{{ m.total_price|floatformat:0 }}</td>
+                            <td>{{ m.ordered_by.get_full_name|default:'—' }}</td>
+                            <td>{{ m.ordered_at|date:"d.m.Y H:i" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center text-muted py-3">Dorilar yo'q</td></tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-light"><td colspan="2" class="text-end fw-bold">Dorilar jami:</td><td colspan="3" class="fw-bold">{{ medicines_total|floatformat:0 }} so'm</td></tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <span class="fs-5 fw-bold">Umumiy summa:</span>
+                <span class="fs-4 fw-bold text-primary">{{ grand_total|floatformat:0 }} so'm</span>
+            </div>
+        </div>
+        <div class="text-end mt-2">
+            <a href="{% url 'invoice_detail' patient.pk %}" target="_blank" class="btn btn-outline-primary btn-sm">📄 Hisob-fakturani ko'rish / chop etish</a>
+        </div>
+    </div>
+
+
+    <!-- РЕЦЕПТ TAB -->
+    <div class="tab-pane fade" id="tab-prescription">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="mb-0 fw-bold" style="font-size:1.15rem;">{% trans "Yozilgan retseptlar" %}</h5>
+            <button type="button" class="btn btn-primary btn-sm px-3" id="rx-add-btn" onclick="rxShowForm()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-1" style="vertical-align:-1px"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>
+              {% trans "Dori qo'shish" %}
+            </button>
+          </div>
+
+          {{ prescriptions|json_script:"prescriptions-data" }}
+
+          <div id="rx-list-empty" class="text-center text-muted py-5">
+            <div style="font-size:2.5rem;">📄</div>
+            <div class="mt-2">{% trans "Retseptlar yo'q. Dori qo'shish tugmasini bosing." %}</div>
+          </div>
+
+          <div id="rx-list" class="list-group list-group-flush mb-3"></div>
+
+          <div id="rx-error" class="alert alert-danger d-none mb-3"></div>
+
+          <div class="rx-card" id="rx-form-card" style="display:none;">
+            <div class="rx-card-header">
+              <span class="rx-card-title" id="rx-form-title">{% trans "Yangi retsept" %}</span>
+              <button type="button" class="btn btn-sm btn-outline-secondary px-2 py-1" onclick="rxHideForm()">✕</button>
+            </div>
+
+            <div class="rx-body">
+              <!-- ROW 1 -->
+              <div class="rx-grid">
+                <div>
+                  <label class="rx-label rx-required">{% trans "Dori nomi" %}</label>
+                  <input type="text" class="rx-input rx-mnn" placeholder="{% trans "Dori nomini kiriting..." %}" autocomplete="off" required>
+                </div>
+                <div>
+                  <label class="rx-label">Форма выпуска</label>
+                  <input type="text" class="rx-input rx-form-field" placeholder="Таблетки, капсулы..." autocomplete="off">
+                </div>
+              </div>
+
+              <!-- ROW 2 -->
+              <div class="rx-grid">
+                <div>
+                  <label class="rx-label">Доза</label>
+                  <div class="rx-search-wrap">
+                    <span class="rx-search-icon">🔍</span>
+                    <input type="text" class="rx-input rx-ac rx-dose" placeholder="100 мг, 5 мл..." autocomplete="off" data-src="dose">
+                    <div class="rx-ac-list rx-dose-list"></div>
+                  </div>
+                </div>
+                <div>
+                  <label class="rx-label">Частота приёма</label>
+                  <div class="rx-freq-wrap">
+                    <input type="number" min="1" max="99" class="rx-input rx-freq-num" placeholder="раз в">
+                    <span class="rx-label-in">раз в</span>
+                    <select class="rx-select rx-freq-unit">
+                      <option value="День">День</option>
+                      <option value="Неделя">Неделя</option>
+                      <option value="Месяц">Месяц</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label class="rx-label">Разовая доза</label>
+                  <select class="rx-select w-100 rx-single-dose" id="rx-single-dose-select"></select>
+                </div>
+              </div>
+
+              <!-- ROW 3 -->
+              <div class="rx-grid">
+                <div>
+                  <label class="rx-label">Способ применения</label>
+                  <div class="rx-search-wrap">
+                    <span class="rx-search-icon">🔍</span>
+                    <input type="text" class="rx-input rx-ac rx-method" placeholder="Перорально, в/м..." autocomplete="off" data-src="method">
+                    <div class="rx-ac-list rx-method-list"></div>
+                  </div>
+                </div>
+                <div>
+                  <label class="rx-label">Продолжительность приёма</label>
+                  <div class="rx-dur-wrap">
+                    <input type="number" min="1" max="365" class="rx-input rx-duration" placeholder="7">
+                    <span class="rx-dur-wrap-postfix rx-postfix">дней</span>
+                  </div>
+                </div>
+                <div>
+                  <label class="rx-label">Время приёма</label>
+                  <div class="rx-time-wrap">
+                    <select class="rx-select rx-hour" id="rx-hour-select"></select>
+                    <span class="rx-colon fw-bold" style="color:#6c757d;">:</span>
+                    <select class="rx-select rx-minute" id="rx-minute-select"></select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ROW 4 -->
+              <div class="rx-grid">
+                <div>
+                  <label class="rx-label">Период приёма</label>
+                  <div class="rx-daterange-wrap">
+                    <span class="rx-cal-icon">📅</span>
+                    <input type="date" class="rx-input rx-date-start" title="Начало">
+                    <span class="rx-sep">—</span>
+                    <input type="date" class="rx-input rx-date-end" title="Конец">
+                  </div>
+                </div>
+                <div>
+                  <label class="rx-label">Кол-во препарата за весь период</label>
+                  <input type="text" class="rx-input rx-total" placeholder="Вычисляется автоматически" readonly style="background:#f8f9fa; color:#6c757d;">
+                </div>
+                <div>
+                  <label class="rx-label">Примечание</label>
+                  <input type="text" class="rx-input rx-note" placeholder="Доп. указания...">
+                </div>
+              </div>
+
+              <div class="d-flex justify-content-end gap-2 mt-3">
+                <button type="button" class="btn btn-secondary" onclick="rxHideForm()">{% trans "Bekor" %}</button>
+                <button type="button" class="btn btn-success" id="rx-save-btn" onclick="rxSave()">💾 {% trans "Saqlash" %}</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+</div><!-- /tab-content -->
+
+<!-- CHIQARISH MODALI -->
+<div class="modal fade" id="dischargeModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">🏥 {% trans "Bemorni chiqarish" %}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{% url 'patient_edit' patient.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="_discharge" value="1">
+        <input type="hidden" name="next" value="{% url 'doctor_patient_card' patient.pk %}">
+        <div class="modal-body">
+          <div class="row g-3">
+
+            <!-- Chiqish sanasi -->
+            <div class="col-md-6">
+              <label class="form-label fw-bold">{% trans "Chiqish sanasi" %} *</label>
+              <input type="date" name="discharge_date" class="form-control"
+                     value="{{ today }}" required>
+            </div>
+
+            <!-- Kasallanish yakuni -->
+            <div class="col-md-6">
+              <label class="form-label fw-bold">{% trans "Kasallanish yakuni" %} *</label>
+              <select name="outcome" class="form-select" required>
+                <option value="">{% trans "— Tanlang —" %}</option>
+                {% for val, label in outcome_choices %}
+                <option value="{{ val }}" {% if patient.outcome == val %}selected{% endif %}>
+                  {{ label }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Yakuniy tashxis -->
+            <div class="col-12">
+              <label class="form-label fw-bold">{% trans "Yakuniy tashxis" %} *</label>
+              <input type="text" name="final_diagnosis" class="form-control"
+                     value="{{ patient.final_diagnosis|default:patient.admission_diagnosis|default:'' }}"
+                     placeholder="{% trans "Yakuniy tashxis..." %}" required>
+            </div>
+
+            <!-- Chiqish xulosasi (FK) -->
+            <div class="col-12">
+              <label class="form-label fw-bold">{% trans "Chiqish xulosasi" %}</label>
+              <select name="discharge_conclusion" class="form-select">
+                <option value="">{% trans "— Tanlang —" %}</option>
+                {% for dc in discharge_conclusions %}
+                <option value="{{ dc.pk }}"
+                  {% if patient.discharge_conclusion_id == dc.pk %}selected{% endif %}>
+                  {{ dc.name }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Qo'shimcha izoh -->
+            <div class="col-12">
+              <label class="form-label fw-bold">{% trans "Qo'shimcha izoh / tavsiyalar" %}</label>
+              <textarea name="discharge_conclusion_text" class="form-control" rows="2"
+                        placeholder="{% trans "Qo'shimcha izoh..." %}">{{ patient.discharge_note|default:'' }}</textarea>
+            </div>
+
+            <!-- Yotgan kunlar + Shifokorlar -->
+            <div class="col-md-4">
+              <label class="form-label fw-bold">{% trans "Yotgan kunlar soni" %}</label>
+              <input type="number" name="days_in_hospital" class="form-control"
+                     min="0" value="{{ patient.days_in_hospital|default:0 }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold">{% trans "Davolovchi shifokor" %}</label>
+              <select name="attending_doctor" class="form-select">
+                <option value="">{% trans "— Tanlang —" %}</option>
+                {% for doc in doctors %}
+                <option value="{{ doc.pk }}" {% if doc.pk == patient.attending_doctor.pk %}selected{% endif %}>
+                  {{ doc.full_name }}{% if doc.is_head %} ★{% endif %}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold">{% trans "Bo'lim mudiri" %}</label>
+              <select name="department_head" class="form-select">
+                <option value="">{% trans "— Tanlang —" %}</option>
+                {% for doc in doctors %}
+                <option value="{{ doc.pk }}" {% if doc.pk == patient.department_head.pk %}selected{% endif %}>
+                  {{ doc.full_name }}{% if doc.is_head %} ★{% endif %}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Bekor" %}</button>
+          <button type="submit" class="btn btn-danger">✅ {% trans "Bemorni chiqarish" %}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+/* ─── Reference data ─── */
+const MEDICINE_SEARCH_URL = '{% url "medicine_search" %}';
+
+const METHOD_LIST = [
+  'Перорально (внутрь)','Внутримышечно (в/м)','Внутривенно (в/в)',
+  'Подкожно (п/к)','Сублингвально','Наружно','Ингаляционно',
+  'Ректально','Вагинально','Глазные капли','Ушные капли','Интраназально',
+];
+
+const SINGLE_DOSE_OPTS = [
+  { label:'— Выберите —', val:'' },
+  { label:'¼ таб.',   val:'0.25' },
+  { label:'½ таб.',   val:'0.5'  },
+  { label:'1 таб.',   val:'1'    },
+  { label:'1½ таб.',  val:'1.5'  },
+  { label:'2 таб.',   val:'2'    },
+  { label:'3 таб.',   val:'3'    },
+  { label:'1 капс.',  val:'1'    },
+  { label:'2 капс.',  val:'2'    },
+  { label:'1 мл',     val:'1'    },
+  { label:'2 мл',     val:'2'    },
+  { label:'5 мл',     val:'5'    },
+  { label:'10 мл',    val:'10'   },
+  { label:'1 кап.',   val:'1'    },
+  { label:'2 кап.',   val:'2'    },
+  { label:'5 кап.',   val:'5'    },
+  { label:'Другое',   val:''     },
+];
+
+/* ─── Build hours / minutes / single-dose options ─── */
+function buildHourOpts() {
+  let s = '<option value="">—</option>';
+  for (let h = 0; h < 24; h++) s += `<option value="${h}">${String(h).padStart(2,'0')}</option>`;
+  return s;
+}
+function buildMinOpts() {
+  let s = '<option value="">—</option>';
+  for (let m = 0; m < 60; m += 5) s += `<option value="${m}">${String(m).padStart(2,'0')}</option>`;
+  return s;
+}
+document.getElementById('rx-hour-select').innerHTML = buildHourOpts();
+document.getElementById('rx-minute-select').innerHTML = buildMinOpts();
+document.getElementById('rx-single-dose-select').innerHTML = SINGLE_DOSE_OPTS.map(o =>
+  `<option value="${o.val}">${o.label}</option>`
+).join('');
+
+/* ─── State ─── */
+const PRESCRIPTIONS_ADD_URL    = '{% url "prescription_add" patient.pk %}';
+const PRESCRIPTIONS_UPDATE_URL = '{% url "prescription_update" 999999 %}';
+const PRESCRIPTIONS_DELETE_URL = '{% url "prescription_delete" 999999 %}';
+const PRESCRIPTIONS_PRINT_URL  = '{% url "prescription_print" 999999 %}';
+let RX_LIST = JSON.parse(document.getElementById('prescriptions-data').textContent);
+let rxEditId = null;
+
+const rxFormCard  = document.getElementById('rx-form-card');
+const rxListEl    = document.getElementById('rx-list');
+const rxEmptyEl   = document.getElementById('rx-list-empty');
+const rxErrorEl   = document.getElementById('rx-error');
+
+function rxFieldEls() {
+  return {
+    drug_name:      rxFormCard.querySelector('.rx-mnn'),
+    dosage_form:    rxFormCard.querySelector('.rx-form-field'),
+    dose:           rxFormCard.querySelector('.rx-dose'),
+    frequency_num:  rxFormCard.querySelector('.rx-freq-num'),
+    frequency_unit: rxFormCard.querySelector('.rx-freq-unit'),
+    single_dose:    rxFormCard.querySelector('.rx-single-dose'),
+    method:         rxFormCard.querySelector('.rx-method'),
+    duration_days:  rxFormCard.querySelector('.rx-duration'),
+    hour:           rxFormCard.querySelector('.rx-hour'),
+    minute:         rxFormCard.querySelector('.rx-minute'),
+    date_start:      rxFormCard.querySelector('.rx-date-start'),
+    date_end:        rxFormCard.querySelector('.rx-date-end'),
+    total_quantity:  rxFormCard.querySelector('.rx-total'),
+    note:            rxFormCard.querySelector('.rx-note'),
+  };
+}
+
+function rxRenderList() {
+  if (!RX_LIST.length) {
+    rxListEl.innerHTML = '';
+    rxEmptyEl.style.display = '';
+    return;
+  }
+  rxEmptyEl.style.display = 'none';
+  rxListEl.innerHTML = RX_LIST.map(p => `
+    <div class="list-group-item d-flex justify-content-between align-items-start" data-id="${p.id}">
+      <div>
+        <div class="fw-semibold">${p.summary}</div>
+        <div class="text-muted small">${p.created_at}</div>
+        ${p.note ? `<div class="small text-muted">📝 ${p.note}</div>` : ''}
+      </div>
+      <div class="d-flex gap-1 flex-shrink-0">
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="rxEdit(${p.id})" title="{% trans "Tahrirlash" %}">✏️</button>
+        <button type="button" class="btn btn-sm btn-outline-danger" onclick="rxDelete(${p.id})" title="{% trans "O'chirish" %}">🗑</button>
+        <a class="btn btn-sm btn-outline-primary" href="${PRESCRIPTIONS_PRINT_URL.replace('999999', p.id)}" target="_blank" title="{% trans "Chop etish" %}">🖨</a>
+      </div>
+    </div>
+  `).join('');
+}
+rxRenderList();
+
+window.rxShowForm = function (id) {
+  rxEditId = id || null;
+  rxErrorEl.classList.add('d-none');
+  const f = rxFieldEls();
+  const item = id ? RX_LIST.find(p => p.id === id) : null;
+  document.getElementById('rx-form-title').textContent = item ? '{% trans "Retseptni tahrirlash" %}' : '{% trans "Yangi retsept" %}';
+
+  f.drug_name.value      = item ? item.drug_name : '';
+  f.dosage_form.value    = item ? item.dosage_form : '';
+  f.dose.value           = item ? item.dose : '';
+  f.frequency_num.value  = item ? (item.frequency_num || '') : '';
+  f.frequency_unit.value = item ? (item.frequency_unit || 'День') : 'День';
+  f.single_dose.value    = item ? (item.single_dose || '') : '';
+  f.method.value         = item ? item.method : '';
+  f.duration_days.value  = item ? (item.duration_days || '') : '';
+  f.date_start.value     = item ? (item.date_start || '') : new Date().toISOString().slice(0, 10);
+  f.date_end.value       = item ? (item.date_end || '') : '';
+  f.total_quantity.value = item ? (item.total_quantity || '') : '';
+  f.note.value           = item ? item.note : '';
+
+  const timeParts = item && item.intake_time ? item.intake_time.split(':') : ['', ''];
+  f.hour.value   = timeParts[0] || '';
+  f.minute.value = timeParts[1] || '';
+
+  rxFormCard.style.display = '';
+  rxFormCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+};
+
+window.rxHideForm = function () {
+  rxFormCard.style.display = 'none';
+  rxEditId = null;
+};
+
+window.rxEdit = function (id) {
+  rxShowForm(id);
+};
+
+window.rxDelete = function (id) {
+  if (!confirm("{% trans "Retseptni o'chirishni tasdiqlaysizmi?" %}")) return;
+  fetch(PRESCRIPTIONS_DELETE_URL.replace('999999', id), {
+    method: 'POST',
+    headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+  }).then(r => r.json()).then(data => {
+    if (data.success) {
+      RX_LIST = RX_LIST.filter(p => p.id !== id);
+      rxRenderList();
+    } else {
+      alert(data.error || '{% trans "Xato yuz berdi" %}');
+    }
+  }).catch(() => alert('{% trans "Tarmoq xatosi" %}'));
+};
+
+window.rxSave = function () {
+  const f = rxFieldEls();
+  const drugName = f.drug_name.value.trim();
+  if (!drugName) {
+    rxErrorEl.textContent = '{% trans "Dori nomini kiriting" %}';
+    rxErrorEl.classList.remove('d-none');
+    return;
+  }
+  const hour = f.hour.value, minute = f.minute.value;
+  const payload = {
+    drug_name:      drugName,
+    dosage_form:    f.dosage_form.value.trim(),
+    dose:           f.dose.value.trim(),
+    frequency_num:  f.frequency_num.value || null,
+    frequency_unit: f.frequency_unit.value,
+    single_dose:    f.single_dose.value,
+    method:         f.method.value.trim(),
+    duration_days:  f.duration_days.value || null,
+    intake_time:    (hour && minute) ? `${hour}:${minute}` : '',
+    date_start:     f.date_start.value || '',
+    date_end:       f.date_end.value || '',
+    total_quantity: f.total_quantity.value.trim(),
+    note:           f.note.value.trim(),
+  };
+
+  const url = rxEditId ? PRESCRIPTIONS_UPDATE_URL.replace('999999', rxEditId) : PRESCRIPTIONS_ADD_URL;
+  const btn = document.getElementById('rx-save-btn');
+  btn.disabled = true;
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+    body: JSON.stringify(payload),
+  }).then(r => r.json()).then(data => {
+    btn.disabled = false;
+    if (data.success) {
+      if (rxEditId) {
+        RX_LIST = RX_LIST.map(p => p.id === rxEditId ? data.prescription : p);
+      } else {
+        RX_LIST.unshift(data.prescription);
+      }
+      rxRenderList();
+      rxHideForm();
+    } else {
+      rxErrorEl.textContent = data.error || '{% trans "Xato yuz berdi" %}';
+      rxErrorEl.classList.remove('d-none');
+    }
+  }).catch(() => {
+    btn.disabled = false;
+    rxErrorEl.textContent = '{% trans "Tarmoq xatosi" %}';
+    rxErrorEl.classList.remove('d-none');
+  });
+};
+
+/* ─── Autocomplete ─── */
+const LOCAL_SOURCES = {
+  method: { list: METHOD_LIST,  key: null   },
+};
+// dose → AJAX orqali medicine_search endpoint (mnn/form endi qo'lda yoziladi)
+const AJAX_FIELD_MAP = { dose: 'strength' };
+
+function fetchAC(fieldParam, q, cb) {
+  const url = `${MEDICINE_SEARCH_URL}?field=${fieldParam}&q=${encodeURIComponent(q)}&category=drug`;
+  fetch(url)
+    .then(r => r.json())
+    .then(data => cb(Array.isArray(data) ? data : []))
+    .catch(() => cb([]));
+}
+
+function initAC(input, listEl, srcKey) {
+  const isAjax = srcKey in AJAX_FIELD_MAP;
+  const src    = LOCAL_SOURCES[srcKey];
+  let timer;
+
+  function renderList(items, labelFn) {
+    listEl.innerHTML = items.map((item, i) =>
+      `<div class="rx-ac-item" data-idx="${i}">${labelFn(item)}</div>`
+    ).join('');
+    listEl.style.display = items.length ? 'block' : 'none';
+
+    listEl.querySelectorAll('.rx-ac-item').forEach((row, i) => {
+      row.addEventListener('mousedown', e => {
+        e.preventDefault();
+        const item = items[i];
+        input.value = typeof item === 'string' ? item : labelFn(item);
+        listEl.style.display = 'none';
+        input.dispatchEvent(new Event('change'));
+      });
+    });
+  }
+
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if (q.length < 1) { listEl.style.display = 'none'; return; }
+
+    if (isAjax) {
+      timer = setTimeout(() => {
+        fetchAC(AJAX_FIELD_MAP[srcKey], q, items => renderList(items, s => s));
+      }, 200);
+    } else {
+      timer = setTimeout(() => {
+        const ql = q.toLowerCase();
+        const data = src.list;
+        const matches = src.key
+          ? data.filter(o => o[src.key].toLowerCase().includes(ql)).slice(0, 10)
+          : data.filter(s => s.toLowerCase().includes(ql)).slice(0, 10);
+        renderList(matches, item => src.key ? item[src.key] : item);
+      }, 80);
+    }
+  });
+
+  input.addEventListener('focus', () => {
+    if (input.value.length >= 1) input.dispatchEvent(new Event('input'));
+  });
+
+  input.addEventListener('blur', () => {
+    setTimeout(() => { listEl.style.display = 'none'; }, 200);
+  });
+}
+
+/* ─── Date sync ─── */
+function syncEnd(card) {
+  const startEl    = card.querySelector('.rx-date-start');
+  const durationEl = card.querySelector('.rx-duration');
+  const endEl      = card.querySelector('.rx-date-end');
+  if (!startEl.value || !durationEl.value) return;
+  const d = new Date(startEl.value);
+  d.setDate(d.getDate() + parseInt(durationEl.value, 10) - 1);
+  endEl.value = d.toISOString().slice(0, 10);
+}
+
+function syncDuration(card) {
+  const startEl = card.querySelector('.rx-date-start');
+  const endEl   = card.querySelector('.rx-date-end');
+  const durEl   = card.querySelector('.rx-duration');
+  if (!startEl.value || !endEl.value) return;
+  const diff = Math.round((new Date(endEl.value) - new Date(startEl.value)) / 86400000) + 1;
+  if (diff > 0) { durEl.value = diff; }
+}
+
+/* ─── Total quantity auto-calc ─── */
+function calcTotal(card) {
+  const freqNum   = parseFloat(card.querySelector('.rx-freq-num').value)   || 0;
+  const freqUnit  = card.querySelector('.rx-freq-unit').value;
+  const duration  = parseFloat(card.querySelector('.rx-duration').value)   || 0;
+  const singleVal = parseFloat(card.querySelector('.rx-single-dose').value) || 0;
+
+  if (!freqNum || !duration) { card.querySelector('.rx-total').value = ''; return; }
+
+  let dosesPerDay = freqNum;
+  if (freqUnit === 'Неделя')  dosesPerDay = freqNum / 7;
+  if (freqUnit === 'Месяц')   dosesPerDay = freqNum / 30;
+
+  const totalDoses = Math.round(dosesPerDay * duration);
+  const qty = singleVal > 0 ? totalDoses * singleVal : totalDoses;
+  const txt = Number.isInteger(qty) ? String(qty) : qty.toFixed(1);
+
+  card.querySelector('.rx-total').value = singleVal > 0 ? `${txt} ед.` : `${txt} приём`;
+}
+
+/* ─── Form init (bitta statik forma — bir marta ishga tushadi) ─── */
+(function initRxForm() {
+  const card = rxFormCard;
+  initAC(card.querySelector('.rx-dose'),       card.querySelector('.rx-dose-list'),   'dose');
+  initAC(card.querySelector('.rx-method'),     card.querySelector('.rx-method-list'), 'method');
+
+  const startEl = card.querySelector('.rx-date-start');
+  const endEl   = card.querySelector('.rx-date-end');
+  const durEl   = card.querySelector('.rx-duration');
+  startEl.addEventListener('change', () => syncEnd(card));
+  durEl.addEventListener('input',    () => syncEnd(card));
+  endEl.addEventListener('change',   () => syncDuration(card));
+
+  ['input', 'change'].forEach(ev => {
+    ['.rx-freq-num', '.rx-freq-unit', '.rx-duration', '.rx-single-dose'].forEach(sel => {
+      const el = card.querySelector(sel);
+      if (el) el.addEventListener(ev, () => calcTotal(card));
+    });
+  });
+})();
+
+})();
+</script>
+
+<script>
+(function () {
+'use strict';
+
+const SERVICE_SEARCH_URL  = '{% url "service_search" %}';
+const PACKAGES_URL        = '/services/packages/';
+const TOGGLE_PACKAGE_URL  = '{% url "package_toggle_service" %}';
+const ASSIGN_URL          = '{% url "assign_services" patient.pk %}';
+const PATIENT_ID          = {{ patient.pk }};
+const CSRF                = '{{ csrf_token }}';
+
+const SERVICE_CATEGORIES = JSON.parse(document.getElementById('service-categories-data').textContent);
+
+let assignCat      = '';       // '' = barchasi, '__my_packages__' = mening paketim, yoki category_type
+let assignSubCatId = '';       // aniq ServiceCategory id (2-qator tanlovi)
+let assignCart  = {};          // { [serviceId]: {id, name, category, price, doctor_id, comment} }
+let starredIds  = new Set();
+let myPackages  = [];
+let lastServices = [];         // oxirgi render qilingan xizmatlar ro'yxati (qidiruv/kategoriya natijasi)
+
+window.openAssignModal = function () {
+    assignCat      = '';
+    assignSubCatId = '';
+    assignCart = {};
+    document.querySelectorAll('.assign-cat-btn').forEach(b => {
+        const active = b.dataset.cat === '';
+        b.classList.toggle('btn-primary', active);
+        b.classList.toggle('btn-outline-primary', !active && b.dataset.cat !== '__my_packages__');
+        b.classList.toggle('btn-outline-warning', b.dataset.cat === '__my_packages__');
+        b.classList.remove('btn-warning');
+    });
+    renderSubCategories();
+    document.getElementById('assign-search').value = '';
+    document.getElementById('assign-error').style.display = 'none';
+    renderAssignSummary();
+    loadMyPackages();
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('assignModal'));
+    modal.show();
+    setTimeout(() => fetchAssignServices(''), 150);
+};
+
+function loadMyPackages() {
+    fetch(`${PACKAGES_URL}?patient_id=${PATIENT_ID}`)
+        .then(r => r.json())
+        .then(data => {
+            myPackages = data;
+            starredIds.clear();
+            data.forEach(pkg => pkg.items.forEach(item => starredIds.add(String(item.service_id))));
+        });
+}
+
+function renderSubCategories() {
+    const wrap = document.getElementById('assign-subcat-btns');
+    const subcats = SERVICE_CATEGORIES.filter(c => c.category_type === assignCat);
+    if (assignCat === '' || assignCat === '__my_packages__' || !subcats.length) {
+        wrap.style.display = 'none';
+        wrap.innerHTML = '';
+        return;
+    }
+    wrap.innerHTML = subcats.map(c => `
+        <button type="button" class="btn ${assignSubCatId === String(c.id) ? 'btn-success' : 'btn-outline-success'} assign-subcat-btn rounded-pill py-1 px-3" data-id="${c.id}">${c.icon || ''} ${c.name}</button>
+    `).join('');
+    wrap.style.display = '';
+    wrap.querySelectorAll('.assign-subcat-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const id = String(this.dataset.id);
+            assignSubCatId = (assignSubCatId === id) ? '' : id;
+            renderSubCategories();
+            fetchAssignServices(assignSearch.value);
+        });
+    });
+}
+
+document.querySelectorAll('.assign-cat-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+        assignCat      = this.dataset.cat;
+        assignSubCatId = '';
+        document.querySelectorAll('.assign-cat-btn').forEach(b => {
+            const active = b === this;
+            b.classList.remove('btn-primary', 'btn-outline-primary', 'btn-warning', 'btn-outline-warning');
+            if (b.dataset.cat === '__my_packages__') {
+                b.classList.add(active ? 'btn-warning' : 'btn-outline-warning');
+            } else {
+                b.classList.add(active ? 'btn-primary' : 'btn-outline-primary');
+            }
+        });
+        renderSubCategories();
+        document.getElementById('assign-search').value = '';
+        fetchAssignServices('');
+    });
+});
+
+const assignSearch = document.getElementById('assign-search');
+const assignGrid    = document.getElementById('assign-grid');
+const assignGridEmpty = document.getElementById('assign-grid-empty');
+let assignTimer;
+
+function fetchAssignServices(q) {
+    if (assignCat === '__my_packages__') {
+        const seen = new Set();
+        const items = [];
+        myPackages.forEach(pkg => pkg.items.forEach(item => {
+            if (seen.has(item.service_id)) return;
+            seen.add(item.service_id);
+            items.push({ id: item.service_id, name: item.service_name, category: item.category || '', price: item.price || 0 });
+        }));
+        const ql = (q || '').toLowerCase().trim();
+        const filtered = ql ? items.filter(s => s.name.toLowerCase().includes(ql)) : items;
+        renderAssignGrid(filtered);
+        return;
+    }
+    const catParam = assignSubCatId ? `&category=${assignSubCatId}` : '';
+    const url = `${SERVICE_SEARCH_URL}?q=${encodeURIComponent(q)}&category_type=${assignCat}${catParam}&patient_id=${PATIENT_ID}`;
+    assignGrid.innerHTML = '<div class="p-3 text-muted">⏳ Qidirilmoqda...</div>';
+    assignGridEmpty.style.display = 'none';
+    fetch(url).then(r => r.json()).then(renderAssignGrid);
+}
+
+function renderAssignGrid(data) {
+    lastServices = data;
+    if (!data.length) {
+        assignGrid.innerHTML = '';
+        assignGridEmpty.style.display = '';
+        return;
+    }
+    assignGridEmpty.style.display = 'none';
+    assignGrid.innerHTML = data.map(s => assignRowHTML(s)).join('');
+    bindAssignGridEvents();
+}
+
+function assignRowHTML(s) {
+    const id      = String(s.id);
+    const checked = !!assignCart[id];
+    const starred = starredIds.has(id);
+    return `
+    <div class="col-md-6">
+        <div class="assign-svc-row ${checked ? 'checked' : ''}" data-id="${id}" data-name="${s.name.replace(/"/g, '&quot;')}" data-category="${s.category || ''}" data-price="${s.price || 0}">
+            <div class="d-flex align-items-center gap-2">
+                <input type="checkbox" class="form-check-input assign-svc-cb" ${checked ? 'checked' : ''}>
+                <span class="assign-svc-star" data-id="${id}" title="Mening paketimga qo'shish/o'chirish">${starred ? '⭐' : '☆'}</span>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="assign-svc-name">${s.name}</div>
+                    <div class="assign-svc-cat">${s.category || ''}</div>
+                </div>
+                <span class="badge bg-success">${Number(s.price || 0).toLocaleString()} so'm</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary assign-row-toggle" title="Biriktirilgan shifokorlar / izoh">▼</button>
+            </div>
+            <div class="assign-row-detail" style="display:none;">
+                <div class="small text-muted mb-1">Biriktirilgan shifokorlar:</div>
+                <div class="assign-row-doctors small text-muted">⏳ Yuklanmoqda...</div>
+                <textarea class="form-control form-control-sm mt-2 assign-row-comment" rows="2" placeholder="Izoh / kommentariya..."></textarea>
+                <div class="row g-2 mt-2 align-items-end">
+                    <div class="col-4">
+                        <label class="form-label small mb-1">📅 Sana</label>
+                        <input type="date" class="form-control form-control-sm assign-row-date">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label small mb-1">🕐 Vaqt</label>
+                        <input type="time" class="form-control form-control-sm assign-row-time" value="09:00">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label small mb-1">Necha kun</label>
+                        <input type="number" min="1" max="60" value="1" class="form-control form-control-sm assign-row-days">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>`;
+}
+
+function bindAssignGridEvents() {
+    assignGrid.querySelectorAll('.assign-svc-row').forEach(row => {
+        const id = row.dataset.id;
+        const cb = row.querySelector('.assign-svc-cb');
+
+        cb.addEventListener('change', function () {
+            if (this.checked) {
+                assignCart[id] = assignCart[id] || {
+                    id, name: row.dataset.name, category: row.dataset.category,
+                    price: parseFloat(row.dataset.price) || 0, doctor_id: null, comment: '',
+                    scheduled_date: '', scheduled_time: '09:00', repeat_days: 1,
+                };
+                row.classList.add('checked');
+            } else {
+                delete assignCart[id];
+                row.classList.remove('checked');
+            }
+            renderAssignSummary();
+        });
+
+        row.querySelector('.assign-svc-star').addEventListener('click', function (e) {
+            e.stopPropagation();
+            toggleStar(id, this);
+        });
+
+        const toggleBtn = row.querySelector('.assign-row-toggle');
+        const detail     = row.querySelector('.assign-row-detail');
+        let loaded = false;
+        toggleBtn.addEventListener('click', function () {
+            const open = detail.style.display !== 'none';
+            detail.style.display = open ? 'none' : '';
+            this.classList.toggle('open', !open);
+            if (!open && !loaded) {
+                loaded = true;
+                loadRowDoctors(row, id);
+            }
+        });
+
+        const commentEl = row.querySelector('.assign-row-comment');
+        commentEl.addEventListener('input', function () {
+            if (assignCart[id]) assignCart[id].comment = this.value;
+        });
+
+        const dateEl = row.querySelector('.assign-row-date');
+        const timeEl = row.querySelector('.assign-row-time');
+        const daysEl = row.querySelector('.assign-row-days');
+        dateEl.addEventListener('input', function () { if (assignCart[id]) assignCart[id].scheduled_date = this.value; });
+        timeEl.addEventListener('input', function () { if (assignCart[id]) assignCart[id].scheduled_time = this.value; });
+        daysEl.addEventListener('input', function () { if (assignCart[id]) assignCart[id].repeat_days = parseInt(this.value) || 1; });
+    });
+}
+
+function loadRowDoctors(row, serviceId) {
+    const box = row.querySelector('.assign-row-doctors');
+    fetch(`/services/${serviceId}/doctors/`)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.length) {
+                box.innerHTML = '<span class="text-muted">Bu xizmatga shifokor biriktirilmagan</span>';
+                return;
+            }
+            box.innerHTML = data.map(d => `
+                <div class="form-check assign-doctor-pick">
+                    <input class="form-check-input assign-doctor-radio" type="radio" name="assign-doc-${serviceId}" value="${d.id}" id="assign-doc-${serviceId}-${d.id}">
+                    <label class="form-check-label" for="assign-doc-${serviceId}-${d.id}">${d.full_name}${d.department ? ' — ' + d.department : ''}</label>
+                </div>
+            `).join('');
+            box.querySelectorAll('.assign-doctor-radio').forEach(radio => {
+                radio.addEventListener('change', function () {
+                    const id = String(serviceId);
+                    if (!assignCart[id]) {
+                        row.querySelector('.assign-svc-cb').checked = true;
+                        row.querySelector('.assign-svc-cb').dispatchEvent(new Event('change'));
+                    }
+                    assignCart[id].doctor_id = this.value;
+                });
+            });
+        });
+}
+
+function toggleStar(id, starEl) {
+    const wasStarred = starredIds.has(id);
+    if (wasStarred) { starredIds.delete(id); starEl.textContent = '☆'; }
+    else            { starredIds.add(id);    starEl.textContent = '⭐'; }
+    fetch(TOGGLE_PACKAGE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ service_id: id }),
+    })
+    .then(r => r.json())
+    .then(() => loadMyPackages());
+}
+
+function renderAssignSummary() {
+    const count = Object.keys(assignCart).length;
+    document.getElementById('assign-count').textContent = count;
+    document.getElementById('assign-save-count').textContent = count;
+    document.getElementById('btn-assign-save').disabled = count === 0;
+}
+
+assignSearch.addEventListener('input', function () {
+    clearTimeout(assignTimer);
+    assignTimer = setTimeout(() => fetchAssignServices(this.value), 250);
+});
+
+document.getElementById('btn-assign-save').addEventListener('click', function () {
+    const items = Object.values(assignCart);
+    if (!items.length) return;
+    const btn    = this;
+    const errDiv = document.getElementById('assign-error');
+    errDiv.style.display = 'none';
+    btn.disabled  = true;
+    btn.innerHTML = '⏳ Saqlanmoqda...';
+
+    fetch(ASSIGN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({
+            items: items.map(c => ({
+                service_id: parseInt(c.id),
+                doctor_id:  c.doctor_id ? parseInt(c.doctor_id) : null,
+                notes:      c.comment || '',
+                scheduled_date: c.scheduled_date || '',
+                scheduled_time: c.scheduled_time || '',
+                repeat_days:    c.repeat_days || 1,
+            })),
+        }),
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (!data.success) {
+            errDiv.textContent   = data.error || 'Xato yuz berdi';
+            errDiv.style.display = 'block';
+            btn.disabled         = false;
+            btn.innerHTML        = `✅ Saqlash (<span id="assign-save-count">${items.length}</span> ta)`;
+            return;
+        }
+        window.location.reload();
+    })
+    .catch(() => {
+        errDiv.textContent   = "Tarmoq xatosi. Qayta urinib ko'ring.";
+        errDiv.style.display = 'block';
+        btn.disabled         = false;
+        btn.innerHTML        = `✅ Saqlash (<span id="assign-save-count">${items.length}</span> ta)`;
+    });
+});
+
+})();
+</script>
+
+<script>
+(function () {
+'use strict';
+
+const CONSULT_SERVICE_SEARCH_URL = '{% url "service_search" %}';
+
+const consultSearch        = document.getElementById('consult-svc-search');
+const consultDropdown      = document.getElementById('consult-svc-dropdown');
+const consultSvcId         = document.getElementById('consult-svc-id');
+const consultDoctorsBlock  = document.getElementById('consult-doctors-block');
+const consultDoctorsList   = document.getElementById('consult-doctors-list');
+const consultSubmitBtn     = document.getElementById('consult-submit-btn');
+let consultTimer;
+
+function fetchConsultServices(q) {
+    fetch(`${CONSULT_SERVICE_SEARCH_URL}?q=${encodeURIComponent(q)}&category_type=consultation`)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.length) {
+                consultDropdown.innerHTML = '<div class="p-2 text-muted small">Topilmadi</div>';
+                consultDropdown.style.display = 'block';
+                return;
+            }
+            consultDropdown.innerHTML = data.map(s =>
+                `<div class="px-3 py-2 border-bottom consult-svc-item" style="cursor:pointer;" data-id="${s.id}" data-name="${s.name.replace(/"/g, '&quot;')}">${s.name}</div>`
+            ).join('');
+            consultDropdown.style.display = 'block';
+            consultDropdown.querySelectorAll('.consult-svc-item').forEach(item => {
+                item.addEventListener('mousedown', function (e) {
+                    e.preventDefault();
+                    consultSvcId.value = this.dataset.id;
+                    consultSearch.value = this.dataset.name;
+                    consultDropdown.style.display = 'none';
+                    loadConsultDoctors(this.dataset.id);
+                });
+            });
+        });
+}
+
+function loadConsultDoctors(serviceId) {
+    consultDoctorsBlock.style.display = 'none';
+    consultSubmitBtn.disabled = true;
+    fetch(`/services/${serviceId}/doctors/`)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.length) {
+                consultDoctorsList.innerHTML = '<div class="text-muted small p-2">Bu xizmatga hali shifokor biriktirilmagan. Administratorga murojaat qiling.</div>';
+                consultDoctorsBlock.style.display = '';
+                consultSubmitBtn.disabled = true;
+                return;
+            }
+            consultDoctorsList.innerHTML = data.map(d => `
+                <div class="form-check">
+                    <input class="form-check-input consult-doctor-cb" type="checkbox" name="consultants" value="${d.id}" id="consult-doc-${d.id}">
+                    <label class="form-check-label small" for="consult-doc-${d.id}">${d.full_name}${d.department ? ' — ' + d.department : ''}</label>
+                </div>
+            `).join('');
+            consultDoctorsBlock.style.display = '';
+            consultSubmitBtn.disabled = false;
+        });
+}
+
+consultSearch.addEventListener('input', function () {
+    clearTimeout(consultTimer);
+    consultSvcId.value = '';
+    consultDoctorsBlock.style.display = 'none';
+    consultSubmitBtn.disabled = true;
+    const q = this.value.trim();
+    consultTimer = setTimeout(() => fetchConsultServices(q), 200);
+});
+consultSearch.addEventListener('focus', function () {
+    fetchConsultServices(this.value.trim());
+});
+document.addEventListener('click', function (e) {
+    if (!e.target.closest('#consult-svc-search') && !e.target.closest('#consult-svc-dropdown')) {
+        consultDropdown.style.display = 'none';
+    }
+});
+
+document.getElementById('consult-form').addEventListener('submit', function (e) {
+    const checked = this.querySelectorAll('.consult-doctor-cb:checked');
+    if (!checked.length) {
+        e.preventDefault();
+        alert('Kamida bitta shifokorni tanlang.');
+    }
+});
+
+})();
+</script>
+{% endblock %}

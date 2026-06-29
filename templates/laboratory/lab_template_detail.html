@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-
-{% block title %}{{ template.name }} — Shablon{% endblock %}
+{% load i18n %}
+{% block title %}{% blocktrans with name=template.name %}{{ name }} — Shablon{% endblocktrans %}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-3">
@@ -10,20 +10,20 @@
     <div>
       <h4 class="mb-1">{{ template.name }}</h4>
       <div class="text-muted small">
-        Kategoriya: <strong>{{ template.get_category_display }}</strong>
+        {% trans "Kategoriya" %}: <strong>{{ template.get_category_display }}</strong>
         &middot;
-        Holat:
+        {% trans "Holat" %}:
         {% if template.is_active %}
-          <span class="badge bg-success">Faol</span>
+          <span class="badge bg-success">{% trans "Faol" %}</span>
         {% else %}
-          <span class="badge bg-danger">Nofaol</span>
+          <span class="badge bg-danger">{% trans "Nofaol" %}</span>
         {% endif %}
         {% if template.description %}
           &middot; {{ template.description }}
         {% endif %}
       </div>
     </div>
-    <a href="{% url 'lab_template_list' %}" class="btn btn-outline-secondary btn-sm">← Orqaga</a>
+    <a href="{% url 'lab_template_list' %}" class="btn btn-outline-secondary btn-sm">← {% trans "Orqaga" %}</a>
   </div>
 
   <!-- Xato xabari -->
@@ -33,23 +33,23 @@
   <!-- Parametrlar jadvali -->
   <div class="card mb-3">
     <div class="card-header d-flex justify-content-between align-items-center py-2">
-      <strong>Parametrlar</strong>
+      <strong>{% trans "Parametrlar" %}</strong>
       <button class="btn btn-primary btn-sm" id="show-add-form-btn">
-        + Parametr qo'shish
+        + {% trans "Parametr qo'shish" %}
       </button>
     </div>
     <div class="table-responsive">
       <table class="table table-sm table-hover mb-0" id="params-table">
         <thead class="table-light">
           <tr>
-            <th width="50" class="text-center">Tartib</th>
-            <th>Nomi</th>
-            <th>Nomi (ru)</th>
-            <th width="70">Birlik</th>
-            <th width="120">Me'yor (umumiy)</th>
-            <th width="120">Me'yor (E/A)</th>
-            <th width="70">Turi</th>
-            <th width="60" class="text-center">O'chir</th>
+            <th width="50" class="text-center">{% trans "Tartib" %}</th>
+            <th>{% trans "Nomi" %}</th>
+            <th>{% trans "Nomi (ru)" %}</th>
+            <th width="70">{% trans "Birlik" %}</th>
+            <th width="120">{% trans "Me'yor (umumiy)" %}</th>
+            <th width="120">{% trans "Me'yor (E/A)" %}</th>
+            <th width="70">{% trans "Turi" %}</th>
+            <th width="60" class="text-center">{% trans "O'chir" %}</th>
           </tr>
         </thead>
         <tbody id="params-tbody">
@@ -62,10 +62,10 @@
             <td>{{ param.get_normal_display }}</td>
             <td>
               {% if param.normal_min_m or param.normal_max_m %}
-                <span class="text-primary small">E: {{ param.normal_min_m|default:"?" }} – {{ param.normal_max_m|default:"?" }}</span><br>
+                <span class="text-primary small">{% trans "E" %}: {{ param.normal_min_m|default:"?" }} – {{ param.normal_max_m|default:"?" }}</span><br>
               {% endif %}
               {% if param.normal_min_f or param.normal_max_f %}
-                <span class="text-danger small">A: {{ param.normal_min_f|default:"?" }} – {{ param.normal_max_f|default:"?" }}</span>
+                <span class="text-danger small">{% trans "A" %}: {{ param.normal_min_f|default:"?" }} – {{ param.normal_max_f|default:"?" }}</span>
               {% endif %}
             </td>
             <td>
@@ -75,7 +75,7 @@
               <button
                 class="btn btn-sm btn-outline-danger delete-param-btn"
                 data-param-id="{{ param.pk }}"
-                title="O'chirish">
+                title="{% trans "O'chirish" %}">
                 🗑
               </button>
             </td>
@@ -83,7 +83,7 @@
           {% empty %}
           <tr id="empty-row">
             <td colspan="8" class="text-center text-muted py-3">
-              Hali parametr yo'q. Parametr qo'shing.
+              {% trans "Hali parametr yo'q. Parametr qo'shing." %}
             </td>
           </tr>
           {% endfor %}
@@ -95,26 +95,26 @@
   <!-- Parametr qo'shish formasi (boshlanganda yashirin) -->
   <div id="add-param-form" class="card mb-3 d-none">
     <div class="card-header py-2 bg-primary text-white">
-      <strong>+ Yangi parametr</strong>
+      <strong>+ {% trans "Yangi parametr" %}</strong>
       <button type="button" class="btn-close btn-close-white float-end" id="hide-add-form-btn"></button>
     </div>
     <div class="card-body">
       <div id="add-param-error" class="alert alert-danger d-none"></div>
       <div class="row g-2">
         <div class="col-md-4">
-          <label class="form-label small mb-1">Nomi (uz) <span class="text-danger">*</span></label>
-          <input type="text" id="p-name" class="form-control form-control-sm" placeholder="Masalan: Gemoglobin">
+          <label class="form-label small mb-1">{% trans "Nomi (uz)" %} <span class="text-danger">*</span></label>
+          <input type="text" id="p-name" class="form-control form-control-sm" placeholder="{% trans "Masalan: Gemoglobin" %}">
         </div>
         <div class="col-md-4">
-          <label class="form-label small mb-1">Nomi (ru)</label>
+          <label class="form-label small mb-1">{% trans "Nomi (ru)" %}</label>
           <input type="text" id="p-name-ru" class="form-control form-control-sm" placeholder="Гемоглобин">
         </div>
         <div class="col-md-2">
-          <label class="form-label small mb-1">Birlik</label>
+          <label class="form-label small mb-1">{% trans "Birlik" %}</label>
           <input type="text" id="p-unit" class="form-control form-control-sm" placeholder="g/L">
         </div>
         <div class="col-md-2">
-          <label class="form-label small mb-1">Tur</label>
+          <label class="form-label small mb-1">{% trans "Tur" %}</label>
           <select id="p-type" class="form-select form-select-sm">
             {% for val, label in param_type_choices %}
             <option value="{{ val }}">{{ label }}</option>
@@ -122,36 +122,36 @@
           </select>
         </div>
         <div class="col-md-3">
-          <label class="form-label small mb-1">Me'yor min (umumiy)</label>
+          <label class="form-label small mb-1">{% trans "Me'yor min (umumiy)" %}</label>
           <input type="number" step="any" id="p-normal-min" class="form-control form-control-sm" placeholder="0">
         </div>
         <div class="col-md-3">
-          <label class="form-label small mb-1">Me'yor max (umumiy)</label>
+          <label class="form-label small mb-1">{% trans "Me'yor max (umumiy)" %}</label>
           <input type="number" step="any" id="p-normal-max" class="form-control form-control-sm" placeholder="0">
         </div>
         <div class="col-md-3">
-          <label class="form-label small mb-1">Erkak min</label>
+          <label class="form-label small mb-1">{% trans "Erkak min" %}</label>
           <input type="number" step="any" id="p-normal-min-m" class="form-control form-control-sm" placeholder="0">
         </div>
         <div class="col-md-3">
-          <label class="form-label small mb-1">Erkak max</label>
+          <label class="form-label small mb-1">{% trans "Erkak max" %}</label>
           <input type="number" step="any" id="p-normal-max-m" class="form-control form-control-sm" placeholder="0">
         </div>
         <div class="col-md-3">
-          <label class="form-label small mb-1">Ayol min</label>
+          <label class="form-label small mb-1">{% trans "Ayol min" %}</label>
           <input type="number" step="any" id="p-normal-min-f" class="form-control form-control-sm" placeholder="0">
         </div>
         <div class="col-md-3">
-          <label class="form-label small mb-1">Ayol max</label>
+          <label class="form-label small mb-1">{% trans "Ayol max" %}</label>
           <input type="number" step="any" id="p-normal-max-f" class="form-control form-control-sm" placeholder="0">
         </div>
         <div class="col-md-2">
-          <label class="form-label small mb-1">Tartib raqami</label>
+          <label class="form-label small mb-1">{% trans "Tartib raqami" %}</label>
           <input type="number" id="p-sort" class="form-control form-control-sm" value="{{ parameters|length }}">
         </div>
         <div class="col-12">
-          <button class="btn btn-primary btn-sm" id="add-param-btn">Parametr qo'shish</button>
-          <button type="button" class="btn btn-outline-secondary btn-sm ms-2" id="cancel-add-btn">Bekor</button>
+          <button class="btn btn-primary btn-sm" id="add-param-btn">{% trans "Parametr qo'shish" %}</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm ms-2" id="cancel-add-btn">{% trans "Bekor" %}</button>
         </div>
       </div>
     </div>
@@ -163,6 +163,14 @@
 const TEMPLATE_PK = {{ template.pk }};
 const ADD_URL = "{% url 'lab_parameter_add' template.pk %}";
 const CSRF = "{{ csrf_token }}";
+const MSG_NAME_REQUIRED = "{% trans 'Nomi kiritilishi shart!' %}";
+const MSG_GENERIC_ERROR = "{% trans 'Xato yuz berdi' %}";
+const MSG_UNKNOWN_ERROR = "{% trans "Noma'lum xato" %}";
+const MSG_CONFIRM_DELETE_PARAM = "{% trans "Parametrni o'chirishni tasdiqlaysizmi?" %}";
+const TXT_DELETE = "{% trans "O'chirish" %}";
+const MSG_PARAM_ADDED_SUFFIX = "{% trans "parametri qo'shildi." %}";
+const MSG_NETWORK_ERROR_PREFIX = "{% trans 'Tarmoq xatosi' %}: ";
+const MSG_ERROR_PREFIX = "{% trans 'Xato' %}: ";
 
 // Forma ko'rsatish / yashirish
 document.getElementById('show-add-form-btn').addEventListener('click', () => {
@@ -183,7 +191,7 @@ document.getElementById('add-param-btn').addEventListener('click', async functio
   const name = document.getElementById('p-name').value.trim();
   if (!name) {
     errorDiv.classList.remove('d-none');
-    errorDiv.textContent = 'Nomi kiritilishi shart!';
+    errorDiv.textContent = MSG_NAME_REQUIRED;
     return;
   }
 
@@ -226,7 +234,7 @@ document.getElementById('add-param-btn').addEventListener('click', async functio
         <td><span class="badge bg-secondary">${data.param_type}</span></td>
         <td class="text-center">
           <button class="btn btn-sm btn-outline-danger delete-param-btn"
-                  data-param-id="${data.id}" title="O'chirish">🗑</button>
+                  data-param-id="${data.id}" title="${TXT_DELETE}">🗑</button>
         </td>
       `;
       tbody.appendChild(row);
@@ -243,18 +251,18 @@ document.getElementById('add-param-btn').addEventListener('click', async functio
       document.getElementById('p-normal-max-f').value = '';
 
       document.getElementById('global-success').classList.remove('d-none');
-      document.getElementById('global-success').textContent = '"' + data.name + '" parametri qo\'shildi.';
+      document.getElementById('global-success').textContent = '"' + data.name + '" ' + MSG_PARAM_ADDED_SUFFIX;
       setTimeout(() => document.getElementById('global-success').classList.add('d-none'), 3000);
 
       // Delete tugmalarini qayta ulash
       attachDeleteHandlers();
     } else {
       errorDiv.classList.remove('d-none');
-      errorDiv.textContent = data.error || 'Xato yuz berdi';
+      errorDiv.textContent = data.error || MSG_GENERIC_ERROR;
     }
   } catch (e) {
     errorDiv.classList.remove('d-none');
-    errorDiv.textContent = 'Tarmoq xatosi: ' + e.message;
+    errorDiv.textContent = MSG_NETWORK_ERROR_PREFIX + e.message;
   }
 });
 
@@ -263,7 +271,7 @@ function attachDeleteHandlers() {
   document.querySelectorAll('.delete-param-btn').forEach(btn => {
     btn.onclick = async function() {
       const paramId = this.dataset.paramId;
-      if (!confirm('Parametrni o\'chirishni tasdiqlaysizmi?')) return;
+      if (!confirm(MSG_CONFIRM_DELETE_PARAM)) return;
 
       try {
         const resp = await fetch(`/laboratory/parameter/${paramId}/delete/`, {
@@ -275,10 +283,10 @@ function attachDeleteHandlers() {
           const row = document.getElementById('param-row-' + paramId);
           if (row) row.remove();
         } else {
-          alert('Xato: ' + (data.error || 'Noma\'lum xato'));
+          alert(MSG_ERROR_PREFIX + (data.error || MSG_UNKNOWN_ERROR));
         }
       } catch (e) {
-        alert('Tarmoq xatosi: ' + e.message);
+        alert(MSG_NETWORK_ERROR_PREFIX + e.message);
       }
     };
   });

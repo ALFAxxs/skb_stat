@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}{% blocktrans with label=visit_type_label %}{{ label }} bemorlar{% endblocktrans %}{% endblock %}
+
+{% block content %}
+<style>.patient-row:hover { background: #f0f4ff; }</style>
+{% if visit_type == 'inpatient' %}
+    {% include 'patients/doctor/_nav.html' with active='inpatient' %}
+{% else %}
+    {% include 'patients/doctor/_nav.html' with active='outpatient' %}
+{% endif %}
+
+<h4 class="mb-3">{% if visit_type == 'inpatient' %}🛏{% else %}🚶{% endif %} {% blocktrans with label=visit_type_label %}{{ label }} bemorlar{% endblocktrans %}
+    {% if doctor.is_head %}<span class="badge bg-success">{% trans "Bo'lim bo'yicha" %}</span>{% else %}<span class="badge bg-primary">{% trans "Faqat menga biriktirilganlar" %}</span>{% endif %}
+</h4>
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small">{% trans "Qidiruv (F.I.Sh., bayonnoma yoki kasallik varaqasi raqami)" %}</label>
+                <input type="text" name="q" value="{{ query }}" class="form-control form-control-sm" placeholder="{% trans "Qidirish..." %}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small">{% trans "Status" %}</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">{% trans "Barchasi" %}</option>
+                    {% for val, label in status_choices %}
+                    <option value="{{ val }}" {% if status == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small">{% trans "Saralash" %}</label>
+                <select name="sort" class="form-select form-select-sm">
+                    <option value="-admission_date" {% if sort == '-admission_date' %}selected{% endif %}>{% trans "Sana (yangi birinchi)" %}</option>
+                    <option value="admission_date" {% if sort == 'admission_date' %}selected{% endif %}>{% trans "Sana (eski birinchi)" %}</option>
+                    <option value="full_name" {% if sort == 'full_name' %}selected{% endif %}>{% trans "F.I.Sh. (A-Z)" %}</option>
+                    <option value="-full_name" {% if sort == '-full_name' %}selected{% endif %}>{% trans "F.I.Sh. (Z-A)" %}</option>
+                    <option value="status" {% if sort == 'status' %}selected{% endif %}>{% trans "Status" %}</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100">🔍 {% trans "Qidirish" %}</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>{% trans "F.I.Sh." %}</th>
+                    <th>{% trans "Bayonnoma / Kasallik varaqasi" %}</th>
+                    {% if visit_type == 'inpatient' %}
+                        <th>{% trans "Bo'lim / Xona" %}</th>
+                        <th>{% trans "Yotqizilgan sana" %}</th>
+                    {% else %}
+                        <th>{% trans "Tashrif sanasi" %}</th>
+                        <th>{% trans "Tashxis" %}</th>
+                    {% endif %}
+                    <th>{% trans "Status" %}</th>
+                    <th>{% trans "Davolovchi shifokor" %}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in page_obj %}
+                <tr class="patient-row" style="cursor:pointer;" onclick="window.location.href='{% url 'doctor_patient_card' p.pk %}'">
+                    <td>{{ p.full_name }}</td>
+                    <td>
+                        {{ p.medical_record_number }}
+                        {% if p.case_sheet_number %}<div class="text-muted" style="font-size:0.7rem;">📋 {{ p.case_sheet_number }}</div>{% endif %}
+                    </td>
+                    {% if visit_type == 'inpatient' %}
+                        <td>{{ p.department.name|default:'—' }}{% if p.room_number %} / {{ p.room_number }}{% endif %}</td>
+                        <td>{{ p.admission_date|date:"d.m.Y H:i" }}</td>
+                    {% else %}
+                        <td>{{ p.admission_date|date:"d.m.Y" }}</td>
+                        <td>{{ p.admission_diagnosis|default:'—'|truncatechars:40 }}</td>
+                    {% endif %}
+                    <td><span class="badge bg-{% if p.status == 'completed' %}secondary{% elif p.status == 'admitted' %}info{% else %}warning{% endif %}">{{ p.get_status_display }}</span></td>
+                    <td>{{ p.attending_doctor.full_name|default:'—' }}</td>
+                    <td><a href="{% url 'doctor_patient_card' p.pk %}" class="btn btn-sm btn-outline-primary">{% trans "Ochish" %}</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-muted py-4">{% trans "Bemorlar topilmadi" %}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="mt-3">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ query }}&status={{ status }}&sort={{ sort }}">‹</a></li>
+        {% endif %}
+        <li class="page-item active"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ query }}&status={{ status }}&sort={{ sort }}">›</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

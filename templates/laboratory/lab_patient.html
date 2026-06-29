@@ -1,5 +1,6 @@
 {% extends "base.html" %}
-{% block title %}Laboratoriya — {{ patient.full_name }}{% endblock %}
+{% load i18n %}
+{% block title %}{% blocktrans with name=patient.full_name %}Laboratoriya — {{ name }}{% endblocktrans %}{% endblock %}
 {% block content %}
 <div class="container-fluid py-3">
 
@@ -8,27 +9,27 @@
     <div>
       <h4 class="mb-1">🔬 {{ patient.full_name }}</h4>
       <div class="text-muted small">
-        Karta №: <strong>{{ patient.medical_record_number }}</strong>
+        {% trans "Karta №" %}: <strong>{{ patient.medical_record_number }}</strong>
         &middot; {{ patient.birth_date|date:"d.m.Y" }}
-        &middot; {% if patient.gender == 'M' %}Erkak{% else %}Ayol{% endif %}
+        &middot; {% if patient.gender == 'M' %}{% trans "Erkak" %}{% else %}{% trans "Ayol" %}{% endif %}
         {% if patient.department %}&middot; <strong>{{ patient.department.name }}</strong>{% endif %}
       </div>
     </div>
     <div class="d-flex gap-2">
-      <a href="{% url 'patient_detail' patient.pk %}" class="btn btn-outline-secondary btn-sm">← Bemor kartasi</a>
-      <a href="{% url 'lab_home' %}" class="btn btn-outline-secondary btn-sm">🔬 Laboratoriya</a>
+      <a href="{% url 'patient_detail' patient.pk %}" class="btn btn-outline-secondary btn-sm">← {% trans "Bemor kartasi" %}</a>
+      <a href="{% url 'lab_home' %}" class="btn btn-outline-secondary btn-sm">🔬 {% trans "Laboratoriya" %}</a>
     </div>
   </div>
 
   <!-- Statistika -->
   {% if status_counts %}
   <div class="d-flex gap-2 mb-3 flex-wrap">
-    {% if status_counts.pending %}<span class="badge bg-secondary py-2 px-3">🕐 Kutilmoqda: {{ status_counts.pending }}</span>{% endif %}
-    {% if status_counts.sample_taken %}<span class="badge bg-info text-dark py-2 px-3">🧪 Namuna: {{ status_counts.sample_taken }}</span>{% endif %}
-    {% if status_counts.in_progress %}<span class="badge bg-warning text-dark py-2 px-3">⚙️ Jarayonda: {{ status_counts.in_progress }}</span>{% endif %}
-    {% if status_counts.result_entering %}<span class="badge bg-primary py-2 px-3">✏️ Kiritilmoqda: {{ status_counts.result_entering }}</span>{% endif %}
-    {% if status_counts.completed %}<span class="badge bg-success py-2 px-3">✅ Tayyor: {{ status_counts.completed }}</span>{% endif %}
-    {% if status_counts.rejected %}<span class="badge bg-danger py-2 px-3">✕ Rad: {{ status_counts.rejected }}</span>{% endif %}
+    {% if status_counts.pending %}<span class="badge bg-secondary py-2 px-3">🕐 {% trans "Kutilmoqda" %}: {{ status_counts.pending }}</span>{% endif %}
+    {% if status_counts.sample_taken %}<span class="badge bg-info text-dark py-2 px-3">🧪 {% trans "Namuna" %}: {{ status_counts.sample_taken }}</span>{% endif %}
+    {% if status_counts.in_progress %}<span class="badge bg-warning text-dark py-2 px-3">⚙️ {% trans "Jarayonda" %}: {{ status_counts.in_progress }}</span>{% endif %}
+    {% if status_counts.result_entering %}<span class="badge bg-primary py-2 px-3">✏️ {% trans "Kiritilmoqda" %}: {{ status_counts.result_entering }}</span>{% endif %}
+    {% if status_counts.completed %}<span class="badge bg-success py-2 px-3">✅ {% trans "Tayyor" %}: {{ status_counts.completed }}</span>{% endif %}
+    {% if status_counts.rejected %}<span class="badge bg-danger py-2 px-3">✕ {% trans "Rad" %}: {{ status_counts.rejected }}</span>{% endif %}
   </div>
   {% endif %}
 
@@ -36,18 +37,18 @@
   {% if items %}
   <div class="card shadow-sm">
     <div class="card-header py-2 d-flex justify-content-between align-items-center bg-primary text-white">
-      <strong>📋 Laboratoriya xizmatlari</strong>
-      <span class="badge bg-white text-dark">{{ items|length }} ta</span>
+      <strong>📋 {% trans "Laboratoriya xizmatlari" %}</strong>
+      <span class="badge bg-white text-dark">{% blocktrans with cnt=items|length %}{{ cnt }} ta{% endblocktrans %}</span>
     </div>
     <div class="table-responsive">
       <table class="table table-sm table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th>Xizmat nomi</th>
-            <th style="width:170px">Shablon</th>
-            <th style="width:150px">Holat</th>
-            <th style="width:80px">To'liqlik</th>
-            <th style="width:175px" class="text-center">Amallar</th>
+            <th>{% trans "Xizmat nomi" %}</th>
+            <th style="width:170px">{% trans "Shablon" %}</th>
+            <th style="width:150px">{% trans "Holat" %}</th>
+            <th style="width:80px">{% trans "To'liqlik" %}</th>
+            <th style="width:230px" class="text-center">{% trans "Amallar" %}</th>
           </tr>
         </thead>
         <tbody>
@@ -57,7 +58,7 @@
 
             <!-- Xizmat nomi -->
             <td>
-              <div class="fw-semibold">{{ item.patient_service.service.name }}</div>
+              <div class="fw-semibold">{{ item.patient_service.service.display_name }}</div>
               <small class="text-muted">{{ item.patient_service.ordered_at|date:"d.m.Y H:i" }}</small>
             </td>
 
@@ -67,7 +68,7 @@
                 <span class="badge bg-light text-dark border small">{{ item.template.name }}</span>
               {% elif can_edit %}
                 <button class="btn btn-outline-secondary btn-sm py-0 px-2"
-                        onclick="openTemplateModal({{ item.pk }}, false)">+ Shablon</button>
+                        onclick="openTemplateModal({{ item.pk }}, false)">+ {% trans "Shablon" %}</button>
               {% else %}
                 <span class="text-muted small">—</span>
               {% endif %}
@@ -106,36 +107,36 @@
 
             <!-- Amallar -->
             <td class="text-center">
-              <div class="d-flex gap-1 justify-content-center flex-wrap">
+              <div class="d-flex gap-1 justify-content-center flex-nowrap">
                 {% if can_edit %}
 
                   {% if item.status == 'pending' %}
                   <button class="btn btn-sm btn-outline-info"
                           onclick="doTransition({{ item.pk }}, 'sample_taken')"
-                          title="Namuna olindi">🧪</button>
+                          title="{% trans "Namuna olindi" %}">🧪</button>
                   {% endif %}
 
                   {% if item.status == 'pending' or item.status == 'sample_taken' or item.status == 'in_progress' %}
                   <button class="btn btn-sm btn-primary"
                           onclick="startEntry({{ item.pk }}, {% if item.template %}{{ item.template.pk }}{% else %}null{% endif %})"
-                          title="Natija kiritishni boshlash">▶ Boshlash</button>
+                          title="{% trans "Natija kiritishni boshlash" %}">▶ {% trans "Boshlash" %}</button>
                   {% endif %}
 
                   {% if item.status == 'result_entering' and item.result %}
                   <a href="{% url 'lab_result_enter' item.result.pk %}"
-                     class="btn btn-sm btn-primary" title="Davom etish">✏️ Davom</a>
+                     class="btn btn-sm btn-primary" title="{% trans "Davom etish" %}">✏️ {% trans "Davom" %}</a>
                   {% endif %}
 
                   {% if item.status == 'completed' %}
                   <button class="btn btn-sm btn-success"
                           onclick="doTransition({{ item.pk }}, 'verify')"
-                          title="Tasdiqlash">🔒 Tasdiq</button>
+                          title="{% trans "Tasdiqlash" %}">🔒 {% trans "Tasdiq" %}</button>
                   {% endif %}
 
                   {% if item.status != 'rejected' and item.status != 'recollect' and item.status != 'printed' %}
                   <button class="btn btn-sm btn-outline-danger"
                           onclick="openRejectModal({{ item.pk }})"
-                          title="Muammo bildirish">✕</button>
+                          title="{% trans "Muammo bildirish" %}">✕</button>
                   {% endif %}
 
                 {% endif %}
@@ -143,7 +144,7 @@
                 {% if item.result %}
                 <a href="{% url 'lab_result_print' item.result.pk %}"
                    class="btn btn-sm btn-outline-secondary" target="_blank"
-                   title="Chop etish">🖨</a>
+                   title="{% trans "Chop etish" %}">🖨</a>
                 {% endif %}
 
               </div>
@@ -157,8 +158,8 @@
 
   {% else %}
   <div class="alert alert-info">
-    Bu bemor uchun laboratoriya xizmatlari topilmadi.
-    <a href="{% url 'patient_services' patient.pk %}">Xizmat qo'shish →</a>
+    {% trans "Bu bemor uchun laboratoriya xizmatlari topilmadi." %}
+    <a href="{% url 'patient_services' patient.pk %}">{% trans "Xizmat qo'shish" %} →</a>
   </div>
   {% endif %}
 
@@ -169,14 +170,14 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">📋 Shablon tanlash</h5>
+        <h5 class="modal-title">📋 {% trans "Shablon tanlash" %}</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="tmpl-item-id">
         <input type="hidden" id="tmpl-start-after" value="0">
         <input type="text" id="tmpl-search" class="form-control mb-2"
-               placeholder="🔍 Shablon nomini qidiring...">
+               placeholder="🔍 {% trans "Shablon nomini qidiring..." %}">
         <div style="max-height:340px; overflow-y:auto;">
           {% regroup templates by get_category_display as tmpl_groups %}
           {% for group in tmpl_groups %}
@@ -199,30 +200,30 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header bg-danger text-white">
-        <h5 class="modal-title">Namuna muammosi</h5>
+        <h5 class="modal-title">{% trans "Namuna muammosi" %}</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="reject-item-id">
         <div class="mb-3">
-          <label class="form-label fw-bold">Sabab *</label>
+          <label class="form-label fw-bold">{% trans "Sabab" %} *</label>
           <select id="reject-reason" class="form-select">
-            <option value="hemolyzed">Gemolizlangan namuna</option>
-            <option value="insufficient">Namuna yetarli emas</option>
-            <option value="wrong_tube">Noto'g'ri quvurcha</option>
-            <option value="clotted">Ivigan namuna</option>
-            <option value="contaminated">Ifloslangan namuna</option>
-            <option value="other">Boshqa sabab</option>
+            <option value="hemolyzed">{% trans "Gemolizlangan namuna" %}</option>
+            <option value="insufficient">{% trans "Namuna yetarli emas" %}</option>
+            <option value="wrong_tube">{% trans "Noto'g'ri quvurcha" %}</option>
+            <option value="clotted">{% trans "Ivigan namuna" %}</option>
+            <option value="contaminated">{% trans "Ifloslangan namuna" %}</option>
+            <option value="other">{% trans "Boshqa sabab" %}</option>
           </select>
         </div>
         <div class="mb-3">
-          <label class="form-label fw-bold">Izoh</label>
+          <label class="form-label fw-bold">{% trans "Izoh" %}</label>
           <textarea id="reject-note" class="form-control" rows="2"
-                    placeholder="Qo'shimcha izoh..."></textarea>
+                    placeholder="{% trans "Qo'shimcha izoh..." %}"></textarea>
         </div>
         <div class="d-flex gap-2">
-          <button class="btn btn-danger w-50" onclick="confirmReject('rejected')">✕ Rad etish</button>
-          <button class="btn btn-warning w-50" onclick="confirmReject('recollect')">↩ Qayta namuna</button>
+          <button class="btn btn-danger w-50" onclick="confirmReject('rejected')">✕ {% trans "Rad etish" %}</button>
+          <button class="btn btn-warning w-50" onclick="confirmReject('recollect')">↩ {% trans "Qayta namuna" %}</button>
         </div>
       </div>
     </div>

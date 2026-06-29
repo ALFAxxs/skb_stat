@@ -10,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
 from apps.patients.models import PatientCard
@@ -221,7 +222,7 @@ def lab_item_transition(request, pk):
     Body: {"action": "sample_taken" | "start_entry" | "reject" | "recollect" | "verify"}
     """
     if not _can_edit_lab(request):
-        return JsonResponse({'success': False, 'error': 'Ruxsat yo\'q'}, status=403)
+        return JsonResponse({'success': False, 'error': _('Ruxsat yo\'q')}, status=403)
 
     item = get_object_or_404(
         LabOrderItem.objects.select_related('template', 'result', 'order'),
@@ -231,7 +232,7 @@ def lab_item_transition(request, pk):
     try:
         data = json.loads(request.body)
     except (json.JSONDecodeError, Exception):
-        return JsonResponse({'success': False, 'error': 'JSON xatosi'}, status=400)
+        return JsonResponse({'success': False, 'error': _('JSON xatosi')}, status=400)
 
     action = data.get('action', '')
     note   = data.get('note', '')
@@ -248,7 +249,7 @@ def lab_item_transition(request, pk):
     if action == 'start_entry':
         if not item.template:
             return JsonResponse(
-                {'success': False, 'error': 'Avval shablon tanlang'},
+                {'success': False, 'error': _('Avval shablon tanlang')},
                 status=400
             )
         # LabResult topish yoki yaratish
@@ -286,7 +287,7 @@ def lab_item_transition(request, pk):
     }
     new_status = ACTION_MAP.get(action)
     if not new_status:
-        return JsonResponse({'success': False, 'error': 'Noto\'g\'ri action'}, status=400)
+        return JsonResponse({'success': False, 'error': _('Noto\'g\'ri action')}, status=400)
 
     # Rad etish uchun sabab majburiy
     if new_status == 'rejected':
@@ -303,13 +304,13 @@ def lab_item_transition(request, pk):
 def lab_item_set_template(request, pk):
     """AJAX: LabOrderItem ga shablon biriktirish"""
     if not _can_edit_lab(request):
-        return JsonResponse({'success': False, 'error': 'Ruxsat yo\'q'}, status=403)
+        return JsonResponse({'success': False, 'error': _('Ruxsat yo\'q')}, status=403)
 
     item = get_object_or_404(LabOrderItem, pk=pk)
     try:
         data = json.loads(request.body)
     except Exception:
-        return JsonResponse({'success': False, 'error': 'JSON xatosi'}, status=400)
+        return JsonResponse({'success': False, 'error': _('JSON xatosi')}, status=400)
 
     template_id = data.get('template_id')
     template = get_object_or_404(LabTemplate, pk=template_id)
@@ -412,14 +413,14 @@ def lab_result_enter(request, pk):
 def lab_result_save(request, pk):
     """AJAX: Natija qiymatlarini saqlash — faqat admin va laborant"""
     if not _can_edit_lab(request):
-        return JsonResponse({'success': False, 'error': 'Faqat laborant yoki admin tahrirlaya oladi'}, status=403)
+        return JsonResponse({'success': False, 'error': _('Faqat laborant yoki admin tahrirlaya oladi')}, status=403)
 
     result = get_object_or_404(LabResult, pk=pk)
 
     try:
         data = json.loads(request.body)
     except (json.JSONDecodeError, Exception):
-        return JsonResponse({'success': False, 'error': 'JSON xatosi'}, status=400)
+        return JsonResponse({'success': False, 'error': _('JSON xatosi')}, status=400)
 
     values = data.get('values', [])
     conclusion = data.get('conclusion', '')
@@ -534,14 +535,16 @@ def lab_result_print(request, pk):
     }
 
     params_with_values = []
-    for i, param in enumerate(parameters, 1):
+    for param in parameters:
         rv = values_map.get(param.pk)
+        if not rv or not rv.value:
+            continue
         params_with_values.append({
-            'num': i,
+            'num': len(params_with_values) + 1,
             'param': param,
-            'value': rv.value if rv else '',
-            'value_status': rv.value_status if rv else 'normal',
-            'comment': rv.comment if rv else '',
+            'value': rv.value,
+            'value_status': rv.value_status,
+            'comment': rv.comment,
             'normal_display': param.get_normal_display(result.patient_card.gender),
         })
 
@@ -558,14 +561,14 @@ def lab_result_print(request, pk):
         result.printed_at = timezone.now()
         result.save()
 
-    logo_b64 = ''
-    for logo_path in [
-        os.path.join(settings.STATIC_ROOT, 'img', 'hospital_logo.png'),
-        os.path.join(settings.BASE_DIR, 'static', 'img', 'hospital_logo.png'),
+    header_b64 = ''
+    for header_path in [
+        os.path.join(settings.STATIC_ROOT, 'img', 'hospital_header.png'),
+        os.path.join(settings.BASE_DIR, 'static', 'img', 'hospital_header.png'),
     ]:
-        if os.path.exists(logo_path):
-            with open(logo_path, 'rb') as f:
-                logo_b64 = base64.b64encode(f.read()).decode()
+        if os.path.exists(header_path):
+            with open(header_path, 'rb') as f:
+                header_b64 = base64.b64encode(f.read()).decode()
             break
 
     context = {
@@ -573,7 +576,7 @@ def lab_result_print(request, pk):
         'params_with_values': params_with_values,
         'age': age,
         'print_date': date.today(),
-        'logo_b64': logo_b64,
+        'header_b64': header_b64,
     }
     return render(request, 'laboratory/lab_print.html', context)
 
@@ -668,19 +671,19 @@ def lab_template_detail(request, pk):
 def lab_template_create(request):
     """AJAX: Yangi shablon yaratish"""
     if not _check_role(request):
-        return JsonResponse({'success': False, 'error': 'Ruxsat yo\'q'}, status=403)
+        return JsonResponse({'success': False, 'error': _('Ruxsat yo\'q')}, status=403)
 
     try:
         data = json.loads(request.body)
     except (json.JSONDecodeError, Exception):
-        return JsonResponse({'success': False, 'error': 'JSON xatosi'}, status=400)
+        return JsonResponse({'success': False, 'error': _('JSON xatosi')}, status=400)
 
     name = data.get('name', '').strip()
     category = data.get('category', 'other')
     description = data.get('description', '').strip()
 
     if not name:
-        return JsonResponse({'success': False, 'error': 'Nomi kiritilishi shart'}, status=400)
+        return JsonResponse({'success': False, 'error': _('Nomi kiritilishi shart')}, status=400)
 
     template = LabTemplate.objects.create(
         name=name,
@@ -701,18 +704,18 @@ def lab_template_create(request):
 def lab_parameter_add(request, template_pk):
     """AJAX: Shablonga parametr qo'shish"""
     if not _check_role(request):
-        return JsonResponse({'success': False, 'error': 'Ruxsat yo\'q'}, status=403)
+        return JsonResponse({'success': False, 'error': _('Ruxsat yo\'q')}, status=403)
 
     template = get_object_or_404(LabTemplate, pk=template_pk)
 
     try:
         data = json.loads(request.body)
     except (json.JSONDecodeError, Exception):
-        return JsonResponse({'success': False, 'error': 'JSON xatosi'}, status=400)
+        return JsonResponse({'success': False, 'error': _('JSON xatosi')}, status=400)
 
     name = data.get('name', '').strip()
     if not name:
-        return JsonResponse({'success': False, 'error': 'Nomi kiritilishi shart'}, status=400)
+        return JsonResponse({'success': False, 'error': _('Nomi kiritilishi shart')}, status=400)
 
     def to_decimal_or_none(val):
         if val is None or val == '':
@@ -765,7 +768,7 @@ def lab_parameter_add(request, template_pk):
 def lab_parameter_delete(request, pk):
     """AJAX: Parametrni o'chirish"""
     if not _check_role(request):
-        return JsonResponse({'success': False, 'error': 'Ruxsat yo\'q'}, status=403)
+        return JsonResponse({'success': False, 'error': _('Ruxsat yo\'q')}, status=403)
 
     parameter = get_object_or_404(LabParameter, pk=pk)
     parameter.delete()

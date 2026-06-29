@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}{% blocktrans with name=patient.full_name %}Ambulator qabul — {{ name }}{% endblocktrans %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+    <div>
+      <h4 class="mb-1">🩺 {{ patient.full_name }}</h4>
+      <div class="text-muted small">
+        {% trans "Tug'ilgan sana" %}: <strong>{{ patient.birth_date|date:"d.m.Y" }}</strong>
+        &middot; {{ patient.get_gender_display }}
+        &middot; {% trans "Registratsiya qilgan" %}: <strong>{{ patient.registered_by.get_full_name|default:'—' }}</strong>
+        &middot; {{ patient.admission_date|date:"d.m.Y H:i" }}
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'doctor_patient_card' patient.pk %}" class="btn btn-outline-secondary btn-sm">← {% trans "Bemor kartasiga qaytish" %}</a>
+    </div>
+  </div>
+
+  {% if consultation.status == 'completed' %}
+  <div class="alert alert-success py-2 mb-3 small">
+    <strong>{% trans "Qabul yakunlangan." %}</strong> {{ consultation.finished_at|date:"d.m.Y H:i" }}
+  </div>
+
+  <!-- FAQAT KO'RISH (yakunlangan qabul) -->
+  <div class="card mb-3">
+    <div class="card-header py-2"><strong>{% trans "Qabul natijasi" %}</strong></div>
+    <div class="card-body" style="white-space: pre-wrap;">{{ consultation.result|default:'—' }}</div>
+  </div>
+  <div class="card mb-3">
+    <div class="card-header py-2"><strong>{% trans "Tavsiyalar" %}</strong></div>
+    <div class="card-body" style="white-space: pre-wrap;">{{ consultation.recommendation|default:'—' }}</div>
+  </div>
+  <div class="card mb-3">
+    <div class="card-header py-2"><strong>{% trans "Xulosa" %}</strong></div>
+    <div class="card-body" style="white-space: pre-wrap;">{{ consultation.conclusion|default:'—' }}</div>
+  </div>
+
+  {% else %}
+
+  <div id="save-status" class="alert alert-info py-1 px-2 small mb-2" style="display:none;"></div>
+
+  <!-- Qabul natijasi -->
+  <div class="card mb-3">
+    <div class="card-header py-2 d-flex justify-content-between align-items-center">
+      <strong>{% trans "Qabul natijasi" %}</strong>
+      <button type="button" class="btn btn-sm btn-outline-primary" onclick="openTmplModal('result')">📋 {% trans "Shablon biriktirish" %}</button>
+    </div>
+    <div class="card-body">
+      <textarea id="field-result" class="form-control" rows="4"
+                placeholder="{% trans "Qabul natijasini yozing..." %}">{{ consultation.result }}</textarea>
+    </div>
+  </div>
+
+  <!-- Tavsiyalar -->
+  <div class="card mb-3">
+    <div class="card-header py-2 d-flex justify-content-between align-items-center">
+      <strong>{% trans "Tavsiyalar" %}</strong>
+      <button type="button" class="btn btn-sm btn-outline-primary" onclick="openTmplModal('recommendation')">📋 {% trans "Shablon biriktirish" %}</button>
+    </div>
+    <div class="card-body">
+      <textarea id="field-recommendation" class="form-control" rows="3"
+                placeholder="{% trans "Tavsiyalarni yozing..." %}">{{ consultation.recommendation }}</textarea>
+    </div>
+  </div>
+
+  <!-- Xulosa -->
+  <div class="card mb-3">
+    <div class="card-header py-2 d-flex justify-content-between align-items-center">
+      <strong>{% trans "Xulosa" %}</strong>
+      <button type="button" class="btn btn-sm btn-outline-primary" onclick="openTmplModal('conclusion')">📋 {% trans "Shablon biriktirish" %}</button>
+    </div>
+    <div class="card-body">
+      <textarea id="field-conclusion" class="form-control" rows="3"
+                placeholder="{% trans "Xulosani yozing..." %}">{{ consultation.conclusion }}</textarea>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2 flex-wrap mb-5">
+    <button class="btn btn-success" onclick="saveConsultation(false)">💾 {% trans "Saqlash" %}</button>
+    <div id="post-save-actions" class="d-flex gap-2 flex-wrap"
+         {% if not consultation.result and not consultation.recommendation and not consultation.conclusion %}style="display:none;"{% endif %}>
+      <button class="btn btn-primary" onclick="saveConsultation(true)">✅ {% trans "Ko'rikni yakunlash" %}</button>
+      <a href="{% url 'ambulatory_consultation_print' consultation.pk %}" class="btn btn-outline-secondary" target="_blank">🖨 {% trans "Chop etish" %}</a>
+    </div>
+  </div>
+
+  <!-- SHABLON MODAL (har 3 maydon uchun umumiy) -->
+  <div class="modal fade" id="tmplModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">📋 {% trans "Shablon tanlash" %}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="tmpl-kind">
+
+          <div id="tmpl-list-result" class="tmpl-list" style="display:none;">
+            {% for t in templates_result %}
+            <button type="button" class="btn btn-outline-primary btn-sm w-100 text-start mb-1 tmpl-option"
+                    data-kind="result" data-body="{{ t.body }}">{{ t.title }}</button>
+            {% empty %}
+            <div class="text-muted small mb-2">{% trans "Shablonlar yo'q." %}</div>
+            {% endfor %}
+          </div>
+          <div id="tmpl-list-recommendation" class="tmpl-list" style="display:none;">
+            {% for t in templates_recommendation %}
+            <button type="button" class="btn btn-outline-primary btn-sm w-100 text-start mb-1 tmpl-option"
+                    data-kind="recommendation" data-body="{{ t.body }}">{{ t.title }}</button>
+            {% empty %}
+            <div class="text-muted small mb-2">{% trans "Shablonlar yo'q." %}</div>
+            {% endfor %}
+          </div>
+          <div id="tmpl-list-conclusion" class="tmpl-list" style="display:none;">
+            {% for t in templates_conclusion %}
+            <button type="button" class="btn btn-outline-primary btn-sm w-100 text-start mb-1 tmpl-option"
+                    data-kind="conclusion" data-body="{{ t.body }}">{{ t.title }}</button>
+            {% empty %}
+            <div class="text-muted small mb-2">{% trans "Shablonlar yo'q." %}</div>
+            {% endfor %}
+          </div>
+
+          <hr>
+          <button type="button" class="btn btn-sm btn-outline-success mb-2" id="tmpl-add-toggle">+ {% trans "Yangi shablon qo'shish" %}</button>
+          <div id="tmpl-add-form" style="display:none;">
+            <input type="text" id="tmpl-new-title" class="form-control form-control-sm mb-2" placeholder="{% trans "Shablon nomi..." %}">
+            <textarea id="tmpl-new-body" class="form-control form-control-sm mb-2" rows="3" placeholder="{% trans "Shablon matni..." %}"></textarea>
+            <button type="button" class="btn btn-sm btn-success" id="tmpl-new-save">{% trans "Saqlash" %}</button>
+            <div id="tmpl-add-msg" class="small mt-1"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  const SAVE_URL = "{% url 'ambulatory_consultation_save' consultation.pk %}";
+  const TEMPLATE_CREATE_URL = "{% url 'doctor_template_create' %}";
+  const OUTPATIENTS_URL = "{% url 'doctor_outpatients' %}";
+  const CONSULTATIONS_URL = "{% url 'doctor_consultation_inbox' %}";
+  const FINISH_REDIRECT_URL = {% if from_consultation %}CONSULTATIONS_URL{% else %}OUTPATIENTS_URL{% endif %};
+  const CSRF_TOKEN = "{{ csrf_token }}";
+
+  function openTmplModal(kind) {
+      document.getElementById('tmpl-kind').value = kind;
+      document.querySelectorAll('.tmpl-list').forEach(el => el.style.display = 'none');
+      document.getElementById('tmpl-list-' + kind).style.display = 'block';
+      document.getElementById('tmpl-add-form').style.display = 'none';
+      document.getElementById('tmpl-add-msg').textContent = '';
+      new bootstrap.Modal(document.getElementById('tmplModal')).show();
+  }
+
+  document.querySelectorAll('.tmpl-option').forEach(btn => {
+      btn.addEventListener('click', function() {
+          const kind = this.dataset.kind;
+          const field = document.getElementById('field-' + kind);
+          field.value = field.value ? field.value + '\n' + this.dataset.body : this.dataset.body;
+          bootstrap.Modal.getInstance(document.getElementById('tmplModal')).hide();
+      });
+  });
+
+  document.getElementById('tmpl-add-toggle').addEventListener('click', function() {
+      const form = document.getElementById('tmpl-add-form');
+      form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  });
+
+  document.getElementById('tmpl-new-save').addEventListener('click', async function() {
+      const kind = document.getElementById('tmpl-kind').value;
+      const title = document.getElementById('tmpl-new-title').value.trim();
+      const body = document.getElementById('tmpl-new-body').value.trim();
+      const msgEl = document.getElementById('tmpl-add-msg');
+      if (!title || !body) {
+          msgEl.className = 'small mt-1 text-danger';
+          msgEl.textContent = "{% trans 'Nomi va matnini kiriting' %}";
+          return;
+      }
+      try {
+          const resp = await fetch(TEMPLATE_CREATE_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+              body: JSON.stringify({ kind, title, body }),
+          });
+          const data = await resp.json();
+          if (data.success) {
+              const list = document.getElementById('tmpl-list-' + kind);
+              const btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'btn btn-outline-primary btn-sm w-100 text-start mb-1 tmpl-option';
+              btn.dataset.kind = kind;
+              btn.dataset.body = data.body;
+              btn.textContent = data.title;
+              btn.addEventListener('click', function() {
+                  const field = document.getElementById('field-' + kind);
+                  field.value = field.value ? field.value + '\n' + this.dataset.body : this.dataset.body;
+                  bootstrap.Modal.getInstance(document.getElementById('tmplModal')).hide();
+              });
+              list.appendChild(btn);
+              document.getElementById('tmpl-new-title').value = '';
+              document.getElementById('tmpl-new-body').value = '';
+              document.getElementById('tmpl-add-form').style.display = 'none';
+              msgEl.className = 'small mt-1 text-success';
+              msgEl.textContent = "{% trans 'Saqlandi' %}";
+          } else {
+              msgEl.className = 'small mt-1 text-danger';
+              msgEl.textContent = data.error || "{% trans 'Xato' %}";
+          }
+      } catch (e) {
+          msgEl.className = 'small mt-1 text-danger';
+          msgEl.textContent = "{% trans 'Tarmoq xatosi' %}: " + e.message;
+      }
+  });
+
+  async function saveConsultation(finish) {
+      const statusEl = document.getElementById('save-status');
+      statusEl.style.display = 'block';
+      statusEl.className = 'alert alert-info py-1 px-2 small mb-2';
+      statusEl.textContent = "{% trans 'Saqlanmoqda...' %}";
+
+      try {
+          const resp = await fetch(SAVE_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+              body: JSON.stringify({
+                  result: document.getElementById('field-result').value,
+                  recommendation: document.getElementById('field-recommendation').value,
+                  conclusion: document.getElementById('field-conclusion').value,
+                  finish: finish,
+              }),
+          });
+          const data = await resp.json();
+          if (data.success) {
+              statusEl.className = 'alert alert-success py-1 px-2 small mb-2';
+              statusEl.textContent = finish ? "{% trans 'Ko‘rik yakunlandi' %}" : "{% trans 'Saqlandi' %}";
+              document.getElementById('post-save-actions').style.display = 'flex';
+              if (finish) {
+                  setTimeout(() => { window.location.href = FINISH_REDIRECT_URL; }, 800);
+              } else {
+                  setTimeout(() => { statusEl.style.display = 'none'; }, 2500);
+              }
+          } else {
+              statusEl.className = 'alert alert-danger py-1 px-2 small mb-2';
+              statusEl.textContent = "{% trans 'Xato' %}: " + (data.error || "{% trans 'Noma’lum xato' %}");
+          }
+      } catch (e) {
+          statusEl.className = 'alert alert-danger py-1 px-2 small mb-2';
+          statusEl.textContent = "{% trans 'Tarmoq xatosi' %}: " + e.message;
+      }
+  }
+  </script>
+
+  {% endif %}
+
+</div>
+{% endblock %}

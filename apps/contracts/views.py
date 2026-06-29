@@ -4,6 +4,7 @@ from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, Http404
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
+from django.utils.translation import gettext as _
 
 from apps.contracts.models import Contract
 from apps.contracts.utils import generate_contract_pdf
@@ -52,10 +53,10 @@ def regenerate_contract(request, pk):
             contract.pdf_file.delete(save=False)
         contract.pdf_file.save(filename, ContentFile(pdf_bytes), save=True)
         from django.contrib import messages
-        messages.success(request, "✅ Shartnoma PDF qayta yaratildi.")
+        messages.success(request, _("✅ Shartnoma PDF qayta yaratildi."))
     except Exception as e:
         from django.contrib import messages
-        messages.error(request, f"Xato: {e}")
+        messages.error(request, _("Xato: %(error)s") % {'error': e})
     from django.shortcuts import redirect
     return redirect('patient_detail', pk=contract.patient_card.pk)
 

@@ -2,31 +2,36 @@
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 
 
 # apps/users/models.py
 
 class CustomUser(AbstractUser):
     ROLE_CHOICES = [
-        ('admin', 'Administrator'),
-        ('doctor', 'Shifokor'),
-        ('statistician', 'Statistik'),
-        ('reception', 'Qabulxona'),
-        ('laborant', 'Laborant'),
-        ('viewer', "Faqat ko'rish"),
+        ('admin', _('Administrator')),
+        ('doctor', _('Shifokor')),
+        ('statistician', _('Statistik')),
+        ('reception', _('Qabulxona')),
+        ('laborant', _('Laborant')),
+        ('nurse', _('Hamshira')),
+        ('head_nurse', _('Katta hamshira')),
+        ('diagnostician', _('Diagnost')),
+        ('viewer', _("Faqat ko'rish")),
+        ('old', 'old'),
     ]
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='viewer')
     department = models.ForeignKey(
         'patients.Department',
         on_delete=models.SET_NULL,
         null=True, blank=True,
-        verbose_name="Asosiy bo'lim"
+        verbose_name=_("Asosiy bo'lim")
     )
     departments = models.ManyToManyField(
         'patients.Department',
         blank=True,
         related_name='staff_users',
-        verbose_name="Bo'limlar"
+        verbose_name=_("Bo'limlar")
     )
     phone = models.CharField(max_length=20, blank=True)
 

@@ -2,40 +2,41 @@
 
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 
 class QueueTicket(models.Model):
     STATUS_CHOICES = [
-        ('waiting',   'Kutmoqda'),
-        ('calling',   'Chaqirilmoqda'),
-        ('serving',   "Xizmat ko'rilmoqda"),
-        ('done',      'Yakunlandi'),
-        ('skipped',   "O'tkazib yuborildi"),
+        ('waiting',   _('Kutmoqda')),
+        ('calling',   _('Chaqirilmoqda')),
+        ('serving',   _("Xizmat ko'rilmoqda")),
+        ('done',      _('Yakunlandi')),
+        ('skipped',   _("O'tkazib yuborildi")),
     ]
 
-    ticket_number = models.PositiveIntegerField(verbose_name="Navbat raqami")
+    ticket_number = models.PositiveIntegerField(verbose_name=_("Navbat raqami"))
     patient_card  = models.ForeignKey(
         'patients.PatientCard', on_delete=models.CASCADE,
-        related_name='queue_tickets', verbose_name="Bemor"
+        related_name='queue_tickets', verbose_name=_("Bemor")
     )
     service       = models.ForeignKey(
         'services.PatientService', on_delete=models.CASCADE,
-        related_name='queue_ticket', verbose_name="Xizmat",
+        related_name='queue_ticket', verbose_name=_("Xizmat"),
         null=True, blank=True
     )
     status        = models.CharField(
         max_length=20, choices=STATUS_CHOICES,
-        default='waiting', verbose_name="Holat"
+        default='waiting', verbose_name=_("Holat")
     )
-    room          = models.CharField(max_length=50, default='MRT xonasi', verbose_name="Xona")
+    room          = models.CharField(max_length=50, default='MRT xonasi', verbose_name=_("Xona"))
     created_at    = models.DateTimeField(auto_now_add=True)
     called_at     = models.DateTimeField(null=True, blank=True)
     served_at     = models.DateTimeField(null=True, blank=True)
     done_at       = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        verbose_name        = "Navbat chipta"
-        verbose_name_plural = "Navbat chiptalar"
+        verbose_name        = _("Navbat chipta")
+        verbose_name_plural = _("Navbat chiptalar")
         ordering            = ['ticket_number']
 
     def __str__(self):
@@ -59,23 +60,23 @@ class QueueTicket(models.Model):
 
 class QueueSettings(models.Model):
     AUDIO_CHOICES = [
-        ('beep',  '🔔 Signal (ding)'),
-        ('voice', '🔊 Ovozli chaqiruv'),
-        ('both',  '🔔🔊 Ikkalasi'),
-        ('off',   '🔇 Ovozsiz'),
+        ('beep',  _('🔔 Signal (ding)')),
+        ('voice', _('🔊 Ovozli chaqiruv')),
+        ('both',  _('🔔🔊 Ikkalasi')),
+        ('off',   _('🔇 Ovozsiz')),
     ]
     audio_mode = models.CharField(
         max_length=10, choices=AUDIO_CHOICES,
-        default='beep', verbose_name="Audio rejim"
+        default='beep', verbose_name=_("Audio rejim")
     )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name        = "Navbat sozlamalari"
-        verbose_name_plural = "Navbat sozlamalari"
+        verbose_name        = _("Navbat sozlamalari")
+        verbose_name_plural = _("Navbat sozlamalari")
 
     @classmethod
     def get(cls):
         """Yagona sozlamalar ob'ektini qaytaradi"""
-        obj, _ = cls.objects.get_or_create(pk=1)
+        obj, created = cls.objects.get_or_create(pk=1)
         return obj

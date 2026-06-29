@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
+    'django_filters',
     #my_apps
     'apps.statistic',
     'apps.patients',
@@ -54,14 +56,24 @@ INSTALLED_APPS = [
     'apps.queue_app',
     'apps.laboratory',
     'apps.telegram_bot',
+    'apps.care',
+    'apps.billing',
 ]
 
 MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_URL  = '/media/'
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [],
-    'DEFAULT_PERMISSION_CLASSES':     [],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ],
 }
 
 # Telegram Bot
@@ -78,10 +90,25 @@ CELERY_TASK_SERIALIZER    = 'json'
 CELERY_RESULT_SERIALIZER  = 'json'
 CELERY_ACCEPT_CONTENT     = ['json']
 CELERY_TIMEZONE           = 'Asia/Tashkent'
+CELERY_BEAT_SCHEDULE = {
+    'care-check-overdue-tasks': {
+        'task': 'care.check_overdue_tasks',
+        'schedule': 60.0,
+    },
+    'patients-send-due-schedule-reminders': {
+        'task': 'patients.send_due_schedule_reminders',
+        'schedule': 60.0,
+    },
+}
+
+# Care (Hamshira) moduli
+# Qancha vaqt 'delayed' holatda tursa, vazifa 'missed' deb belgilanadi (daqiqa)
+CARE_TASK_MISSED_AFTER_MINUTES = int(os.environ.get('CARE_TASK_MISSED_AFTER_MINUTES', 120))
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -101,6 +128,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.i18n',
             ],
         },
     },
@@ -112,19 +140,19 @@ WSGI_APPLICATION = 'conf.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.postgresql'),
-#         'NAME': os.getenv('DB_NAME', 'skb_stat'), 'USER': os.getenv('DB_USER', 'skb_user'), 'PASSWORD': os.getenv('DB_PASSWORD', ''), 'HOST': os.getenv('DB_HOST', 'localhost'), 'PORT': os.getenv('DB_PORT', '5432'),
-#     }
-# }
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.postgresql'),
+        'NAME': os.getenv('DB_NAME', 'skb_stat'), 'USER': os.getenv('DB_USER', 'skb_user'), 'PASSWORD': os.getenv('DB_PASSWORD', ''), 'HOST': os.getenv('DB_HOST', 'localhost'), 'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
@@ -150,7 +178,14 @@ LOGOUT_REDIRECT_URL = '/login/'
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'uz'
+
+LANGUAGES = [
+    ('uz', "O'zbekcha"),
+    ('ru', 'Русский'),
+]
+
+LOCALE_PATHS = [BASE_DIR / 'locale']
 
 TIME_ZONE = 'UTC'
 
@@ -170,4 +205,6 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 
 AUTH_USER_MODEL = 'users.CustomUser'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
 

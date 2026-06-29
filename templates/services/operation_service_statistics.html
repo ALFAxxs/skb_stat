@@ -1,15 +1,16 @@
 {% extends 'base.html' %}
-{% block title %}Operatsiya xizmatlari statistikasi{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Operatsiya xizmatlari statistikasi" %}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h3>🔪 Operatsiya xizmatlari statistikasi</h3>
-        <div class="text-muted small">Faqat <code>is_operation=True</code> belgilangan xizmatlar</div>
+        <h3>🔪 {% trans "Operatsiya xizmatlari statistikasi" %}</h3>
+        <div class="text-muted small">{% blocktrans %}Faqat <code>is_operation=True</code> belgilangan xizmatlar{% endblocktrans %}</div>
     </div>
     <div class="d-flex gap-2">
         <a href="{% url 'export_operation_service_excel' %}?{{ current_filters }}" class="btn btn-success btn-sm">📥 Excel</a>
-        <a href="{% url 'operation_statistics' %}" class="btn btn-outline-secondary btn-sm">🔪 SurgicalOperation stat.</a>
+        <a href="{% url 'operation_statistics' %}" class="btn btn-outline-secondary btn-sm">🔪 {% trans "SurgicalOperation stat." %}</a>
     </div>
 </div>
 
@@ -19,17 +20,17 @@
         <form method="get">
             <div class="row g-2 align-items-end">
                 <div class="col-md-2">
-                    <label class="form-label small fw-bold">Boshlanish</label>
+                    <label class="form-label small fw-bold">{% trans "Boshlanish" %}</label>
                     <input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from }}">
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small fw-bold">Tugash</label>
+                    <label class="form-label small fw-bold">{% trans "Tugash" %}</label>
                     <input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to }}">
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small fw-bold">Kategoriya</label>
+                    <label class="form-label small fw-bold">{% trans "Kategoriya" %}</label>
                     <select name="category" class="form-select form-select-sm">
-                        <option value="">Barchasi</option>
+                        <option value="">{% trans "Barchasi" %}</option>
                         {% for cat in op_categories %}
                         <option value="{{ cat.pk }}" {% if selected_category == cat.pk|stringformat:"s" %}selected{% endif %}>
                             {{ cat.icon }} {{ cat.name }}
@@ -38,9 +39,9 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small fw-bold">Operatsiya</label>
+                    <label class="form-label small fw-bold">{% trans "Operatsiya" %}</label>
                     <select name="service" class="form-select form-select-sm">
-                        <option value="">Barchasi</option>
+                        <option value="">{% trans "Barchasi" %}</option>
                         {% for svc in op_services %}
                         <option value="{{ svc.pk }}" {% if selected_service == svc.pk|stringformat:"s" %}selected{% endif %}>
                             {{ svc.name }}
@@ -49,16 +50,16 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small fw-bold">Bemor turi</label>
+                    <label class="form-label small fw-bold">{% trans "Bemor turi" %}</label>
                     <select name="patient_category" class="form-select form-select-sm">
-                        <option value="">Barchasi</option>
-                        <option value="railway"      {% if selected_patient_cat == 'railway'      %}selected{% endif %}>🚂 Temir yo'lchi</option>
-                        <option value="paid"         {% if selected_patient_cat == 'paid'         %}selected{% endif %}>💳 Pullik</option>
-                        <option value="non_resident" {% if selected_patient_cat == 'non_resident' %}selected{% endif %}>🌍 Norezident</option>
+                        <option value="">{% trans "Barchasi" %}</option>
+                        <option value="railway"      {% if selected_patient_cat == 'railway'      %}selected{% endif %}>🚂 {% trans "Temir yo'lchi" %}</option>
+                        <option value="paid"         {% if selected_patient_cat == 'paid'         %}selected{% endif %}>💳 {% trans "Pullik" %}</option>
+                        <option value="non_resident" {% if selected_patient_cat == 'non_resident' %}selected{% endif %}>🌍 {% trans "Norezident" %}</option>
                     </select>
                 </div>
                 <div class="col-md-2 d-flex gap-1">
-                    <button type="submit" class="btn btn-primary btn-sm flex-fill">🔍 Filter</button>
+                    <button type="submit" class="btn btn-primary btn-sm flex-fill">🔍 {% trans "Filter" %}</button>
                     <a href="{% url 'operation_service_statistics' %}" class="btn btn-outline-secondary btn-sm">✕</a>
                 </div>
             </div>
@@ -71,40 +72,40 @@
     <div class="col-md-2">
         <div class="card border-0 shadow-sm text-center py-3">
             <div class="h3 fw-bold text-primary mb-1">{{ totals.total_count|default:0 }}</div>
-            <div class="small text-muted">Jami operatsiyalar</div>
+            <div class="small text-muted">{% trans "Jami operatsiyalar" %}</div>
         </div>
     </div>
     <div class="col-md-2">
         <div class="card border-0 shadow-sm text-center py-3">
             <div class="h3 fw-bold text-info mb-1">{{ totals.patients|default:0 }}</div>
-            <div class="small text-muted">Bemorlar</div>
+            <div class="small text-muted">{% trans "Bemorlar" %}</div>
         </div>
     </div>
     <div class="col-md-2">
         <div class="card border-0 shadow-sm text-center py-3" style="border-left:3px solid #0d6efd!important">
             <div class="h4 fw-bold text-primary mb-1">{{ totals.railway_count|default:0 }}</div>
-            <div class="small text-muted">🚂 Temir yo'lchi</div>
-            <div class="small fw-semibold text-primary">{{ totals.railway_sum|floatformat:0|default:0 }} so'm</div>
+            <div class="small text-muted">🚂 {% trans "Temir yo'lchi" %}</div>
+            <div class="small fw-semibold text-primary">{% blocktrans with sum=totals.railway_sum|floatformat:0|default:0 %}{{ sum }} so'm{% endblocktrans %}</div>
         </div>
     </div>
     <div class="col-md-2">
         <div class="card border-0 shadow-sm text-center py-3" style="border-left:3px solid #198754!important">
             <div class="h4 fw-bold text-success mb-1">{{ totals.paid_count|default:0 }}</div>
-            <div class="small text-muted">💳 Pullik</div>
-            <div class="small fw-semibold text-success">{{ totals.paid_sum|floatformat:0|default:0 }} so'm</div>
+            <div class="small text-muted">💳 {% trans "Pullik" %}</div>
+            <div class="small fw-semibold text-success">{% blocktrans with sum=totals.paid_sum|floatformat:0|default:0 %}{{ sum }} so'm{% endblocktrans %}</div>
         </div>
     </div>
     <div class="col-md-2">
         <div class="card border-0 shadow-sm text-center py-3" style="border-left:3px solid #dc3545!important">
             <div class="h4 fw-bold text-danger mb-1">{{ totals.nonresident_count|default:0 }}</div>
-            <div class="small text-muted">🌍 Norezident</div>
-            <div class="small fw-semibold text-danger">{{ totals.nonresident_sum|floatformat:0|default:0 }} so'm</div>
+            <div class="small text-muted">🌍 {% trans "Norezident" %}</div>
+            <div class="small fw-semibold text-danger">{% blocktrans with sum=totals.nonresident_sum|floatformat:0|default:0 %}{{ sum }} so'm{% endblocktrans %}</div>
         </div>
     </div>
     <div class="col-md-2">
         <div class="card border-0 shadow-sm text-center py-3" style="background:#145a32;">
             <div class="h4 fw-bold text-white mb-1">{{ totals.total_sum|floatformat:0|default:0 }}</div>
-            <div class="small text-white opacity-75">Umumiy daromad (so'm)</div>
+            <div class="small text-white opacity-75">{% trans "Umumiy daromad (so'm)" %}</div>
         </div>
     </div>
 </div>
@@ -117,7 +118,7 @@
         <span class="fs-5">{{ cat.service__category__icon|default:"🔪" }}</span>
         <div>
             <div class="small fw-semibold">{{ cat.service__category__name }}</div>
-            <div class="small text-muted">{{ cat.count }} ta &mdash; {{ cat.total|floatformat:0 }} so'm</div>
+            <div class="small text-muted">{% blocktrans with cnt=cat.count total=cat.total|floatformat:0 %}{{ cnt }} ta &mdash; {{ total }} so'm{% endblocktrans %}</div>
         </div>
     </div>
     {% endfor %}
@@ -126,7 +127,7 @@
 
 <!-- Trend grafigi -->
 <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white"><strong>📈 Oylik dinamika</strong></div>
+    <div class="card-header bg-white"><strong>📈 {% trans "Oylik dinamika" %}</strong></div>
     <div class="card-body">
         <canvas id="trendChart" height="70"></canvas>
     </div>
@@ -135,8 +136,8 @@
 <!-- Batafsil jadval -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white d-flex justify-content-between">
-        <strong>🔪 Har bir operatsiya bo'yicha</strong>
-        <span class="badge bg-primary">{{ op_stats|length }} tur</span>
+        <strong>🔪 {% trans "Har bir operatsiya bo'yicha" %}</strong>
+        <span class="badge bg-primary">{% blocktrans with cnt=op_stats|length %}{{ cnt }} tur{% endblocktrans %}</span>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -144,16 +145,16 @@
             <thead class="table-light">
                 <tr>
                     <th class="ps-3" style="width:40px">№</th>
-                    <th>Operatsiya nomi</th>
-                    <th>Kategoriya</th>
-                    <th class="text-center">Jami<br><small>soni</small></th>
-                    <th class="text-center">Bemorlar</th>
-                    <th class="text-center text-primary">🚂 TY<br><small>soni</small></th>
-                    <th class="text-end text-primary">TY<br><small>summa</small></th>
-                    <th class="text-center text-success">💳 Pullik<br><small>soni</small></th>
-                    <th class="text-end text-success">Pullik<br><small>summa</small></th>
-                    <th class="text-center text-danger">🌍 Nores.<br><small>soni</small></th>
-                    <th class="text-end text-danger pe-3">Nores.<br><small>summa</small></th>
+                    <th>{% trans "Operatsiya nomi" %}</th>
+                    <th>{% trans "Kategoriya" %}</th>
+                    <th class="text-center">{% trans "Jami" %}<br><small>{% trans "soni" %}</small></th>
+                    <th class="text-center">{% trans "Bemorlar" %}</th>
+                    <th class="text-center text-primary">🚂 {% trans "TY" %}<br><small>{% trans "soni" %}</small></th>
+                    <th class="text-end text-primary">{% trans "TY" %}<br><small>{% trans "summa" %}</small></th>
+                    <th class="text-center text-success">💳 {% trans "Pullik" %}<br><small>{% trans "soni" %}</small></th>
+                    <th class="text-end text-success">{% trans "Pullik" %}<br><small>{% trans "summa" %}</small></th>
+                    <th class="text-center text-danger">🌍 {% trans "Nores." %}<br><small>{% trans "soni" %}</small></th>
+                    <th class="text-end text-danger pe-3">{% trans "Nores." %}<br><small>{% trans "summa" %}</small></th>
                 </tr>
             </thead>
             <tbody>
@@ -188,15 +189,15 @@
                 </tr>
                 {% empty %}
                 <tr><td colspan="11" class="text-center text-muted py-5">
-                    Ma'lumot topilmadi.<br>
-                    <small>Avval xizmatlarni Admin panelda <strong>is_operation=True</strong> qilib belgilang.</small>
+                    {% trans "Ma'lumot topilmadi." %}<br>
+                    <small>{% blocktrans %}Avval xizmatlarni Admin panelda <strong>is_operation=True</strong> qilib belgilang.{% endblocktrans %}</small>
                 </td></tr>
                 {% endfor %}
             </tbody>
             {% if totals.total_count %}
             <tfoot class="table-light fw-bold">
                 <tr>
-                    <td colspan="3" class="ps-3">JAMI:</td>
+                    <td colspan="3" class="ps-3">{% trans "JAMI:" %}</td>
                     <td class="text-center">{{ totals.total_count }}</td>
                     <td class="text-center">{{ totals.patients }}</td>
                     <td class="text-center text-primary">{{ totals.railway_count }}</td>
@@ -207,8 +208,8 @@
                     <td class="text-end pe-3 text-danger">{{ totals.nonresident_sum|floatformat:0|default:0 }}</td>
                 </tr>
                 <tr style="background:#145a32; color:#fff;">
-                    <td colspan="10" class="ps-3 py-2">UMUMIY DAROMAD:</td>
-                    <td class="text-end pe-3 py-2 fs-6">{{ totals.total_sum|floatformat:0|default:0 }} so'm</td>
+                    <td colspan="10" class="ps-3 py-2">{% trans "UMUMIY DAROMAD:" %}</td>
+                    <td class="text-end pe-3 py-2 fs-6">{% blocktrans with sum=totals.total_sum|floatformat:0|default:0 %}{{ sum }} so'm{% endblocktrans %}</td>
                 </tr>
             </tfoot>
             {% endif %}

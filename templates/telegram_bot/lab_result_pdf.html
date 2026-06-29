@@ -1,3 +1,4 @@
+{% load i18n %}
 <!DOCTYPE html>
 <html lang="uz">
 <head>
@@ -59,12 +60,12 @@
 <!-- Shifoxona shapkasi -->
 <div class="hospital-header">
   {% if logo_b64 %}
-  <img src="data:image/png;base64,{{ logo_b64 }}" alt="logo">
+  <img src="data:image/png;base64,{{ logo_b64 }}" alt="{% trans 'logo' %}">
   {% endif %}
   <div class="hospital-header-text">
     <div class="org1">&ldquo;O&lsquo;ZBEKISTON TEMIR YO&lsquo;LLARI&rdquo; AJ</div>
     <div class="org2">&ldquo;TEMIR YO&lsquo;L IJTIMOIY XIZMATLAR&rdquo; MCHJ</div>
-    <div class="main-name">Markaziy klinik kasalxonasi filiali</div>
+    <div class="main-name">{% trans "Markaziy klinik kasalxonasi filiali" %}</div>
     <div class="address">
       100047 Toshkent sh., Yashnobod t-n., Cho&lsquo;lpon MFY Pahlavon Mahmud ko&lsquo;chasi 36 B-uy
       &nbsp;|&nbsp; Tel: (99871) 299-62-90 &nbsp;|&nbsp; E-mail: mkk320@mail.ru
@@ -74,11 +75,11 @@
 
 <!-- Bemor ma'lumotlari -->
 <div class="patient-info">
-  <span><b>Bemor:</b> {{ patient.full_name }}</span>
-  <span><b>Yosh:</b> {{ age }}</span>
-  <span><b>Jinsi:</b> {% if patient.gender == 'M' %}Erkak{% else %}Ayol{% endif %}</span>
-  <span><b>Karta &numero;:</b> {{ patient.medical_record_number }}</span>
-  {% if patient.department %}<span><b>Bo&lsquo;lim:</b> {{ patient.department }}</span>{% endif %}
+  <span><b>{% trans "Bemor:" %}</b> {{ patient.full_name }}</span>
+  <span><b>{% trans "Yosh:" %}</b> {{ age }}</span>
+  <span><b>{% trans "Jinsi:" %}</b> {% if patient.gender == 'M' %}{% trans "Erkak" %}{% else %}{% trans "Ayol" %}{% endif %}</span>
+  <span><b>{% trans "Karta &numero;:" %}</b> {{ patient.medical_record_number }}</span>
+  {% if patient.department %}<span><b>{% trans "Bo&lsquo;lim:" %}</b> {{ patient.department }}</span>{% endif %}
 </div>
 
 <!-- Tahlil nomi -->
@@ -88,11 +89,11 @@
 <table>
   <thead>
     <tr>
-      <th style="width:40%">Parametr</th>
-      <th style="width:18%">Natija</th>
-      <th style="width:12%">Birlik</th>
-      <th style="width:20%">Me&lsquo;yor</th>
-      <th style="width:10%">Holat</th>
+      <th style="width:40%">{% trans "Parametr" %}</th>
+      <th style="width:18%">{% trans "Natija" %}</th>
+      <th style="width:12%">{% trans "Birlik" %}</th>
+      <th style="width:20%">{% trans "Me&lsquo;yor" %}</th>
+      <th style="width:10%">{% trans "Holat" %}</th>
     </tr>
   </thead>
   <tbody>
@@ -105,9 +106,9 @@
       <td>{{ e.param.unit }}</td>
       <td>{{ e.normal_display }}</td>
       <td>
-        {% if e.value_status == 'high' %}&uarr; Yuqori
-        {% elif e.value_status == 'low' %}&darr; Past
-        {% elif e.value_status == 'critical' %}!! Kritik
+        {% if e.value_status == 'high' %}&uarr; {% trans "Yuqori" %}
+        {% elif e.value_status == 'low' %}&darr; {% trans "Past" %}
+        {% elif e.value_status == 'critical' %}!! {% trans "Kritik" %}
         {% else %}&mdash;{% endif %}
       </td>
     </tr>
@@ -133,14 +134,14 @@
 
 {% if result.conclusion %}
 <div class="conclusion">
-  <b>Xulosa:</b> {{ result.conclusion }}
+  <b>{% trans "Xulosa:" %}</b> {{ result.conclusion }}
 </div>
 {% endif %}
 
 <!-- Footer -->
 <div class="footer">
-  Chop etilgan: {{ print_date|date:"d.m.Y" }}<br>
-  <span class="qr-note">Token: {{ qr_token }}</span>
+  {% blocktrans with d=print_date|date:"d.m.Y" %}Chop etilgan: {{ d }}{% endblocktrans %}<br>
+  <span class="qr-note">{% blocktrans with token=qr_token %}Token: {{ token }}{% endblocktrans %}</span>
 </div>
 
 </body>

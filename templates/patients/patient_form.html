@@ -1,5 +1,6 @@
 <!-- templates/patients/patient_form.html -->
 {% extends 'base.html' %}
+{% load i18n %}
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
@@ -39,7 +40,7 @@
 
             {% if form.errors %}
             <div class="alert alert-danger">
-                <strong>Xatoliklar bor:</strong><br>
+                <strong>{% trans "Xatoliklar bor:" %}</strong><br>
                 {% for field, errors in form.errors.items %}
                     <div>• <b>{{ field }}</b>: {{ errors|join:", " }}</div>
                 {% endfor %}
@@ -49,7 +50,7 @@
             {% for error in surgery_formset.errors %}
                 {% if error %}
                 <div class="alert alert-warning">
-                    <strong>Jarrohlik formasi xatolari:</strong>
+                    <strong>{% trans "Jarrohlik formasi xatolari:" %}</strong>
                     {% for field, msgs in error.items %}
                         <div>• {{ field }}: {{ msgs|join:", " }}</div>
                     {% endfor %}
@@ -59,7 +60,7 @@
 
             <!-- 1. Bemor ma'lumotlari -->
             <div class="form-section">
-                <h5>👤 Bemor ma'lumotlari</h5>
+                <h5>👤 {% trans "Bemor ma'lumotlari" %}</h5>
                 <div class="row">
                     <div class="col-md-4 mb-3">
                         <label class="form-label">{{ form.medical_record_number.label }}</label>
@@ -72,10 +73,10 @@
                         <div class="text-danger small">{{ form.full_name.errors }}</div>
                     </div>
                     <div class="col-md-3 mb-3">
-                        <label class="form-label fw-bold d-block">Rezidentlik holati</label>
+                        <label class="form-label fw-bold d-block">{% trans "Rezidentlik holati" %}</label>
                         <div class="toggle-group mt-2">
-                            <button type="button" class="toggle-btn" id="res-yes">🏠 Rezident</button>
-                            <button type="button" class="toggle-btn" id="res-no">🌍 Norezident</button>
+                            <button type="button" class="toggle-btn" id="res-yes">🏠 {% trans "Rezident" %}</button>
+                            <button type="button" class="toggle-btn" id="res-no">🌍 {% trans "Norezident" %}</button>
                         </div>
                         <input type="hidden" name="resident_status" id="resident_status_val"
                                value="{{ form.instance.resident_status|default:'resident' }}">
@@ -117,9 +118,9 @@
                     <!-- Ish joyi — temir yo'lchilar uchun dropdown -->
                     <div class="col-md-6 mb-3" id="workplace-field">
                         <label class="form-label fw-bold">
-                            Ish joyi
+                            {% trans "Ish joyi" %}
                             <span class="badge bg-primary ms-1 small" id="railway-badge" style="display:none;">
-                                🚂 Temir yo'lchi
+                                🚂 {% trans "Temir yo'lchi" %}
                             </span>
                         </label>
                         <!-- Temir yo'lchi uchun AJAX qidiruv -->
@@ -127,7 +128,7 @@
                             <div class="position-relative">
                                 <input type="text" id="org-search-input"
                                        class="form-control"
-                                       placeholder="🔍 Korxona kodi, INN, nomi yoki filial bo'yicha qidiring..."
+                                       placeholder="{% trans '🔍 Korxona kodi, INN, nomi yoki filial bo\'yicha qidiring...' %}"
                                        autocomplete="off">
                                 <div id="org-dropdown"
                                      style="display:none; position:absolute; top:100%; left:0; right:0;
@@ -158,10 +159,10 @@
 
                     <!-- Urush qatnashchisi — TOGGLE -->
                     <div class="col-md-3 mb-3">
-                        <label class="form-label fw-bold d-block">Urush qatnashchisi?</label>
+                        <label class="form-label fw-bold d-block">{% trans "Urush qatnashchisi?" %}</label>
                         <div class="toggle-group mt-2">
-                            <button type="button" class="toggle-btn" id="vet-yes">&#9876; Ha</button>
-                            <button type="button" class="toggle-btn" id="vet-no">&#10007; Yo'q</button>
+                            <button type="button" class="toggle-btn" id="vet-yes">&#9876; {% trans "Ha" %}</button>
+                            <button type="button" class="toggle-btn" id="vet-no">&#10007; {% trans "Yo'q" %}</button>
                         </div>
                         <input type="hidden" name="is_war_veteran" id="is_war_veteran_val"
                                value="{{ form.instance.is_war_veteran|yesno:'True,False' }}">
@@ -169,10 +170,10 @@
 
                     <!-- Pensioner — TOGGLE -->
                     <div class="col-md-3 mb-3">
-                        <label class="form-label fw-bold d-block">Pensioner?</label>
+                        <label class="form-label fw-bold d-block">{% trans "Pensioner?" %}</label>
                         <div class="toggle-group mt-2">
-                            <button type="button" class="toggle-btn" id="pen-yes">&#128081; Ha</button>
-                            <button type="button" class="toggle-btn" id="pen-no">&#10007; Yo'q</button>
+                            <button type="button" class="toggle-btn" id="pen-yes">&#128081; {% trans "Ha" %}</button>
+                            <button type="button" class="toggle-btn" id="pen-no">&#10007; {% trans "Yo'q" %}</button>
                         </div>
                         <input type="hidden" name="is_pensioner" id="is_pensioner_val"
                                value="{{ form.instance.is_pensioner|yesno:'True,False'|default:'False' }}">
@@ -183,17 +184,17 @@
 
             <!-- 2. Yashash manzili -->
             <div class="form-section" id="address-section">
-                <h5>📍 Yashash manzili</h5>
+                <h5>📍 {% trans "Yashash manzili" %}</h5>
                 <div class="row">
                     <div class="col-md-3 mb-3">
-                        <label class="form-label">Davlat</label>
+                        <label class="form-label">{% trans "Davlat" %}</label>
                         {{ form.country }}
                         <div class="text-danger small">{{ form.country.errors }}</div>
                     </div>
                     <div class="col-md-3 mb-3">
-                        <label class="form-label">Viloyat</label>
+                        <label class="form-label">{% trans "Viloyat" %}</label>
                         <select name="region" id="id_region" class="form-select">
-                            <option value="">— Tanlang —</option>
+                            <option value="">— {% trans "Tanlang" %} —</option>
                             {% if form.instance.region %}
                                 <option value="{{ form.instance.region.id }}" selected>
                                     {{ form.instance.region.name }}
@@ -202,9 +203,9 @@
                         </select>
                     </div>
                     <div class="col-md-3 mb-3">
-                        <label class="form-label">Tuman</label>
+                        <label class="form-label">{% trans "Tuman" %}</label>
                         <select name="district" id="id_district" class="form-select">
-                            <option value="">— Tanlang —</option>
+                            <option value="">— {% trans "Tanlang" %} —</option>
                             {% if form.instance.district %}
                                 <option value="{{ form.instance.district.id }}" selected>
                                     {{ form.instance.district.name }}
@@ -213,9 +214,9 @@
                         </select>
                     </div>
                     <div class="col-md-3 mb-3">
-                        <label class="form-label">Shahar/Qishloq</label>
+                        <label class="form-label">{% trans "Shahar/Qishloq" %}</label>
                         <select name="city" id="id_city" class="form-select">
-                            <option value="">— Tanlang —</option>
+                            <option value="">— {% trans "Tanlang" %} —</option>
                             {% if form.instance.city %}
                                 <option value="{{ form.instance.city.id }}" selected>
                                     {{ form.instance.city.name }}
@@ -224,7 +225,7 @@
                         </select>
                     </div>
                     <div class="col-md-12 mb-3">
-                        <label class="form-label">Ko'cha nomi va uy raqami</label>
+                        <label class="form-label">{% trans "Ko'cha nomi va uy raqami" %}</label>
                         {{ form.street_address }}
                         <div class="text-danger small">{{ form.street_address.errors }}</div>
                     </div>
@@ -233,7 +234,7 @@
 
             <!-- 3. Qabul ma'lumotlari -->
             <div class="form-section">
-                <h5>🏥 Qabul ma'lumotlari</h5>
+                <h5>🏥 {% trans "Qabul ma'lumotlari" %}</h5>
                 <div class="row">
                     <div class="col-md-4 mb-3">
                         <label class="form-label">{{ form.referral_type.label }}</label>
@@ -245,7 +246,7 @@
                         <div class="position-relative">
                             <input type="text" id="ref-org-search-input"
                                    class="form-control"
-                                   placeholder="🔍 Muassasa nomi, kodi yoki INN..."
+                                   placeholder="{% trans '🔍 Muassasa nomi, kodi yoki INN...' %}"
                                    autocomplete="off">
                             <div id="ref-org-dropdown"
                                  style="display:none; position:absolute; top:100%; left:0; right:0;
@@ -295,10 +296,10 @@
                         {{ form.admission_count }}
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label class="form-label fw-bold d-block">Shoshilinch olib kelinganmi?</label>
+                        <label class="form-label fw-bold d-block">{% trans "Shoshilinch olib kelinganmi?" %}</label>
                         <div class="toggle-group mt-2">
-                            <button type="button" class="toggle-btn" id="emg-yes">&#10003; Ha</button>
-                            <button type="button" class="toggle-btn" id="emg-no">&#10007; Yo'q</button>
+                            <button type="button" class="toggle-btn" id="emg-yes">&#10003; {% trans "Ha" %}</button>
+                            <button type="button" class="toggle-btn" id="emg-no">&#10007; {% trans "Yo'q" %}</button>
                         </div>
                         <input type="hidden" name="is_emergency" id="is_emergency_val"
                                value="{{ form.instance.is_emergency|yesno:'True,False' }}">
@@ -310,7 +311,7 @@
 
             <!-- 4. Chiqish ma'lumotlari -->
             <div class="form-section">
-                <h5>📋 Chiqish ma'lumotlari</h5>
+                <h5>📋 {% trans "Chiqish ma'lumotlari" %}</h5>
                 <div class="row">
                     <div class="col-md-3 mb-3">
                         <label class="form-label">{{ form.days_in_hospital.label }}</label>
@@ -327,7 +328,7 @@
                         <div class="input-group">
                             {{ form.discharge_conclusion }}
                             <button type="button" class="btn btn-outline-danger"
-                                    id="clear-conclusion" title="Tozalash">✕</button>
+                                    id="clear-conclusion" title="{% trans 'Tozalash' %}">✕</button>
                         </div>
                         <div class="text-danger small">{{ form.discharge_conclusion.errors }}</div>
                     </div>
@@ -339,13 +340,13 @@
                 </div>
                 <div class="mt-2" id="add-conclusion-block">
                     <button type="button" class="btn btn-outline-secondary btn-sm"
-                            id="toggle-add-conclusion">+ Yangi xulosa qo'shish</button>
+                            id="toggle-add-conclusion">+ {% trans "Yangi xulosa qo'shish" %}</button>
                     <div id="new-conclusion-form" style="display:none;" class="mt-2">
                         <div class="input-group" style="max-width: 400px;">
                             <input type="text" id="new-conclusion-name"
-                                   class="form-control" placeholder="Xulosa nomi...">
-                            <button type="button" class="btn btn-success" id="save-conclusion">Saqlash</button>
-                            <button type="button" class="btn btn-secondary" id="cancel-conclusion">Bekor</button>
+                                   class="form-control" placeholder="{% trans 'Xulosa nomi...' %}">
+                            <button type="button" class="btn btn-success" id="save-conclusion">{% trans "Saqlash" %}</button>
+                            <button type="button" class="btn btn-secondary" id="cancel-conclusion">{% trans "Bekor" %}</button>
                         </div>
                         <div id="conclusion-msg" class="small mt-1"></div>
                     </div>
@@ -354,7 +355,7 @@
 
             <!-- 5. Yakuniy tashxis -->
             <div class="form-section">
-                <h5>🔬 Yakuniy tashxis</h5>
+                <h5>🔬 {% trans "Yakuniy tashxis" %}</h5>
                 <div class="row">
                     <div class="col-md-3 mb-3">
                         <label class="form-label">{{ form.clinical_main_diagnosis.label }}</label>
@@ -362,17 +363,17 @@
                         <div class="text-danger small">{{ form.clinical_main_diagnosis.errors }}</div>
                     </div>
                     <div class="col-md-9 mb-3">
-                        <label class="form-label">Klinik tashxis matni</label>
+                        <label class="form-label">{% trans "Klinik tashxis matni" %}</label>
                         {{ form.clinical_main_diagnosis_text }}
                     </div>
                     <div class="col-md-12 mb-3">
-                        <label class="form-label">Klinik yo'ldosh kasalliklar</label>
+                        <label class="form-label">{% trans "Klinik yo'ldosh kasalliklar" %}</label>
                         {{ form.clinical_comorbidities }}
                     </div>
                 </div>
                 <div id="patho-section">
                     <hr>
-                    <h6 class="text-danger">Patologoanatomik tashxis</h6>
+                    <h6 class="text-danger">{% trans "Patologoanatomik tashxis" %}</h6>
                     <div class="row">
                         <div class="col-md-3 mb-3">
                             <label class="form-label">{{ form.pathological_main_diagnosis.label }}</label>
@@ -380,11 +381,11 @@
                             <div class="text-danger small">{{ form.pathological_main_diagnosis.errors }}</div>
                         </div>
                         <div class="col-md-9 mb-3">
-                            <label class="form-label">Patologoanatomik tashxis matni</label>
+                            <label class="form-label">{% trans "Patologoanatomik tashxis matni" %}</label>
                             {{ form.pathological_main_diagnosis_text }}
                         </div>
                         <div class="col-md-12 mb-3">
-                            <label class="form-label">Patologoanatomik yo'ldosh kasalliklar</label>
+                            <label class="form-label">{% trans "Patologoanatomik yo'ldosh kasalliklar" %}</label>
                             {{ form.pathological_comorbidities }}
                         </div>
                     </div>
@@ -393,7 +394,7 @@
 
             <!-- 6. O'lim sababi -->
             <div class="form-section" id="death-section">
-                <h5 class="text-danger">💀 O'lim sababi</h5>
+                <h5 class="text-danger">💀 {% trans "O'lim sababi" %}</h5>
                 <div class="row">
                     <div class="col-md-12 mb-3">
                         <label class="form-label">{{ death_form.immediate_cause.label }}</label>
@@ -419,22 +420,22 @@
 
             <!-- 7. Jarrohlik amaliyotlari -->
             <div class="form-section">
-                <h5>🔪 Jarrohlik amaliyotlari</h5>
+                <h5>🔪 {% trans "Jarrohlik amaliyotlari" %}</h5>
                 {{ surgery_formset.management_form }}
                 <div id="surgery-forms">
                     {% for sform in surgery_formset %}
                     <div class="surgery-form border rounded p-3 mb-2">
                         <div class="row">
                             <div class="col-md-2 mb-2">
-                                <label class="form-label">Sana</label>
+                                <label class="form-label">{% trans "Sana" %}</label>
                                 {{ sform.operation_date }}
                             </div>
                             <div class="col-md-4 mb-2">
-                                <label class="form-label">Amaliyot turi</label>
+                                <label class="form-label">{% trans "Amaliyot turi" %}</label>
                                 <div class="position-relative">
                                     <input type="text"
                                            class="form-control op-search-input"
-                                           placeholder="Kod yoki nom kiriting..."
+                                           placeholder="{% trans 'Kod yoki nom kiriting...' %}"
                                            autocomplete="off">
                                     {{ sform.operation_type }}
                                     <ul class="op-suggest list-group position-absolute w-100"
@@ -442,18 +443,18 @@
                                 </div>
                             </div>
                             <div class="col-md-2 mb-2">
-                                <label class="form-label">Narkoz</label>
+                                <label class="form-label">{% trans "Narkoz" %}</label>
                                 {{ sform.anesthesia }}
                             </div>
                             <div class="col-md-4 mb-2">
-                                <label class="form-label">Asorati</label>
+                                <label class="form-label">{% trans "Asorati" %}</label>
                                 {{ sform.complication }}
                             </div>
                             {% if sform.instance.pk %}
                             <div class="col-md-12 mt-1">
                                 <div class="form-check">
                                     {{ sform.DELETE }}
-                                    <label class="form-check-label text-danger">O'chirish</label>
+                                    <label class="form-check-label text-danger">{% trans "O'chirish" %}</label>
                                 </div>
                             </div>
                             {% endif %}
@@ -463,28 +464,28 @@
                     {% endfor %}
                 </div>
                 <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="add-surgery">
-                    + Amaliyot qo'shish
+                    + {% trans "Amaliyot qo'shish" %}
                 </button>
             </div>
 
             <!-- 8. Tekshiruvlar -->
             <div class="form-section">
-                <h5>🧪 Tekshiruvlar</h5>
+                <h5>🧪 {% trans "Tekshiruvlar" %}</h5>
                 <div class="row">
                     <div class="col-md-3 mb-3">
-                        <label class="form-label">OITS tekshiruvi sanasi</label>
+                        <label class="form-label">{% trans "OITS tekshiruvi sanasi" %}</label>
                         {{ form.aids_test_date }}
                     </div>
                     <div class="col-md-3 mb-3">
-                        <label class="form-label">OITS natijasi</label>
+                        <label class="form-label">{% trans "OITS natijasi" %}</label>
                         {{ form.aids_test_result }}
                     </div>
                     <div class="col-md-3 mb-3">
-                        <label class="form-label">WP tekshiruvi sanasi</label>
+                        <label class="form-label">{% trans "WP tekshiruvi sanasi" %}</label>
                         {{ form.wp_test_date }}
                     </div>
                     <div class="col-md-3 mb-3">
-                        <label class="form-label">WP natijasi</label>
+                        <label class="form-label">{% trans "WP natijasi" %}</label>
                         {{ form.wp_test_result }}
                     </div>
                     <!-- is_war_veteran Bemor ma'lumotlari bo'limiga ko'chirildi -->
@@ -509,11 +510,292 @@
 </div>
 
             <div class="d-flex gap-2 mb-5">
-                <button type="submit" class="btn btn-primary btn-lg">💾 Saqlash</button>
-                <a href="{% url 'patient_list' %}" class="btn btn-secondary btn-lg">Bekor qilish</a>
+                <button type="submit" class="btn btn-primary btn-lg">💾 {% trans "Saqlash" %}</button>
+                <a href="{% url 'patient_list' %}" class="btn btn-secondary btn-lg">{% trans "Bekor qilish" %}</a>
             </div>
 
         </form>
+
+    {% if form.instance.pk %}
+    <div class="mt-3">
+      <a href="{% url 'patient_detail' form.instance.pk %}"
+         class="btn btn-outline-secondary">← {% trans "Bemor kartasiga qaytish" %}</a>
+    </div>
+    {% endif %}
+
+    {% comment %}
+    <!-- ==================== EPIZOD ACCORDION ==================== -->
+    <div class="mt-4">
+        <div class="accordion" id="episodeAccordionEdit">
+
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#collapseExamEdit">
+                        🩻 Первичный осмотр
+                    </button>
+                </h2>
+                <div id="collapseExamEdit" class="accordion-collapse collapse" data-bs-parent="#episodeAccordionEdit">
+                    <div class="accordion-body">
+                        <div id="exam-alert-edit"></div>
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-semibold">Shikoyatlar</label>
+                                <textarea class="form-control exam-field-e" data-field="complaints" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-semibold">Kasallik tarixi (Anamnesis morbi)</label>
+                                <textarea class="form-control exam-field-e" data-field="anamnesis_morbi" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-semibold">Hayot tarixi (Anamnesis vitae)</label>
+                                <textarea class="form-control exam-field-e" data-field="anamnesis_vitae" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-semibold">Mahalliy holat (Status localis)</label>
+                                <textarea class="form-control exam-field-e" data-field="status_localis" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-semibold">Epidemiologik anamnez</label>
+                                <textarea class="form-control exam-field-e" data-field="epidemiological_anamnesis" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-semibold">Hozirgi holat (Status praesens)</label>
+                                <textarea class="form-control exam-field-e" data-field="status_praesens" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-semibold">Allergologik anamnez</label>
+                                <textarea class="form-control exam-field-e" data-field="allergy_anamnesis" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-semibold">Nevrologik holat</label>
+                                <textarea class="form-control exam-field-e" data-field="neurological_status" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Laboratoriya tekshiruvlari</label>
+                                <textarea class="form-control exam-field-e" data-field="lab_investigations" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-success" id="btn-save-exam-e">
+                            💾 Ko'rikni saqlash
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Tashxislar -->
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>🏷 Диагнозы в эпизоде (МКБ-10)</strong>
+                <button class="btn btn-sm btn-outline-primary" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#diagAddFormEdit">
+                    ➕ Tashxis qo'shish
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="collapse mb-3" id="diagAddFormEdit">
+                    <div class="card card-body bg-light">
+                        <div id="diag-alert-edit"></div>
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">MKB-10 kodi</label>
+                                <div class="position-relative">
+                                    <input type="text" id="icd10-input-e" class="form-control"
+                                           placeholder="🔍 Kod yoki nom..." autocomplete="off">
+                                    <div id="icd10-dropdown-e"
+                                         style="display:none;position:absolute;top:100%;left:0;right:0;
+                                                z-index:1060;background:#fff;border:1px solid #dee2e6;
+                                                border-radius:8px;max-height:260px;overflow-y:auto;
+                                                box-shadow:0 4px 16px rgba(0,0,0,.12);"></div>
+                                </div>
+                                <input type="hidden" id="icd10-code-val-e" value="">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-semibold">Turi</label>
+                                <select id="diag-type-e" class="form-select">
+                                    <option value="preliminary">Dastlabki</option>
+                                    <option value="final">Yakuniy</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Roli</label>
+                                <select id="diag-role-e" class="form-select">
+                                    <option value="main">Asosiy</option>
+                                    <option value="comorbidity">Hamroh kasallik</option>
+                                    <option value="complication">Asorat</option>
+                                    <option value="background">Fon kasalligi</option>
+                                    <option value="competitive">Raqobatdosh</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Klinik matn</label>
+                                <textarea id="diag-text-e" class="form-control" rows="1"></textarea>
+                            </div>
+                            <div class="col-12 mt-2">
+                                <button type="button" class="btn btn-primary btn-sm" id="btn-add-diag-e">
+                                    ✅ Qo'shish
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>MKB kod</th><th>Nom</th><th>Turi</th>
+                                <th>Roli</th><th>Klinik matn</th><th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="diag-tbody-e">
+                            <tr><td colspan="6" class="text-center text-muted">Yuklanmoqda...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function(){
+        const PATIENT_ID = {{ form.instance.pk }};
+        const EXAM_URL   = `/patients/ajax/initial-examination/${PATIENT_ID}/`;
+        const DIAG_URL   = `/patients/ajax/episode-diagnoses/${PATIENT_ID}/`;
+        const ICD10_URL  = `/patients/ajax/icd10-search/`;
+        const CSRF       = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+
+        function showAlert(el, msg, type='success') {
+            el.innerHTML = `<div class="alert alert-${type} py-2">${msg}</div>`;
+            if (type === 'success') setTimeout(() => { el.innerHTML = ''; }, 2000);
+        }
+
+        // Ko'rik yuklash
+        fetch(EXAM_URL)
+            .then(r => r.json())
+            .then(data => {
+                document.querySelectorAll('.exam-field-e').forEach(ta => {
+                    const f = ta.dataset.field;
+                    if (data[f] !== undefined) ta.value = data[f];
+                });
+            }).catch(() => {});
+
+        document.getElementById('btn-save-exam-e')?.addEventListener('click', function() {
+            const body = {};
+            document.querySelectorAll('.exam-field-e').forEach(ta => { body[ta.dataset.field] = ta.value; });
+            fetch(EXAM_URL, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+                body: JSON.stringify(body)
+            }).then(r => r.json())
+              .then(d => {
+                  const el = document.getElementById('exam-alert-edit');
+                  if (d.success) showAlert(el, "✅ Ko'rik saqlandi");
+                  else showAlert(el, '❌ ' + (d.error||'Xato'), 'danger');
+              }).catch(() => {});
+        });
+
+        // ICD10 autocomplete
+        const inp  = document.getElementById('icd10-input-e');
+        const drop = document.getElementById('icd10-dropdown-e');
+        const val  = document.getElementById('icd10-code-val-e');
+        let tmr;
+        inp?.addEventListener('input', function() {
+            clearTimeout(tmr);
+            const q = this.value.trim();
+            if (q.length < 2) { drop.style.display = 'none'; return; }
+            tmr = setTimeout(() => {
+                fetch(`${ICD10_URL}?q=${encodeURIComponent(q)}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (!data.length) { drop.style.display = 'none'; return; }
+                        drop.innerHTML = data.map(d =>
+                            `<div class="icd-e" data-code="${d.code}"
+                                  data-title="${d.title_uz.replace(/"/g,'&quot;')}"
+                                  style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:13px;">
+                                <strong>${d.code}</strong> — ${d.title_uz}
+                             </div>`
+                        ).join('');
+                        drop.style.display = 'block';
+                        drop.querySelectorAll('.icd-e').forEach(item => {
+                            item.addEventListener('mouseenter', () => item.style.background = '#eef5ff');
+                            item.addEventListener('mouseleave', () => item.style.background = '');
+                            item.addEventListener('click', () => {
+                                val.value  = item.dataset.code;
+                                inp.value  = `${item.dataset.code} — ${item.dataset.title}`;
+                                drop.style.display = 'none';
+                            });
+                        });
+                    });
+            }, 300);
+        });
+        document.addEventListener('click', e => {
+            if (!inp?.contains(e.target) && !drop?.contains(e.target))
+                drop.style.display = 'none';
+        });
+
+        // Tashxislar
+        const tbody = document.getElementById('diag-tbody-e');
+
+        function renderDiags(diags) {
+            if (!diags.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Tashxislar yo\'q</td></tr>';
+                return;
+            }
+            tbody.innerHTML = diags.map(d => `
+                <tr>
+                    <td><span class="badge bg-primary">${d.icd10_code||'—'}</span></td>
+                    <td style="font-size:12px;">${d.icd10_title||'—'}</td>
+                    <td><span class="badge bg-secondary">${d.diagnosis_type_display}</span></td>
+                    <td><span class="badge bg-info text-dark">${d.diagnosis_role_display}</span></td>
+                    <td style="font-size:12px;">${d.clinical_text||''}</td>
+                    <td><button type="button" class="btn btn-sm btn-outline-danger btn-del-e"
+                                data-id="${d.id}">🗑</button></td>
+                </tr>`).join('');
+            tbody.querySelectorAll('.btn-del-e').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    if (!confirm("O'chirilsinmi?")) return;
+                    fetch(`/patients/ajax/episode-diagnosis/${this.dataset.id}/delete/`, {
+                        method: 'POST', headers: {'X-CSRFToken': CSRF}
+                    }).then(r => r.json()).then(d => { if (d.success) loadDiags(); });
+                });
+            });
+        }
+
+        function loadDiags() {
+            fetch(DIAG_URL).then(r => r.json()).then(d => renderDiags(d.diagnoses || [])).catch(() => {});
+        }
+        loadDiags();
+
+        document.getElementById('btn-add-diag-e')?.addEventListener('click', function() {
+            const body = {
+                icd10_code:     val.value,
+                diagnosis_type: document.getElementById('diag-type-e').value,
+                diagnosis_role: document.getElementById('diag-role-e').value,
+                clinical_text:  document.getElementById('diag-text-e').value,
+            };
+            fetch(DIAG_URL, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+                body: JSON.stringify(body)
+            }).then(r => r.json())
+              .then(d => {
+                  const el = document.getElementById('diag-alert-edit');
+                  if (d.success) {
+                      showAlert(el, "✅ Tashxis qo'shildi");
+                      inp.value = ''; val.value = '';
+                      document.getElementById('diag-text-e').value = '';
+                      loadDiags();
+                  } else {
+                      showAlert(el, '❌ ' + (d.error||'Xato'), 'danger');
+                  }
+              }).catch(() => {});
+        });
+    })();
+    </script>
+    {% endcomment %}
+
     </div>
 </div>
 {% endblock %}

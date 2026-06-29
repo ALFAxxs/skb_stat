@@ -1,15 +1,16 @@
 {% extends "base.html" %}
-{% block title %}Laboratoriya — {{ filter_date|date:"d.m.Y" }}{% endblock %}
+{% load i18n %}
+{% block title %}{% blocktrans with d=filter_date|date:"d.m.Y" %}Laboratoriya — {{ d }}{% endblocktrans %}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-3">
 
   <!-- Sarlavha -->
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0">🔬 Laboratoriya
-      <span class="badge bg-secondary ms-2">{{ patients_list|length }} bemor</span>
+    <h4 class="mb-0">🔬 {% trans "Laboratoriya" %}
+      <span class="badge bg-secondary ms-2">{% blocktrans with cnt=patients_list|length %}{{ cnt }} bemor{% endblocktrans %}</span>
     </h4>
-    <a href="{% url 'lab_template_list' %}" class="btn btn-outline-secondary btn-sm">📋 Shablonlar</a>
+    <a href="{% url 'lab_template_list' %}" class="btn btn-outline-secondary btn-sm">📋 {% trans "Shablonlar" %}</a>
   </div>
 
   <!-- Filtrlar -->
@@ -17,22 +18,22 @@
     <div class="card-body py-2">
       <form method="get" class="row g-2 align-items-end">
         <div class="col-auto">
-          <label class="form-label mb-0 small fw-semibold">Sana</label>
+          <label class="form-label mb-0 small fw-semibold">{% trans "Sana" %}</label>
           <input type="date" name="date" class="form-control form-control-sm"
                  value="{{ filter_date|date:'Y-m-d' }}">
         </div>
         <div class="col-auto">
-          <label class="form-label mb-0 small fw-semibold">Holat</label>
+          <label class="form-label mb-0 small fw-semibold">{% trans "Holat" %}</label>
           <select name="status" class="form-select form-select-sm" style="min-width:160px">
-            <option value="">Barcha holatlar</option>
+            <option value="">{% trans "Barcha holatlar" %}</option>
             {% for val, label in item_statuses %}
             <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
           </select>
         </div>
         <div class="col-auto">
-          <button type="submit" class="btn btn-primary btn-sm">Ko'rsatish</button>
-          <a href="{% url 'lab_home' %}" class="btn btn-outline-secondary btn-sm">Bugun</a>
+          <button type="submit" class="btn btn-primary btn-sm">{% trans "Ko'rsatish" %}</button>
+          <a href="{% url 'lab_home' %}" class="btn btn-outline-secondary btn-sm">{% trans "Bugun" %}</a>
         </div>
       </form>
     </div>
@@ -45,7 +46,7 @@
     <div class="col-auto">
       <a href="?date={{ filter_date|date:'Y-m-d' }}&status=pending"
          class="badge bg-secondary text-decoration-none fs-6 py-2 px-3">
-        🕐 Kutilmoqda: {{ status_counts.pending }}
+        🕐 {% trans "Kutilmoqda" %}: {{ status_counts.pending }}
       </a>
     </div>
     {% endif %}
@@ -53,7 +54,7 @@
     <div class="col-auto">
       <a href="?date={{ filter_date|date:'Y-m-d' }}&status=sample_taken"
          class="badge bg-info text-dark text-decoration-none fs-6 py-2 px-3">
-        🧪 Namuna: {{ status_counts.sample_taken }}
+        🧪 {% trans "Namuna" %}: {{ status_counts.sample_taken }}
       </a>
     </div>
     {% endif %}
@@ -61,7 +62,7 @@
     <div class="col-auto">
       <a href="?date={{ filter_date|date:'Y-m-d' }}&status=in_progress"
          class="badge bg-warning text-dark text-decoration-none fs-6 py-2 px-3">
-        ⚙️ Jarayonda: {{ status_counts.in_progress }}
+        ⚙️ {% trans "Jarayonda" %}: {{ status_counts.in_progress }}
       </a>
     </div>
     {% endif %}
@@ -69,7 +70,7 @@
     <div class="col-auto">
       <a href="?date={{ filter_date|date:'Y-m-d' }}&status=result_entering"
          class="badge bg-primary text-decoration-none fs-6 py-2 px-3">
-        ✏️ Kiritilmoqda: {{ status_counts.result_entering }}
+        ✏️ {% trans "Kiritilmoqda" %}: {{ status_counts.result_entering }}
       </a>
     </div>
     {% endif %}
@@ -77,7 +78,7 @@
     <div class="col-auto">
       <a href="?date={{ filter_date|date:'Y-m-d' }}&status=completed"
          class="badge bg-success text-decoration-none fs-6 py-2 px-3">
-        ✅ Tayyor: {{ status_counts.completed }}
+        ✅ {% trans "Tayyor" %}: {{ status_counts.completed }}
       </a>
     </div>
     {% endif %}
@@ -85,7 +86,7 @@
     <div class="col-auto">
       <a href="?date={{ filter_date|date:'Y-m-d' }}&status=rejected"
          class="badge bg-danger text-decoration-none fs-6 py-2 px-3">
-        ✕ Rad: {{ status_counts.rejected }}
+        ✕ {% trans "Rad" %}: {{ status_counts.rejected }}
       </a>
     </div>
     {% endif %}
@@ -96,16 +97,16 @@
   {% if patients_list %}
   <div class="card shadow-sm">
     <div class="card-header py-2 bg-primary text-white">
-      <strong>{{ filter_date|date:"d.m.Y" }} — Laboratoriya buyurtmalari</strong>
+      <strong>{% blocktrans with d=filter_date|date:"d.m.Y" %}{{ d }} — Laboratoriya buyurtmalari{% endblocktrans %}</strong>
     </div>
     <div class="table-responsive">
       <table class="table table-hover table-sm align-middle mb-0">
         <thead class="table-light">
           <tr>
             <th width="36">#</th>
-            <th>Bemor</th>
-            <th>Karta №</th>
-            <th>Xizmatlar va holati</th>
+            <th>{% trans "Bemor" %}</th>
+            <th>{% trans "Karta №" %}</th>
+            <th>{% trans "Xizmatlar va holati" %}</th>
           </tr>
         </thead>
         <tbody>
@@ -119,7 +120,7 @@
                 {{ data.patient.full_name }}
               </a><br>
               <small class="text-muted">
-                {% if data.patient.gender == 'M' %}Erkak{% else %}Ayol{% endif %}
+                {% if data.patient.gender == 'M' %}{% trans "Erkak" %}{% else %}{% trans "Ayol" %}{% endif %}
                 · {{ data.patient.birth_date|date:"d.m.Y" }}
               </small>
             </td>
@@ -134,7 +135,7 @@
                 {% elif svc_data.status == 'rejected' %}bg-danger
                 {% elif svc_data.status == 'recollect' %}bg-danger
                 {% else %}bg-light text-dark{% endif %}">
-                {{ svc_data.ps.service.name }}
+                {{ svc_data.ps.service.display_name }}
               </span>
               {% endfor %}
             </td>
@@ -147,8 +148,8 @@
 
   {% else %}
   <div class="alert alert-info">
-    <strong>{{ filter_date|date:"d.m.Y" }}</strong> kuni
-    {% if status_filter %}tanlangan holatda {% endif %}laboratoriya buyurtmasi yo'q.
+    <strong>{{ filter_date|date:"d.m.Y" }}</strong> {% trans "kuni" %}
+    {% if status_filter %}{% trans "tanlangan holatda" %} {% endif %}{% trans "laboratoriya buyurtmasi yo'q." %}
   </div>
   {% endif %}
 

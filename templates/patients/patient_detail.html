@@ -1,39 +1,57 @@
 <!-- templates/patients/patient_detail.html -->
 {% extends 'base.html' %}
+{% load i18n %}
 {% block title %}{{ patient.full_name }}{% endblock %}
 
 {% block content %}
+<style>
+  body { padding-bottom: 80px; }
+  .detail-sticky-footer {
+    position:fixed;bottom:0;left:0;right:0;z-index:300;
+    background:#fff;border-top:1px solid #e5e7eb;
+    padding:10px 20px;
+    display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+  }
+  .detail-sticky-footer .btn { font-size:13px; }
+</style>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3>📋 Bemor kartasi</h3>
+    <h3>📋 {% trans "Bemor kartasi" %}</h3>
     <div class="d-flex gap-2">
         <a href="{% url 'patient_services' patient.pk %}" class="btn btn-info">
-            🏥 Xizmatlar
+            🏥 {% trans "Xizmatlar" %}
             {% with cnt=patient.patient_services.count %}
                 {% if cnt %}<span class="badge bg-white text-dark">{{ cnt }}</span>{% endif %}
             {% endwith %}
         </a>
         {% if request.user.role == 'admin' or request.user.role == 'doctor' or request.user.is_superuser %}
         <a href="{% url 'lab_patient' patient.pk %}" class="btn btn-outline-success">
-            🔬 Lab natijalari
+            🔬 {% trans "Lab natijalari" %}
             {% with cnt=patient.lab_results.count %}
                 {% if cnt %}<span class="badge bg-success text-white">{{ cnt }}</span>{% endif %}
             {% endwith %}
         </a>
         {% endif %}
         {% if request.user.is_superuser or request.user.role == 'admin' %}
-        <a href="{% url 'patient_edit' patient.pk %}" class="btn btn-warning">✏️ Tahrirlash</a>
+        <a href="{% url 'patient_edit' patient.pk %}" class="btn btn-warning">✏️ {% trans "Tahrirlash" %}</a>
+        {% endif %}
+        {% if request.user.role != 'nurse' and request.user.role != 'head_nurse' %}
+        <button class="btn btn-outline-teal" style="border-color:#0d9488;color:#0d9488;"
+                data-bs-toggle="modal" data-bs-target="#korikTuriModal">
+            ➕ {% trans "Ko'rik" %}
+        </button>
         {% endif %}
         {% if patient.visit_type != 'ambulatory' %}
           {% if request.user.role != 'reception' or request.user.is_superuser %}
-          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#transferModal">🔄 Ko'chirish</button>
-          <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#dischargeModal">🏥 Chiqarish</button>
+          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#transferModal">🔄 {% trans "Ko'chirish" %}</button>
+          <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#dischargeModal">🏥 {% trans "Chiqarish" %}</button>
           {% endif %}
         {% endif %}
-        <a href="{% url 'patient_list' %}" class="btn btn-secondary">← Ro'yxatga</a>
+        <a href="{% url 'patient_list' %}" class="btn btn-secondary">← {% trans "Ro'yxatga" %}</a>
         <a href="{% url 'patient_card_excel' patient.pk %}" class="btn btn-success">📥 Excel</a>
-        <a href="{% url 'patient_invoice' patient.pk %}" class="btn btn-outline-primary">🧾 Hisob-faktura</a>
+        <a href="{% url 'invoice_detail' patient.pk %}" target="_blank" class="btn btn-outline-primary">🧾 {% trans "Hisob-faktura" %}</a>
         {% if patient.contract %}
-        <a href="{% url 'download_contract' patient.contract.pk %}" class="btn btn-outline-dark">📋 Shartnoma</a>
+        <a href="{% url 'download_contract' patient.contract.pk %}" class="btn btn-outline-dark">📋 {% trans "Shartnoma" %}</a>
         {% endif %}
     </div>
 </div>
@@ -44,7 +62,7 @@
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header bg-danger text-white">
-        <h5 class="modal-title">🏥 Bemorni chiqarish</h5>
+        <h5 class="modal-title">🏥 {% trans "Bemorni chiqarish" %}</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" action="{% url 'patient_edit' patient.pk %}">
@@ -55,16 +73,16 @@
 
             <!-- Chiqish sanasi -->
             <div class="col-md-6">
-              <label class="form-label fw-bold">Chiqish sanasi *</label>
+              <label class="form-label fw-bold">{% trans "Chiqish sanasi" %} *</label>
               <input type="date" name="discharge_date" class="form-control"
                      value="{{ today }}" required>
             </div>
 
             <!-- Kasallanish yakuni -->
             <div class="col-md-6">
-              <label class="form-label fw-bold">Kasallanish yakuni *</label>
+              <label class="form-label fw-bold">{% trans "Kasallanish yakuni" %} *</label>
               <select name="outcome" class="form-select" required>
-                <option value="">— Tanlang —</option>
+                <option value="">{% trans "— Tanlang —" %}</option>
                 {% for val, label in outcome_choices %}
                 <option value="{{ val }}" {% if patient.outcome == val %}selected{% endif %}>
                   {{ label }}
@@ -76,17 +94,17 @@
 
             <!-- Yakuniy tashxis -->
             <div class="col-12">
-              <label class="form-label fw-bold">Yakuniy tashxis *</label>
+              <label class="form-label fw-bold">{% trans "Yakuniy tashxis" %} *</label>
               <input type="text" name="final_diagnosis" class="form-control"
                      value="{{ patient.final_diagnosis|default:patient.admission_diagnosis|default:'' }}"
-                     placeholder="Yakuniy tashxis..." required>
+                     placeholder="{% trans "Yakuniy tashxis..." %}" required>
             </div>
 
             <!-- Chiqish xulosasi (FK) -->
             <div class="col-12">
-              <label class="form-label fw-bold">Chiqish xulosasi</label>
+              <label class="form-label fw-bold">{% trans "Chiqish xulosasi" %}</label>
               <select name="discharge_conclusion" class="form-select">
-                <option value="">— Tanlang —</option>
+                <option value="">{% trans "— Tanlang —" %}</option>
                 {% for dc in discharge_conclusions %}
                 <option value="{{ dc.pk }}"
                   {% if patient.discharge_conclusion_id == dc.pk %}selected{% endif %}>
@@ -98,21 +116,21 @@
 
             <!-- Qo'shimcha izoh -->
             <div class="col-12">
-              <label class="form-label fw-bold">Qo'shimcha izoh / tavsiyalar</label>
+              <label class="form-label fw-bold">{% trans "Qo'shimcha izoh / tavsiyalar" %}</label>
               <textarea name="discharge_conclusion_text" class="form-control" rows="2"
-                        placeholder="Qo'shimcha izoh...">{{ patient.discharge_note|default:'' }}</textarea>
+                        placeholder="{% trans "Qo'shimcha izoh..." %}">{{ patient.discharge_note|default:'' }}</textarea>
             </div>
 
             <!-- Yotgan kunlar + Shifokorlar -->
             <div class="col-md-4">
-              <label class="form-label fw-bold">Yotgan kunlar soni</label>
+              <label class="form-label fw-bold">{% trans "Yotgan kunlar soni" %}</label>
               <input type="number" name="days_in_hospital" class="form-control"
                      min="0" value="{{ patient.days_in_hospital|default:0 }}">
             </div>
             <div class="col-md-4">
-              <label class="form-label fw-bold">Davolovchi shifokor</label>
+              <label class="form-label fw-bold">{% trans "Davolovchi shifokor" %}</label>
               <select name="attending_doctor" id="discharge-doctor" class="form-select">
-                <option value="">— Tanlang —</option>
+                <option value="">{% trans "— Tanlang —" %}</option>
                 {% for doc in doctors %}
                 <option value="{{ doc.pk }}" {% if doc.pk == patient.attending_doctor.pk %}selected{% endif %}>
                   {{ doc.full_name }}{% if doc.is_head %} ★{% endif %}
@@ -121,9 +139,9 @@
               </select>
             </div>
             <div class="col-md-4">
-              <label class="form-label fw-bold">Bo'lim mudiri</label>
+              <label class="form-label fw-bold">{% trans "Bo'lim mudiri" %}</label>
               <select name="department_head" id="discharge-head" class="form-select">
-                <option value="">— Tanlang —</option>
+                <option value="">{% trans "— Tanlang —" %}</option>
                 {% for doc in doctors %}
                 <option value="{{ doc.pk }}" {% if doc.pk == patient.department_head.pk %}selected{% endif %}>
                   {{ doc.full_name }}{% if doc.is_head %} ★{% endif %}
@@ -135,8 +153,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor</button>
-          <button type="submit" class="btn btn-danger">✅ Bemorni chiqarish</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Bekor" %}</button>
+          <button type="submit" class="btn btn-danger">✅ {% trans "Bemorni chiqarish" %}</button>
         </div>
       </form>
     </div>
@@ -148,37 +166,37 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title">🔄 Bemorni ko'chirish</h5>
+        <h5 class="modal-title">🔄 {% trans "Bemorni ko'chirish" %}</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" action="{% url 'patient_transfer' patient.pk %}">
         {% csrf_token %}
         <div class="modal-body">
           <div class="alert alert-info py-2 small">
-            <strong>Hozirgi:</strong>
+            <strong>{% trans "Hozirgi:" %}</strong>
             {{ patient.department }} |
             {{ patient.attending_doctor }} |
             {{ patient.department_head }}
           </div>
           <div class="row g-2">
             <div class="col-md-6 mb-2">
-              <label class="form-label fw-bold">Ko'chirish sanasi *</label>
+              <label class="form-label fw-bold">{% trans "Ko'chirish sanasi" %} *</label>
               <input type="date" name="transfer_date" class="form-control"
                      value="{{ today }}" required>
             </div>
             <div class="col-md-6 mb-2">
-              <label class="form-label fw-bold">Yangi bo'lim *</label>
+              <label class="form-label fw-bold">{% trans "Yangi bo'lim" %} *</label>
               <select name="to_department" class="form-select" required id="transfer-dept">
-                <option value="">— Tanlang —</option>
+                <option value="">{% trans "— Tanlang —" %}</option>
                 {% for dept in departments %}
                 <option value="{{ dept.pk }}" {% if dept == patient.department %}selected{% endif %}>{{ dept }}</option>
                 {% endfor %}
               </select>
             </div>
             <div class="col-12 mb-2">
-              <label class="form-label fw-bold">Yangi shifokor</label>
+              <label class="form-label fw-bold">{% trans "Yangi shifokor" %}</label>
               <select name="to_doctor" id="transfer-doctor" class="form-select">
-                <option value="">— Avvalgisi qolsin —</option>
+                <option value="">{% trans "— Avvalgisi qolsin —" %}</option>
                 {% for doc in doctors %}
                 <option value="{{ doc.pk }}" {% if doc.pk == patient.attending_doctor.pk %}selected{% endif %}>
                   {{ doc.full_name }}{% if doc.is_head %} ★{% endif %}
@@ -187,9 +205,9 @@
               </select>
             </div>
             <div class="col-12 mb-2">
-              <label class="form-label fw-bold">Yangi bo'lim mudiri</label>
+              <label class="form-label fw-bold">{% trans "Yangi bo'lim mudiri" %}</label>
               <select name="to_dept_head" id="transfer-head" class="form-select">
-                <option value="">— Avvalgisi qolsin —</option>
+                <option value="">{% trans "— Avvalgisi qolsin —" %}</option>
                 {% for doc in doctors %}
                 <option value="{{ doc.pk }}" {% if doc.pk == patient.department_head.pk %}selected{% endif %}>
                   {{ doc.full_name }}{% if doc.is_head %} ★{% endif %}
@@ -198,15 +216,15 @@
               </select>
             </div>
             <div class="col-12">
-              <label class="form-label fw-bold">Sabab / izoh *</label>
+              <label class="form-label fw-bold">{% trans "Sabab / izoh" %} *</label>
               <textarea name="reason" class="form-control" rows="3"
-                        placeholder="Ko'chirish sababi..." required></textarea>
+                        placeholder="{% trans "Ko'chirish sababi..." %}" required></textarea>
             </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor</button>
-          <button type="submit" class="btn btn-primary">✅ Ko'chirish</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Bekor" %}</button>
+          <button type="submit" class="btn btn-primary">✅ {% trans "Ko'chirish" %}</button>
         </div>
       </form>
     </div>
@@ -217,8 +235,8 @@
 {% if transfers %}
 <div class="card mb-3">
   <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
-    <strong>🔄 Ko'chirish tarixi</strong>
-    <span class="badge bg-white text-dark">{{ transfers|length }} ta ko'chirish</span>
+    <strong>🔄 {% trans "Ko'chirish tarixi" %}</strong>
+    <span class="badge bg-white text-dark">{% blocktrans count counter=transfers|length %}{{ counter }} ta ko'chirish{% plural %}{{ counter }} ta ko'chirish{% endblocktrans %}</span>
   </div>
   <div class="card-body p-0">
     {% for period in transfer_periods %}
@@ -226,18 +244,17 @@
       <!-- Davr sarlavhasi -->
       <div class="bg-light px-3 py-2 d-flex justify-content-between align-items-center">
         <div>
-          <strong>📍 Bo'lim:</strong>
+          <strong>📍 {% trans "Bo'lim:" %}</strong>
           <span class="badge bg-primary ms-1">{{ period.dept|default:"—" }}</span>
           {% if period.doctor %}
-            <span class="text-muted ms-2 small">Shifokor: <strong>{{ period.doctor }}</strong></span>
+            <span class="text-muted ms-2 small">{% trans "Shifokor:" %} <strong>{{ period.doctor }}</strong></span>
           {% endif %}
           {% if period.dept_head %}
-            <span class="text-muted ms-2 small">Mudiri: <strong>{{ period.dept_head }}</strong></span>
+            <span class="text-muted ms-2 small">{% trans "Mudiri:" %} <strong>{{ period.dept_head }}</strong></span>
           {% endif %}
         </div>
         <span class="badge bg-secondary">
-          {{ period.services|length }} ta xizmat —
-          {{ period.services_total|floatformat:0 }} so'm
+          {% blocktrans with cnt=period.services|length total=period.services_total|floatformat:0 %}{{ cnt }} ta xizmat — {{ total }} so'm{% endblocktrans %}
         </span>
       </div>
 
@@ -247,16 +264,16 @@
         <table class="table table-sm table-borderless mb-0">
           <thead class="table-light">
             <tr>
-              <th>Xizmat</th>
-              <th class="text-center" style="width:60px">Miqdor</th>
-              <th class="text-end" style="width:120px">Narx</th>
-              <th class="text-muted small" style="width:140px">Sana</th>
+              <th>{% trans "Xizmat" %}</th>
+              <th class="text-center" style="width:60px">{% trans "Miqdor" %}</th>
+              <th class="text-end" style="width:120px">{% trans "Narx" %}</th>
+              <th class="text-muted small" style="width:140px">{% trans "Sana" %}</th>
             </tr>
           </thead>
           <tbody>
             {% for svc in period.services %}
             <tr>
-              <td>{{ svc.service.name }}</td>
+              <td>{{ svc.service.display_name }}</td>
               <td class="text-center">{{ svc.quantity }}</td>
               <td class="text-end">{{ svc.total_price|floatformat:0 }}</td>
               <td class="text-muted small">{{ svc.ordered_at|date:"d.m.Y H:i" }}</td>
@@ -266,13 +283,13 @@
         </table>
       </div>
       {% else %}
-      <div class="px-3 py-2 text-muted small">Bu davrda xizmat qo'shilmagan</div>
+      <div class="px-3 py-2 text-muted small">{% trans "Bu davrda xizmat qo'shilmagan" %}</div>
       {% endif %}
 
       <!-- Ko'chirish strelkasi (agar so'nggi davr bo'lmasa) -->
       {% if period.transfer %}
       <div class="bg-warning bg-opacity-25 px-3 py-2 border-top small">
-        <strong>🔄 Ko'chirish:</strong>
+        <strong>🔄 {% trans "Ko'chirish:" %}</strong>
         <span class="badge bg-secondary">{{ period.transfer.from_department|default:"—" }}</span>
         →
         <span class="badge bg-primary">{{ period.transfer.to_department|default:"—" }}</span>
@@ -283,13 +300,13 @@
           <span class="text-muted">{{ period.transfer.transferred_at|date:"d.m.Y" }}</span>
         {% endif %}
         {% if period.transfer.to_doctor %}
-          &nbsp;· Yangi shifokor: <strong>{{ period.transfer.to_doctor }}</strong>
+          &nbsp;· {% trans "Yangi shifokor:" %} <strong>{{ period.transfer.to_doctor }}</strong>
         {% endif %}
         {% if period.transfer.reason %}
           &nbsp;· <em class="text-muted">{{ period.transfer.reason }}</em>
         {% endif %}
         {% if period.transfer.transferred_by %}
-          <span class="text-muted ms-2">Kim ko'chirdi: {{ period.transfer.transferred_by }}</span>
+          <span class="text-muted ms-2">{% trans "Kim ko'chirdi:" %} {{ period.transfer.transferred_by }}</span>
         {% endif %}
       </div>
       {% endif %}
@@ -302,7 +319,7 @@
 <!-- 1. Bemor ma'lumotlari -->
 <div class="card mb-3">
     <div class="card-header bg-primary text-white">
-        <strong>👤 Bemor ma'lumotlari</strong>
+        <strong>👤 {% trans "Bemor ma'lumotlari" %}</strong>
         <span class="badge bg-light text-dark ms-2">{{ patient.medical_record_number }}</span>
         <span class="badge {% if patient.resident_status == 'resident' %}bg-success{% else %}bg-warning text-dark{% endif %} ms-1">
             {{ patient.get_resident_status_display }}
@@ -311,31 +328,31 @@
     <div class="card-body">
         <div class="row">
             <div class="col-md-3">
-                <strong>Ism-familiya:</strong><br>
+                <strong>{% trans "Ism-familiya:" %}</strong><br>
                 {{ patient.full_name }}
             </div>
             <div class="col-md-2">
-                <strong>Jinsi:</strong><br>
+                <strong>{% trans "Jinsi:" %}</strong><br>
                 {{ patient.get_gender_display }}
             </div>
             <div class="col-md-2">
-                <strong>Tug'ilgan sana:</strong><br>
+                <strong>{% trans "Tug'ilgan sana:" %}</strong><br>
                 {{ patient.birth_date|date:"d.m.Y" }}
             </div>
             <div class="col-md-2">
-                <strong>Ijtimoiy holat:</strong><br>
+                <strong>{% trans "Ijtimoiy holat:" %}</strong><br>
                 {{ patient.get_social_status_display }}
             </div>
             {% if patient.resident_status == 'resident' %}
             <div class="col-md-3">
-                <strong>Passport:</strong><br>
+                <strong>{% trans "Passport:" %}</strong><br>
                 {{ patient.passport_serial|default:"—" }}
             </div>
             {% endif %}
 
             {% if patient.resident_status == 'resident' %}
             <div class="col-md-12 mt-2">
-                <strong>Manzil:</strong>
+                <strong>{% trans "Manzil:" %}</strong>
                 {% if patient.country %}{{ patient.country }}, {% endif %}
                 {% if patient.region %}{{ patient.region }}, {% endif %}
                 {% if patient.district %}{{ patient.district }}, {% endif %}
@@ -344,7 +361,7 @@
             </div>
             {% else %}
             <div class="col-md-12 mt-2">
-                <span class="badge bg-warning text-dark">Norezident — manzil ko'rsatilmagan</span>
+                <span class="badge bg-warning text-dark">{% trans "Norezident — manzil ko'rsatilmagan" %}</span>
             </div>
             {% endif %}
         </div>
@@ -354,56 +371,60 @@
 <!-- 2. Qabul ma'lumotlari -->
 <div class="card mb-3">
     <div class="card-header bg-info text-white">
-        <strong>🏥 Qabul ma'lumotlari</strong>
+        <strong>🏥 {% trans "Qabul ma'lumotlari" %}</strong>
     </div>
     <div class="card-body">
         <div class="row">
             <div class="col-md-3">
-                <strong>Kim olib kelgan:</strong><br>
+                <strong>{% trans "Kim olib kelgan:" %}</strong><br>
                 {{ patient.get_referral_type_display }}
             </div>
             {% if patient.referral_organization %}
             <div class="col-md-4">
-                <strong>Yo'llagan muassasa:</strong><br>
+                <strong>{% trans "Yo'llagan muassasa:" %}</strong><br>
                 {{ patient.referral_organization }}
             </div>
             {% endif %}
             <div class="col-md-3">
-                <strong>Yotqizilgan sana:</strong><br>
+                <strong>{% trans "Yotqizilgan sana:" %}</strong><br>
                 {{ patient.admission_date|date:"d.m.Y H:i" }}
             </div>
             <div class="col-md-2">
-                <strong>Bo'lim:</strong><br>
+                <strong>{% trans "Bo'lim:" %}</strong><br>
                 {{ patient.department|default:"—" }}
+            </div>
+            <div class="col-md-2">
+                <strong>{% trans "Kasallik varaqasi №:" %}</strong><br>
+                {{ patient.case_sheet_number|default:"—" }}
             </div>
 
             <div class="col-md-4 mt-2">
-                <strong>Yo'llagan muassasa tashxisi:</strong><br>
+                <strong>{% trans "Yo'llagan muassasa tashxisi:" %}</strong><br>
                 {{ patient.referring_diagnosis|default:"—" }}
             </div>
             <div class="col-md-4 mt-2">
-                <strong>Qabul bo'limi tashxisi:</strong><br>
+                <strong>{% trans "Qabul bo'limi tashxisi:" %}</strong><br>
                 {{ patient.admission_diagnosis|default:"—" }}
             </div>
             <div class="col-md-4 mt-2">
-                <strong>Kasallanishdan keyin:</strong><br>
+                <strong>{% trans "Kasallanishdan keyin:" %}</strong><br>
                 {{ patient.get_hours_after_illness_display }}
             </div>
 
             <div class="col-md-3 mt-2">
-                <strong>Shoshilinch:</strong><br>
+                <strong>{% trans "Shoshilinch:" %}</strong><br>
                 <span class="badge {% if patient.is_emergency %}bg-danger{% else %}bg-secondary{% endif %}">
-                    {% if patient.is_emergency %}Ha{% else %}Yo'q{% endif %}
+                    {% if patient.is_emergency %}{% trans "Ha" %}{% else %}{% trans "Yo'q" %}{% endif %}
                 </span>
             </div>
             <div class="col-md-3 mt-2">
-                <strong>Pullik:</strong><br>
+                <strong>{% trans "Pullik:" %}</strong><br>
                 <span class="badge {% if patient.is_paid %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
-                    {% if patient.is_paid %}Ha{% else %}Yo'q{% endif %}
+                    {% if patient.is_paid %}{% trans "Ha" %}{% else %}{% trans "Yo'q" %}{% endif %}
                 </span>
             </div>
             <div class="col-md-3 mt-2">
-                <strong>Yotqizilish:</strong><br>
+                <strong>{% trans "Yotqizilish:" %}</strong><br>
                 <span class="badge bg-info text-dark">
                     {{ patient.get_admission_count_display }}
                 </span>
@@ -415,12 +436,12 @@
 <!-- 3. Chiqish ma'lumotlari -->
 <div class="card mb-3">
     <div class="card-header bg-secondary text-white">
-        <strong>📤 Chiqish ma'lumotlari</strong>
+        <strong>📤 {% trans "Chiqish ma'lumotlari" %}</strong>
     </div>
     <div class="card-body">
         <div class="row">
             <div class="col-md-3">
-                <strong>Yakun:</strong><br>
+                <strong>{% trans "Yakun:" %}</strong><br>
                 <span class="badge fs-6
                     {% if patient.outcome == 'discharged' %}bg-success
                     {% elif patient.outcome == 'deceased' %}bg-danger
@@ -429,7 +450,7 @@
                 </span>
             </div>
             <div class="col-md-3">
-                <strong>Chiqish xulosasi:</strong><br>
+                <strong>{% trans "Chiqish xulosasi:" %}</strong><br>
                 {% if patient.discharge_conclusion %}
                     <span class="badge bg-primary fs-6">
                         {{ patient.discharge_conclusion }}
@@ -439,17 +460,17 @@
                 {% endif %}
             </div>
             <div class="col-md-3">
-                <strong>Chiqgan sana:</strong><br>
+                <strong>{% trans "Chiqgan sana:" %}</strong><br>
                 {{ patient.discharge_date|date:"d.m.Y H:i"|default:"—" }}
             </div>
             <div class="col-md-3">
-                <strong>Yotgan kunlar:</strong><br>
-                {{ patient.days_in_hospital }} kun
+                <strong>{% trans "Yotgan kunlar:" %}</strong><br>
+                {% blocktrans with days=patient.days_in_hospital %}{{ days }} kun{% endblocktrans %}
             </div>
             <div class="col-md-3 mt-2">
-                <strong>Urush qatnashchisi:</strong><br>
+                <strong>{% trans "Urush qatnashchisi:" %}</strong><br>
                 <span class="badge {% if patient.is_war_veteran %}bg-danger{% else %}bg-secondary{% endif %}">
-                    {% if patient.is_war_veteran %}Ha{% else %}Yo'q{% endif %}
+                    {% if patient.is_war_veteran %}{% trans "Ha" %}{% else %}{% trans "Yo'q" %}{% endif %}
                 </span>
             </div>
         </div>
@@ -459,20 +480,20 @@
 <!-- 4. Yakuniy tashxis -->
 <div class="card mb-3">
     <div class="card-header bg-dark text-white">
-        <strong>🔬 Yakuniy tashxis</strong>
+        <strong>🔬 {% trans "Yakuniy tashxis" %}</strong>
     </div>
     <div class="card-body">
         <table class="table table-bordered">
             <thead class="table-light">
                 <tr>
                     <th></th>
-                    <th>Asosiy tashxis (MKB-10)</th>
-                    <th>Yo'ldosh kasalliklar</th>
+                    <th>{% trans "Asosiy tashxis (MKB-10)" %}</th>
+                    <th>{% trans "Yo'ldosh kasalliklar" %}</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td><strong>Klinik</strong></td>
+                    <td><strong>{% trans "Klinik" %}</strong></td>
                     <td>
                         {% if patient.clinical_main_diagnosis %}
                             <span class="badge bg-primary">{{ patient.clinical_main_diagnosis }}</span>
@@ -483,7 +504,7 @@
                 </tr>
                 {% if patient.outcome == 'deceased' %}
                 <tr>
-                    <td><strong>Patologoanatomik</strong></td>
+                    <td><strong>{% trans "Patologoanatomik" %}</strong></td>
                     <td>
                         {% if patient.pathological_main_diagnosis %}
                             <span class="badge bg-danger">{{ patient.pathological_main_diagnosis }}</span>
@@ -502,25 +523,25 @@
 {% if death_cause %}
 <div class="card mb-3 border-danger">
     <div class="card-header bg-danger text-white">
-        <strong>💀 O'lim sababi</strong>
+        <strong>💀 {% trans "O'lim sababi" %}</strong>
     </div>
     <div class="card-body">
         <div class="row">
             <div class="col-md-12 mb-2">
-                <strong>a) O'limga olib kelgan bevosita sabab:</strong><br>
+                <strong>{% trans "a) O'limga olib kelgan bevosita sabab:" %}</strong><br>
                 {{ death_cause.immediate_cause }}
             </div>
             <div class="col-md-12 mb-2">
-                <strong>b) O'lim sababini bevosita chaqiruvchi kasallik:</strong><br>
+                <strong>{% trans "b) O'lim sababini bevosita chaqiruvchi kasallik:" %}</strong><br>
                 {{ death_cause.underlying_cause }}
             </div>
             <div class="col-md-4 mb-2">
-                <strong>v) Asosiy kasallik kodi:</strong><br>
+                <strong>{% trans "v) Asosiy kasallik kodi:" %}</strong><br>
                 <span class="badge bg-danger fs-6">{{ death_cause.main_disease_code }}</span>
             </div>
             {% if death_cause.other_significant_conditions %}
             <div class="col-md-12">
-                <strong>Bog'liq bo'lmagan boshqa muhim kasalliklar:</strong><br>
+                <strong>{% trans "Bog'liq bo'lmagan boshqa muhim kasalliklar:" %}</strong><br>
                 {{ death_cause.other_significant_conditions }}
             </div>
             {% endif %}
@@ -532,17 +553,17 @@
 <!-- 6. Jarrohlik amaliyotlari -->
 <div class="card mb-3">
     <div class="card-header bg-warning text-dark">
-        <strong>🔪 Jarrohlik amaliyotlari</strong>
+        <strong>🔪 {% trans "Jarrohlik amaliyotlari" %}</strong>
     </div>
     <div class="card-body p-0">
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
                     <th>№</th>
-                    <th>Sana</th>
-                    <th>Amaliyot nomi</th>
-                    <th>Narkoz</th>
-                    <th>Asorati</th>
+                    <th>{% trans "Sana" %}</th>
+                    <th>{% trans "Amaliyot nomi" %}</th>
+                    <th>{% trans "Narkoz" %}</th>
+                    <th>{% trans "Asorati" %}</th>
                 </tr>
             </thead>
             <tbody>
@@ -571,24 +592,24 @@
 <!-- 7. Tekshiruvlar -->
 <div class="card mb-3">
     <div class="card-header bg-light">
-        <strong>🧪 Laboratoriya tekshiruvlari</strong>
+        <strong>🧪 {% trans "Laboratoriya tekshiruvlari" %}</strong>
     </div>
     <div class="card-body">
         <div class="row">
             <div class="col-md-3">
-                <strong>OITS tekshiruvi sanasi:</strong><br>
+                <strong>{% trans "OITS tekshiruvi sanasi:" %}</strong><br>
                 {{ patient.aids_test_date|date:"d.m.Y"|default:"—" }}
             </div>
             <div class="col-md-3">
-                <strong>OITS natijasi:</strong><br>
+                <strong>{% trans "OITS natijasi:" %}</strong><br>
                 {{ patient.aids_test_result|default:"—" }}
             </div>
             <div class="col-md-3">
-                <strong>WP tekshiruvi sanasi:</strong><br>
+                <strong>{% trans "WP tekshiruvi sanasi:" %}</strong><br>
                 {{ patient.wp_test_date|date:"d.m.Y"|default:"—" }}
             </div>
             <div class="col-md-3">
-                <strong>WP natijasi:</strong><br>
+                <strong>{% trans "WP natijasi:" %}</strong><br>
                 {{ patient.wp_test_result|default:"—" }}
             </div>
         </div>
@@ -598,16 +619,16 @@
 <!-- 8. Shifokorlar -->
 <div class="card mb-4">
     <div class="card-header bg-light">
-        <strong>👨‍⚕️ Mas'ul shifokorlar</strong>
+        <strong>👨‍⚕️ {% trans "Mas'ul shifokorlar" %}</strong>
     </div>
     <div class="card-body">
         <div class="row">
             <div class="col-md-6">
-                <strong>Davolovchi shifokor:</strong><br>
+                <strong>{% trans "Davolovchi shifokor:" %}</strong><br>
                 {{ patient.attending_doctor|default:"—" }}
             </div>
             <div class="col-md-6">
-                <strong>Bo'lim mudiri:</strong><br>
+                <strong>{% trans "Bo'lim mudiri:" %}</strong><br>
                 {{ patient.department_head|default:"—" }}
             </div>
         </div>
@@ -617,13 +638,13 @@
 <!-- 9. Xizmatlar -->
 <div class="card mb-4">
     <div class="card-header bg-info bg-opacity-10 d-flex justify-content-between align-items-center">
-        <strong>🏥 Bajarilgan xizmatlar
+        <strong>🏥 {% trans "Bajarilgan xizmatlar" %}
             {% if patient_services %}
-                <span class="badge bg-info text-dark ms-1">{{ patient_services.count }} ta</span>
+                <span class="badge bg-info text-dark ms-1">{% blocktrans count cnt=patient_services.count %}{{ cnt }} ta{% plural %}{{ cnt }} ta{% endblocktrans %}</span>
             {% endif %}
         </strong>
         <a href="{% url 'patient_services' patient.pk %}" class="btn btn-sm btn-info">
-            + Boshqarish
+            + {% trans "Boshqarish" %}
         </a>
     </div>
     <div class="card-body p-0">
@@ -631,58 +652,545 @@
         <table class="table table-sm table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
-                    <th class="ps-3">Xizmat</th>
-                    <th>Kategoriya</th>
-                    <th>Shifokor</th>
-                    <th class="text-center">Miqdor</th>
-                    <th class="text-end">Narx</th>
-                    <th class="text-end pe-3">Jami</th>
+                    <th class="ps-3">{% trans "Xizmat" %}</th>
+                    <th>{% trans "Kategoriya" %}</th>
+                    <th>{% trans "Shifokor" %}</th>
+                    <th class="text-center">{% trans "Miqdor" %}</th>
+                    <th class="text-end">{% trans "Narx" %}</th>
+                    <th class="text-end pe-3">{% trans "Jami" %}</th>
                 </tr>
             </thead>
             <tbody>
                 {% for svc in patient_services %}
                 <tr>
-                    <td class="ps-3 fw-semibold">{{ svc.service.name }}</td>
+                    <td class="ps-3 fw-semibold">{{ svc.service.display_name }}</td>
                     <td>
                         <small class="text-muted">
                             {{ svc.service.category.icon|default:"🏥" }}
-                            {{ svc.service.category.name }}
+                            {{ svc.service.category.display_name }}
                         </small>
                     </td>
                     <td><small>{{ svc.ordered_by|default:"—" }}</small></td>
                     <td class="text-center">{{ svc.quantity }}</td>
-                    <td class="text-end">{{ svc.price|floatformat:0 }} so'm</td>
-                    <td class="text-end pe-3 fw-semibold">{{ svc.total_price|floatformat:0 }} so'm</td>
+                    <td class="text-end">{% blocktrans with price=svc.price|floatformat:0 %}{{ price }} so'm{% endblocktrans %}</td>
+                    <td class="text-end pe-3 fw-semibold">{% blocktrans with total=svc.total_price|floatformat:0 %}{{ total }} so'm{% endblocktrans %}</td>
                 </tr>
                 {% endfor %}
             </tbody>
             <tfoot class="table-light">
                 <tr>
-                    <td colspan="5" class="text-end fw-bold">Jami summa:</td>
+                    <td colspan="5" class="text-end fw-bold">{% trans "Jami summa:" %}</td>
                     <td class="text-end pe-3 fw-bold text-success fs-6">
-                        {{ services_total|floatformat:0 }} so'm
+                        {% blocktrans with total=services_total|floatformat:0 %}{{ total }} so'm{% endblocktrans %}
                     </td>
                 </tr>
             </tfoot>
         </table>
         {% else %}
         <div class="text-center text-muted py-4">
-            Hali xizmat qo'shilmagan.
-            <a href="{% url 'patient_services' patient.pk %}">+ Qo'shish</a>
+            {% trans "Hali xizmat qo'shilmagan." %}
+            <a href="{% url 'patient_services' patient.pk %}">+ {% trans "Qo'shish" %}</a>
         </div>
         {% endif %}
     </div>
 </div>
 
+<!-- ===== KO'RIKLAR BO'LIMI ===== -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header d-flex align-items-center justify-content-between py-3"
+       style="background:linear-gradient(135deg,#0d9488,#0891b2);color:#fff;border-radius:12px 12px 0 0;">
+    <span class="fw-bold fs-6">🩺 {% trans "Ko'riklar tarixi" %}</span>
+    {% if request.user.role != 'nurse' and request.user.role != 'head_nurse' %}
+    <button class="btn btn-sm btn-light fw-semibold"
+            data-bs-toggle="modal" data-bs-target="#korikTuriModal">
+      ➕ {% trans "Ko'rik qo'shish" %}
+    </button>
+    {% endif %}
+  </div>
+  <div class="card-body p-0">
+    {% with exams=patient.medical_examinations.all %}
+    {% if exams %}
+    <div class="list-group list-group-flush" id="exams-list">
+      {% for exam in exams %}
+      <div class="list-group-item list-group-item-action px-4 py-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="flex-shrink-0" style="width:44px;height:44px;border-radius:10px;
+               background:#f0fdfa;display:flex;align-items:center;justify-content:center;font-size:20px;">
+            🩺
+          </div>
+          <div class="flex-grow-1">
+            <div class="fw-semibold" style="font-size:15px;">
+              {{ exam.get_examination_type_display }}
+            </div>
+            <div class="text-muted small">
+              {% if exam.examination_datetime %}
+                📅 {{ exam.examination_datetime|date:"d.m.Y H:i" }}
+              {% else %}
+                📅 {{ exam.created_at|date:"d.m.Y H:i" }}
+              {% endif %}
+              {% if exam.created_by %}
+                · 👤 {{ exam.created_by.get_full_name|default:exam.created_by.username }}
+              {% endif %}
+            </div>
+            {% if exam.complaints %}
+            <div class="text-muted small mt-1" style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:500px;">
+              {{ exam.complaints|truncatechars:100 }}
+            </div>
+            {% endif %}
+          </div>
+          <div class="d-flex gap-2 flex-shrink-0">
+            <a href="{% url 'examination_edit' patient.pk exam.pk %}"
+               class="btn btn-sm btn-outline-primary">✏️ {% trans "Tahrirlash" %}</a>
+            <button type="button" class="btn btn-sm btn-outline-danger btn-delete-exam"
+                    data-id="{{ exam.pk }}">🗑</button>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-5">
+      <div style="font-size:3rem;">📋</div>
+      <div class="mt-2">{% trans "Ko'riklar hali qo'shilmagan" %}</div>
+      {% if request.user.role != 'nurse' and request.user.role != 'head_nurse' %}
+      <button class="btn btn-outline-primary mt-3"
+              data-bs-toggle="modal" data-bs-target="#korikTuriModal">
+        ➕ {% trans "Birinchi ko'rikni qo'shish" %}
+      </button>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% endwith %}
+  </div>
+</div>
+
 <!-- Meta -->
 <div class="text-muted small mb-5">
-    Yaratilgan: {{ patient.created_at|date:"d.m.Y H:i" }} |
-    Yangilangan: {{ patient.updated_at|date:"d.m.Y H:i" }}
+    {% trans "Yaratilgan:" %} {{ patient.created_at|date:"d.m.Y H:i" }} |
+    {% trans "Yangilangan:" %} {{ patient.updated_at|date:"d.m.Y H:i" }}
 </div>
+<!-- STICKY FOOTER -->
+<div class="detail-sticky-footer">
+  <button class="btn btn-danger btn-sm"
+          onclick="if(confirm('{% trans "Qabulni bekor qilish?" %}')) window.location='{% url 'patient_delete' patient.pk %}'">
+    {% trans "Qabulga yozuvni bekor qilish" %}
+  </button>
+  <button class="btn btn-outline-secondary btn-sm" onclick="window.print()">🖨 {% trans "Chop etish" %}</button>
+  <a href="{% url 'patient_services' patient.pk %}" class="btn btn-outline-secondary btn-sm">+ {% trans "So'rov rejasi" %}</a>
+  <a href="{% url 'patient_card_excel' patient.pk %}" class="btn btn-outline-secondary btn-sm">📥 Excel</a>
+  <a href="{% url 'invoice_detail' patient.pk %}" target="_blank" class="btn btn-outline-secondary btn-sm">🧾 {% trans "Hisob-faktura" %}</a>
+  <div class="ms-auto d-flex gap-2">
+    {% if request.user.role != 'nurse' and request.user.role != 'head_nurse' %}
+    <button class="btn btn-primary btn-sm"
+            data-bs-toggle="modal" data-bs-target="#korikTuriModal">
+      ➕ {% trans "Ko'rik" %}
+    </button>
+    {% endif %}
+    {% if request.user.is_superuser or request.user.role == 'admin' %}
+    <a href="{% url 'patient_edit' patient.pk %}" class="btn btn-outline-warning btn-sm">✏️ {% trans "Tahrirlash" %}</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ===== KO'RIK TURI TANLASH MODALI ===== -->
+<div class="modal fade" id="korikTuriModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
+    <div class="modal-content" style="border-radius:16px;overflow:hidden;">
+      <div class="modal-header border-0 pb-0" style="padding:24px 24px 8px;">
+        <h5 class="modal-title fw-bold">{% trans "Tekshirishni qo'shish" %}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" style="padding:16px 24px 8px;">
+        <div id="exam-type-list">
+          {% for val, label in exam_type_choices %}
+          <label class="d-flex align-items-center gap-3 py-2 px-2 rounded-2 exam-type-option"
+                 style="cursor:pointer;border:2px solid transparent;margin-bottom:4px;">
+            <input type="radio" name="exam_type_choice" value="{{ val }}"
+                   class="form-check-input mt-0" style="width:18px;height:18px;"
+                   {% if forloop.first %}checked{% endif %}>
+            <span style="font-size:15px;">{{ label }}</span>
+          </label>
+          {% endfor %}
+          <hr class="my-2">
+          <label class="d-flex align-items-center gap-3 py-2 px-2 rounded-2 exam-type-option"
+                 style="cursor:pointer;border:2px solid transparent;margin-bottom:4px;">
+            <input type="radio" name="exam_type_choice" value="__diagnosis__"
+                   class="form-check-input mt-0" style="width:18px;height:18px;">
+            <span style="font-size:15px;">🏷 {% trans "MKB-10 Tashxis qo'shish" %}</span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer border-0" style="padding:12px 24px 24px;">
+        <button type="button" class="btn btn-outline-secondary px-4"
+                data-bs-dismiss="modal">{% trans "Bekor qilish" %}</button>
+        <button type="button" class="btn btn-primary px-4" id="btn-korik-next">
+          {% trans "Qo'shish" %}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DASTLABKI KO'RIK MODALI ===== -->
+<div class="modal fade" id="initialExamModal" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header" style="background:#0d9488;color:#fff;">
+        <h5 class="modal-title">🩺 {% blocktrans with name=patient.full_name %}Dastlabki ko'rik — {{ name }}{% endblocktrans %}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div id="exam-modal-alert"></div>
+
+        <!-- Vaqt -->
+        <div class="mb-4 d-flex align-items-center gap-3">
+          <div>
+            <label class="form-label fw-semibold mb-1" style="color:#374151;">{% trans "Ko'rikdan o'tkazilgan vaqti" %}</label>
+            <input type="time" id="exam-time-input" class="form-control" style="max-width:160px;"
+                   value="{{ now|time:'H:i' }}">
+          </div>
+          <div class="ms-auto">
+            <span class="badge bg-success" id="exam-saved-badge" style="display:none;">✅ {% trans "Saqlandi" %}</span>
+          </div>
+        </div>
+
+        <hr class="my-3">
+
+        <div class="row g-3" id="exam-fields-container">
+          {% for fname, label in exam_field_list %}
+          <div class="col-md-6">
+            <label class="form-label fw-semibold" style="color:#374151;">{{ label }}</label>
+            <textarea class="form-control exam-modal-field" data-field="{{ fname }}"
+                      rows="4" style="resize:vertical;border-radius:8px;"></textarea>
+          </div>
+          {% empty %}
+          <div class="col-md-6">
+            <label class="form-label fw-semibold" style="color:#374151;">{% trans "Ko'rik jarayonidagi shikoyatlar" %}</label>
+            <textarea class="form-control exam-modal-field" data-field="complaints" rows="4" style="resize:vertical;border-radius:8px;"></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold" style="color:#374151;">{% trans "Kasallik tarixidan (Anamnesis morbi)" %}</label>
+            <textarea class="form-control exam-modal-field" data-field="anamnesis_morbi" rows="4" style="resize:vertical;border-radius:8px;"></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold" style="color:#374151;">{% trans "Epidemiologik anamnez" %}</label>
+            <textarea class="form-control exam-modal-field" data-field="epidemiological_anamnesis" rows="4" style="resize:vertical;border-radius:8px;"></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold" style="color:#374151;">{% trans "Hayot anamnezi (Anamnesis vitae)" %}</label>
+            <textarea class="form-control exam-modal-field" data-field="anamnesis_vitae" rows="4" style="resize:vertical;border-radius:8px;"></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold" style="color:#374151;">{% trans "Hozirgi holat (Status praesens)" %}</label>
+            <textarea class="form-control exam-modal-field" data-field="status_praesens" rows="4" style="resize:vertical;border-radius:8px;"></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold" style="color:#374151;">{% trans "Mahalliy holat (Status localis)" %}</label>
+            <textarea class="form-control exam-modal-field" data-field="status_localis" rows="4" style="resize:vertical;border-radius:8px;"></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold" style="color:#374151;">{% trans "Allergologik anamnez" %}</label>
+            <textarea class="form-control exam-modal-field" data-field="allergy_anamnesis" rows="4" style="resize:vertical;border-radius:8px;"></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold" style="color:#374151;">{% trans "Nevrologik holat" %}</label>
+            <textarea class="form-control exam-modal-field" data-field="neurological_status" rows="4" style="resize:vertical;border-radius:8px;"></textarea>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold" style="color:#374151;">{% trans "Laboratoriya tekshiruvlari" %}</label>
+            <textarea class="form-control exam-modal-field" data-field="lab_investigations" rows="4" style="resize:vertical;border-radius:8px;"></textarea>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="modal-footer" style="background:#f9fafb;">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Yopish" %}</button>
+        <button type="button" class="btn btn-success btn-lg px-5" id="btn-save-exam-modal">
+          💾 {% trans "Ko'rikni saqlash" %}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MKB-10 TASHXIS MODALI ===== -->
+<div class="modal fade" id="diagnosisModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header" style="background:#6366f1;color:#fff;">
+        <h5 class="modal-title">🏷 {% trans "MKB-10 Tashxis qo'shish" %}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div id="diag-modal-alert"></div>
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold">{% trans "MKB-10 kodi" %}</label>
+            <div class="position-relative">
+              <input type="text" id="icd10-modal-input" class="form-control form-control-lg"
+                     placeholder="🔍 {% trans "Kod yoki kasallik nomi..." %}" autocomplete="off">
+              <div id="icd10-modal-drop"
+                   style="display:none;position:absolute;top:100%;left:0;right:0;z-index:2000;
+                          background:#fff;border:1px solid #dee2e6;border-radius:8px;
+                          max-height:280px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.12);">
+              </div>
+            </div>
+            <input type="hidden" id="icd10-modal-val" value="">
+            <div id="icd10-selected-badge" class="mt-2"></div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">{% trans "Tashxis turi" %}</label>
+            <select id="diag-modal-type" class="form-select form-select-lg">
+              <option value="preliminary">{% trans "Dastlabki" %}</option>
+              <option value="final">{% trans "Yakuniy" %}</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">{% trans "Tashxis roli" %}</label>
+            <select id="diag-modal-role" class="form-select form-select-lg">
+              <option value="main">{% trans "Asosiy" %}</option>
+              <option value="comorbidity">{% trans "Hamroh kasallik" %}</option>
+              <option value="complication">{% trans "Asorat" %}</option>
+              <option value="background">{% trans "Fon kasalligi" %}</option>
+              <option value="competitive">{% trans "Raqobatdosh" %}</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">{% trans "Klinik matn (ixtiyoriy)" %}</label>
+            <textarea id="diag-modal-text" class="form-control" rows="3"
+                      placeholder="{% trans "Qo'shimcha klinik ma'lumot..." %}"></textarea>
+          </div>
+        </div>
+
+        <!-- Mavjud tashxislar -->
+        <hr class="my-4">
+        <h6 class="fw-semibold mb-2">{% trans "Qo'shilgan tashxislar:" %}</h6>
+        <div id="diag-modal-list">
+          <div class="text-muted small">{% trans "Yuklanmoqda..." %}</div>
+        </div>
+      </div>
+      <div class="modal-footer" style="background:#f9fafb;">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Yopish" %}</button>
+        <button type="button" class="btn btn-primary btn-lg px-5" id="btn-save-diag-modal">
+          ✅ {% trans "Tashxis qo'shish" %}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
+// ===== KO'RIK MODALLARI LOGIKASI =====
+(function(){
+  const PK       = {{ patient.pk }};
+  const EXAM_URL = `/patients/ajax/initial-examination/${PK}/`;
+  const DIAG_URL = `/patients/ajax/episode-diagnoses/${PK}/`;
+  const ICD_URL  = `/patients/ajax/icd10-search/`;
+  const CSRF     = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+  const MSG_DELETE_EXAM_CONFIRM = "{% trans "Ko'rik o'chirilsinmi?" %}";
+  const MSG_SAVING_EXAM = "⏳ {% trans 'Saqlanmoqda...' %}";
+  const MSG_EXAM_SAVED = "✅ {% trans "Ko'rik muvaffaqiyatli saqlandi" %}";
+  const MSG_SERVER_ERROR = "❌ {% trans 'Server xatosi' %}";
+  const MSG_ERROR_PREFIX = "❌ {% trans 'Xato' %}: ";
+  const MSG_ERROR = "{% trans 'Xato' %}";
+  const MSG_ICD_NOT_SELECTED = "❌ {% trans "MKB-10 kodi tanlanmagan" %}";
+  const MSG_DIAGNOSIS_ADDED = "✅ {% trans "Tashxis qo'shildi" %}";
+  const MSG_DELETE_CONFIRM = "{% trans "O'chirilsinmi?" %}";
+  const MSG_GENERIC_ERROR = "{% trans 'Xato yuz berdi' %}";
+  const TXT_SAVE_EXAM_BTN = "💾 {% trans "Ko'rikni saqlash" %}";
+  const MSG_NO_DIAGNOSES = "{% trans "Tashxislar yo'q" %}";
+  const TXT_DIAGNOSIS_ADD_BTN = "✅ {% trans "Tashxis qo'shish" %}";
+
+  function showAlert(elId, msg, type='success') {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.innerHTML = `<div class="alert alert-${type} py-2 mb-3">${msg}</div>`;
+    if (type === 'success') setTimeout(() => { el.innerHTML = ''; }, 2500);
+  }
+
+  // Ko'rik o'chirish
+  document.querySelectorAll('.btn-delete-exam').forEach(btn => {
+    btn.addEventListener('click', function() {
+      if (!confirm(MSG_DELETE_EXAM_CONFIRM)) return;
+      const id = this.dataset.id;
+      fetch(`/patients/ajax/medical-examination/${id}/delete/`, {
+        method: 'POST', headers: {'X-CSRFToken': CSRF}
+      }).then(r => r.json()).then(d => {
+        if (d.success) {
+          const row = this.closest('.list-group-item');
+          row.style.transition = 'opacity .3s';
+          row.style.opacity = '0';
+          setTimeout(() => { row.remove(); }, 300);
+        }
+      }).catch(() => alert(MSG_GENERIC_ERROR));
+    });
+  });
+
+  // Radio hover style
+  document.querySelectorAll('.exam-type-option').forEach(lbl => {
+    lbl.addEventListener('mouseenter', () => lbl.style.background = '#f3f4f6');
+    lbl.addEventListener('mouseleave', () => lbl.style.background = '');
+    const radio = lbl.querySelector('input[type=radio]');
+    radio?.addEventListener('change', () => {
+      document.querySelectorAll('.exam-type-option').forEach(l => {
+        l.style.border = '2px solid transparent';
+        l.style.background = '';
+      });
+      if (radio.checked) lbl.style.border = '2px solid #2563eb';
+    });
+  });
+  // Initial border
+  const firstRadio = document.querySelector('input[name=exam_type_choice]:checked');
+  if (firstRadio) firstRadio.closest('.exam-type-option').style.border = '2px solid #2563eb';
+
+  // "Qo'shish" tugmasi
+  document.getElementById('btn-korik-next')?.addEventListener('click', () => {
+    const sel = document.querySelector('input[name=exam_type_choice]:checked');
+    if (!sel) return;
+    const val = sel.value;
+    bootstrap.Modal.getInstance(document.getElementById('korikTuriModal'))?.hide();
+    if (val === '__diagnosis__') {
+      setTimeout(() => {
+        new bootstrap.Modal(document.getElementById('diagnosisModal')).show();
+        loadDiagList();
+      }, 300);
+    } else {
+      window.location.href = `/patients/${PK}/examination/new/?type=${val}`;
+    }
+  });
+
+  // ===== DASTLABKI KO'RIK =====
+  document.getElementById('initialExamModal')?.addEventListener('show.bs.modal', function() {
+    fetch(EXAM_URL, {headers:{'X-CSRFToken':CSRF}})
+      .then(r => r.json())
+      .then(data => {
+        document.querySelectorAll('.exam-modal-field').forEach(ta => {
+          if (data[ta.dataset.field] !== undefined) ta.value = data[ta.dataset.field];
+        });
+      }).catch(() => {});
+  });
+
+  document.getElementById('btn-save-exam-modal')?.addEventListener('click', function() {
+    const body = {};
+    document.querySelectorAll('.exam-modal-field').forEach(ta => { body[ta.dataset.field] = ta.value; });
+    this.disabled = true; this.textContent = MSG_SAVING_EXAM;
+    fetch(EXAM_URL, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-CSRFToken':CSRF},
+      body: JSON.stringify(body)
+    }).then(r => r.json()).then(d => {
+      if (d.success) {
+        const badge = document.getElementById('exam-saved-badge');
+        if (badge) { badge.style.display='inline-block'; setTimeout(()=>badge.style.display='none',3000); }
+        showAlert('exam-modal-alert', MSG_EXAM_SAVED);
+      } else showAlert('exam-modal-alert', MSG_ERROR_PREFIX+(d.error||MSG_ERROR),'danger');
+    }).catch(()=>showAlert('exam-modal-alert', MSG_SERVER_ERROR,'danger'))
+      .finally(()=>{ this.disabled=false; this.textContent=TXT_SAVE_EXAM_BTN; });
+  });
+
+  // ===== ICD10 AUTOCOMPLETE =====
+  const icdInp  = document.getElementById('icd10-modal-input');
+  const icdDrop = document.getElementById('icd10-modal-drop');
+  const icdVal  = document.getElementById('icd10-modal-val');
+  const icdBadge= document.getElementById('icd10-selected-badge');
+  let icdTimer;
+
+  icdInp?.addEventListener('input', function() {
+    clearTimeout(icdTimer);
+    const q = this.value.trim();
+    if (q.length < 2) { icdDrop.style.display='none'; return; }
+    icdTimer = setTimeout(() => {
+      fetch(`${ICD_URL}?q=${encodeURIComponent(q)}`)
+        .then(r => r.json())
+        .then(data => {
+          if (!data.length) { icdDrop.style.display='none'; return; }
+          icdDrop.innerHTML = data.map(d => `
+            <div class="icd-dd-item" data-code="${d.code}"
+                 data-uz="${d.title_uz.replace(/"/g,'&quot;')}"
+                 style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #f0f0f0;">
+              <div><strong style="color:#4f46e5;">${d.code}</strong>
+                   <span class="ms-2" style="font-size:13px;">${d.title_uz}</span></div>
+              ${d.title_ru ? `<div class="text-muted" style="font-size:11px;">${d.title_ru}</div>` : ''}
+            </div>`).join('');
+          icdDrop.style.display='block';
+          icdDrop.querySelectorAll('.icd-dd-item').forEach(item => {
+            item.addEventListener('mouseenter',()=>item.style.background='#eef2ff');
+            item.addEventListener('mouseleave',()=>item.style.background='');
+            item.addEventListener('click',()=>{
+              icdVal.value  = item.dataset.code;
+              icdInp.value  = '';
+              icdDrop.style.display='none';
+              icdBadge.innerHTML = `<span class="badge fs-6 px-3 py-2" style="background:#4f46e5;">
+                ${item.dataset.code} — ${item.dataset.uz}
+                <button type="button" onclick="document.getElementById('icd10-modal-val').value='';this.parentElement.remove();"
+                        class="btn-close btn-close-white ms-2" style="font-size:10px;"></button>
+              </span>`;
+            });
+          });
+        });
+    }, 280);
+  });
+  document.addEventListener('click', e => {
+    if (!icdInp?.contains(e.target) && !icdDrop?.contains(e.target)) icdDrop.style.display='none';
+  });
+
+  // ===== TASHXISLAR RO'YXATI =====
+  function loadDiagList() {
+    const listEl = document.getElementById('diag-modal-list');
+    if (!listEl) return;
+    fetch(DIAG_URL).then(r=>r.json()).then(d=>{
+      const diags = d.diagnoses || [];
+      if (!diags.length) { listEl.innerHTML=`<div class="text-muted small">${MSG_NO_DIAGNOSES}</div>`; return; }
+      listEl.innerHTML = diags.map(d=>`
+        <div class="d-flex align-items-center gap-2 py-2 border-bottom">
+          <span class="badge" style="background:#4f46e5;font-size:13px;">${d.icd10_code||'—'}</span>
+          <span class="small flex-grow-1">${d.icd10_title||'—'}</span>
+          <span class="badge bg-secondary">${d.diagnosis_type_display}</span>
+          <span class="badge bg-info text-dark">${d.diagnosis_role_display}</span>
+          <button type="button" class="btn btn-sm btn-outline-danger btn-del-diag-m"
+                  data-id="${d.id}">🗑</button>
+        </div>`).join('');
+      listEl.querySelectorAll('.btn-del-diag-m').forEach(btn=>{
+        btn.addEventListener('click',function(){
+          if(!confirm(MSG_DELETE_CONFIRM)) return;
+          fetch(`/patients/ajax/episode-diagnosis/${this.dataset.id}/delete/`,{
+            method:'POST',headers:{'X-CSRFToken':CSRF}
+          }).then(r=>r.json()).then(d=>{ if(d.success) loadDiagList(); });
+        });
+      });
+    }).catch(()=>{ listEl.innerHTML=`<div class="text-danger small">${MSG_ERROR}</div>`; });
+  }
+
+  document.getElementById('btn-save-diag-modal')?.addEventListener('click', function() {
+    const code = icdVal.value;
+    if (!code) { showAlert('diag-modal-alert', MSG_ICD_NOT_SELECTED,'danger'); return; }
+    this.disabled=true; this.textContent='⏳...';
+    fetch(DIAG_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+      body: JSON.stringify({
+        icd10_code:     code,
+        diagnosis_type: document.getElementById('diag-modal-type').value,
+        diagnosis_role: document.getElementById('diag-modal-role').value,
+        clinical_text:  document.getElementById('diag-modal-text').value,
+      })
+    }).then(r=>r.json()).then(d=>{
+      if(d.success){
+        showAlert('diag-modal-alert', MSG_DIAGNOSIS_ADDED);
+        icdVal.value=''; icdBadge.innerHTML='';
+        document.getElementById('diag-modal-text').value='';
+        loadDiagList();
+      } else showAlert('diag-modal-alert', MSG_ERROR_PREFIX+(d.error||MSG_ERROR),'danger');
+    }).catch(()=>showAlert('diag-modal-alert', MSG_SERVER_ERROR,'danger'))
+      .finally(()=>{ this.disabled=false; this.textContent=TXT_DIAGNOSIS_ADD_BTN; });
+  });
+
+})();
+// ===== END KO'RIK =====
+
 const DOCTORS_DATA = [{% for doc in doctors %}{"id":{{ doc.pk }},"name":"{{ doc.full_name|escapejs }}{% if doc.is_head %} ★{% endif %}","dept":"{{ doc.department|default:"Bo'limsiz"|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}];
 
 function buildDoctorSelect(sel, selectedId) {

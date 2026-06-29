@@ -1,0 +1,138 @@
+/* ============================================================
+   SKB Stat — global design system
+   Re-skins existing Bootstrap 5 markup across all pages without
+   requiring per-template HTML changes. Adds the sidebar/topbar
+   app shell used by base.html.
+============================================================ */
+:root{
+  --primary:#2563EB; --primary-dark:#1E40AF; --primary-light:#EFF4FF;
+  --success:#16A34A; --success-light:#EAF8EF;
+  --warning:#D97706; --warning-light:#FEF6E7;
+  --danger:#DC2626;  --danger-light:#FDECEC;
+  --info:#0891B2;    --info-light:#E8F7FA;
+  --ink:#0F172A; --ink-soft:#475569; --ink-faint:#94A3B8;
+  --bg:#F4F6FB; --card:#FFFFFF; --border:#E7EAF3;
+  --radius:14px; --radius-sm:10px;
+  --shadow:0 1px 2px rgba(15,23,42,.04), 0 4px 14px rgba(15,23,42,.06);
+}
+
+/* ===== BASE ===== */
+body{
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  background:var(--bg); color:var(--ink);
+}
+h1,h2,h3,h4,h5,h6{font-weight:700; letter-spacing:-.01em;}
+a{color:var(--primary);}
+
+/* ===== APP SHELL ===== */
+.app-shell{display:flex; min-height:100vh;}
+.sidebar{
+  width:260px; background:var(--card); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; flex-shrink:0; padding:18px 12px;
+  position:sticky; top:0; height:100vh; overflow-y:auto; z-index:20;
+}
+.sidebar-brand{display:flex; align-items:center; gap:10px; padding:6px 8px 18px 8px; text-decoration:none;}
+.sidebar-brand .logo{
+  width:34px; height:34px; border-radius:10px; flex-shrink:0;
+  background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+  display:flex; align-items:center; justify-content:center; color:#fff; font-size:17px;
+}
+.sidebar-brand .brand-text{font-weight:800; font-size:14.5px; line-height:1.15; color:var(--ink);}
+.sidebar-brand .brand-text small{display:block; font-weight:500; color:var(--ink-faint); font-size:10.5px;}
+.nav-section-label{font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); padding:13px 8px 5px;}
+.nav-link-new{
+  display:flex; align-items:center; gap:9px; padding:8px 9px; border-radius:9px;
+  color:var(--ink-soft); font-weight:500; font-size:13px; text-decoration:none; margin-bottom:2px;
+  transition:background .15s, color .15s;
+}
+.nav-link-new i, .nav-link-new .nl-emoji{font-size:15px; width:18px; text-align:center; color:var(--ink-faint); flex-shrink:0;}
+.nav-link-new:hover{background:#F1F4FA; color:var(--ink); text-decoration:none;}
+.nav-link-new.active{background:var(--primary-light); color:var(--primary-dark); font-weight:600;}
+.nav-link-new.active i, .nav-link-new.active .nl-emoji{color:var(--primary);}
+.nav-link-new .nl-badge{margin-left:auto; background:var(--danger); color:#fff; font-size:10px; font-weight:700; padding:1px 6px; border-radius:20px;}
+.sidebar-footer{margin-top:auto; padding-top:12px; border-top:1px solid var(--border); padding:12px 8px 4px;}
+.avatar-new{
+  width:32px; height:32px; border-radius:50%; background:var(--primary-light); color:var(--primary-dark);
+  display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; flex-shrink:0;
+}
+.sidebar-footer .who{font-size:12px; font-weight:600; line-height:1.2; color:var(--ink);}
+.sidebar-footer .who small{display:block; color:var(--ink-faint); font-weight:500; font-size:10.5px;}
+
+.main-new{flex:1; min-width:0; display:flex; flex-direction:column;}
+.topbar-new{
+  height:58px; background:var(--card); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between; padding:0 22px; flex-shrink:0;
+  position:sticky; top:0; z-index:15; gap:14px;
+}
+.topbar-new .dept-badge{background:var(--primary-light); color:var(--primary-dark); font-weight:600; font-size:12px; padding:5px 12px; border-radius:20px;}
+.topbar-new .who-inline{font-size:12.5px; color:var(--ink-soft);}
+.content-new{padding:24px; flex:1;}
+
+/* ===== BOOTSTRAP COMPONENT RE-SKIN (applies everywhere automatically) ===== */
+.btn{border-radius:10px; font-weight:600; font-size:.875rem; padding:.5rem 1rem;}
+.btn-sm{border-radius:8px;}
+.btn-primary{background:var(--primary); border-color:var(--primary);}
+.btn-primary:hover, .btn-primary:focus{background:var(--primary-dark); border-color:var(--primary-dark);}
+.btn-outline-primary{color:var(--primary); border-color:var(--primary);}
+.btn-outline-primary:hover{background:var(--primary); border-color:var(--primary);}
+.btn-success{background:var(--success); border-color:var(--success);}
+.btn-outline-success{color:var(--success); border-color:var(--success);}
+.btn-danger{background:var(--danger); border-color:var(--danger);}
+.btn-outline-danger{color:var(--danger); border-color:var(--danger);}
+.btn-warning{background:var(--warning); border-color:var(--warning); color:#fff;}
+.btn-outline-warning{color:var(--warning); border-color:var(--warning);}
+.btn-info{background:var(--info); border-color:var(--info); color:#fff;}
+.btn-outline-secondary{color:var(--ink-soft); border-color:var(--border);}
+.btn-outline-secondary:hover{background:#F8FAFD; border-color:#D7DCEA; color:var(--ink);}
+.btn-secondary{background:#E7EAF3; border-color:#E7EAF3; color:var(--ink-soft);}
+
+.card{border-color:var(--border); border-radius:var(--radius); box-shadow:var(--shadow);}
+.card-header{background:#FAFBFD; border-color:var(--border); font-weight:600;}
+
+.table{font-size:.9rem;}
+.table thead th{
+  text-transform:uppercase; font-size:11px; letter-spacing:.04em; color:var(--ink-faint);
+  font-weight:700; border-bottom:1px solid var(--border); background:#FAFBFD;
+}
+.table-hover>tbody>tr:hover>*{background-color:#F8FAFD;}
+.table>:not(caption)>*>*{border-bottom-color:#F1F3F9;}
+
+.badge{font-weight:700; border-radius:20px; font-size:.72rem; padding:.32em .65em;}
+.bg-primary{background-color:var(--primary)!important;}
+.bg-success{background-color:var(--success)!important;}
+.bg-warning{background-color:var(--warning)!important;}
+.bg-danger{background-color:var(--danger)!important;}
+.bg-info{background-color:var(--info)!important;}
+.bg-secondary{background-color:#94A3B8!important;}
+
+.alert{border-radius:12px; border:1px solid transparent; font-size:.875rem;}
+.alert-success{background:var(--success-light); color:#0E7B3D;}
+.alert-warning{background:var(--warning-light); color:#B05E03;}
+.alert-danger{background:var(--danger-light); color:#B91C1C;}
+.alert-info{background:var(--info-light); color:#0A6577;}
+
+.form-control, .form-select{border-color:var(--border); border-radius:10px; font-size:.875rem; padding:.55rem .75rem;}
+.form-control:focus, .form-select:focus{border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-light);}
+.form-label{font-weight:600; font-size:.8rem; color:var(--ink-soft);}
+
+.modal-content{border-radius:var(--radius); border:none; box-shadow:0 12px 40px rgba(15,23,42,.18);}
+.modal-header{border-color:var(--border);}
+.modal-footer{border-color:var(--border);}
+
+.nav-tabs .nav-link{border:none; color:var(--ink-faint); font-weight:600; font-size:.85rem;}
+.nav-tabs .nav-link.active{color:var(--primary); border-bottom:2px solid var(--primary); background:none;}
+
+.accordion-button{font-weight:600; font-size:.875rem;}
+.accordion-button:not(.collapsed){background:var(--primary-light); color:var(--primary-dark);}
+.accordion-button:focus{box-shadow:0 0 0 3px var(--primary-light);}
+
+.pagination .page-link{color:var(--ink-soft); border-color:var(--border); border-radius:8px; margin:0 2px;}
+.pagination .page-item.active .page-link{background:var(--primary); border-color:var(--primary);}
+
+/* Legacy inline patterns used across older templates */
+.form-section{border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:20px; background:var(--card); box-shadow:var(--shadow);}
+.form-section h5{color:var(--primary); border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom:16px;}
+.toggle-btn{padding:6px 20px; border-radius:20px; border:2px solid var(--border); background:#f8f9fa; color:#6c757d; cursor:pointer; font-size:14px; font-weight:500; transition:all .2s ease; user-select:none; outline:none;}
+.toggle-btn:hover{border-color:#adb5bd; background:#e9ecef;}
+.toggle-btn.active-yes{border-color:var(--success); background:var(--success); color:#fff;}
+.toggle-btn.active-no{border-color:var(--danger); background:var(--danger); color:#fff;}

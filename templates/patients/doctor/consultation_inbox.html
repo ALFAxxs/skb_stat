@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+{% block title %}{% trans "Konsultatsiya so'rovlari" %}{% endblock %}
+
+{% block content %}
+{% include 'patients/doctor/_nav.html' with active='consultations' %}
+
+<div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
+    <div>
+        <h4 class="mb-0">🩺 {% trans "Menga yuborilgan konsultatsiya so'rovlari" %}</h4>
+        <div class="text-muted small">{{ doctor.full_name }}</div>
+    </div>
+    {% if pending_count %}
+    <span class="badge bg-danger fs-6">⏳ {% blocktrans with cnt=pending_count %}{{ cnt }} ta yangi so'rov{% endblocktrans %}</span>
+    {% endif %}
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>{% trans "Bemor" %}</th>
+                    <th>{% trans "Yo'nalish" %}</th>
+                    <th>{% trans "So'rov sababi" %}</th>
+                    <th>{% trans "So'ragan shifokor" %}</th>
+                    <th>{% trans "Holati" %}</th>
+                    <th>{% trans "Javoblar" %}</th>
+                    <th>{% trans "Amal" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in consultations %}
+                <tr>
+                    <td>
+                        <a href="{% url 'doctor_patient_card' c.patient_card.pk %}#tab-consult" class="fw-semibold text-decoration-none">{{ c.patient_card.full_name }}</a>
+                        <div class="text-muted small">{{ c.patient_card.medical_record_number }}</div>
+                    </td>
+                    <td><span class="badge bg-info text-dark">{{ c.get_specialty_display }}</span></td>
+                    <td class="small">{{ c.reason|default:'—'|truncatechars:80 }}</td>
+                    <td class="small">{{ c.requested_by.full_name|default:'—' }}<br><span class="text-muted">{{ c.created_at|date:"d.m.Y H:i" }}</span></td>
+                    <td>
+                        <span class="badge bg-{% if c.status == 'done' %}success{% elif c.status == 'in_progress' %}info{% elif c.status == 'cancelled' %}secondary{% else %}warning{% endif %}">{{ c.get_status_display }}</span>
+                        {% if c.status == 'cancelled' and c.cancel_reason %}<div class="text-muted small mt-1">{{ c.cancel_reason|truncatechars:80 }}</div>{% endif %}
+                    </td>
+                    <td>
+                        {% if c.status == 'done' %}
+                        <span class="text-success small fw-semibold">✅ {% trans "Tayyor" %}</span>
+                        {% else %}
+                        <span class="text-muted small">{% trans "Hali javob yo'q" %}</span>
+                        {% endif %}
+                    </td>
+                    <td style="min-width:260px;">
+                        {% if c.status == 'assigned' %}
+                        <div class="d-flex gap-1 mb-1">
+                            <form method="post" action="{% url 'consultation_start' c.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-primary text-nowrap">▶ {% trans "Boshlash" %}</button>
+                            </form>
+                            <button type="button" class="btn btn-sm btn-outline-danger text-nowrap" onclick="toggleCancelBox({{ c.pk }})">✕ {% trans "Bekor qilish" %}</button>
+                        </div>
+                        <form method="post" action="{% url 'consultation_cancel' c.pk %}" id="cancel-box-{{ c.pk }}" style="display:none;">
+                            {% csrf_token %}
+                            <textarea name="cancel_reason" class="form-control form-control-sm mb-1" rows="2" placeholder="{% trans "Bekor qilish sababi..." %}" required></textarea>
+                            <button type="submit" class="btn btn-sm btn-danger text-nowrap">✕ {% trans "Bekor qilishni tasdiqlash" %}</button>
+                        </form>
+                        {% elif c.status == 'in_progress' %}
+                        <a href="{% url 'ambulatory_consultation_form' c.patient_card.pk %}" class="btn btn-sm btn-outline-primary text-nowrap">🩺 {% trans "Ko'rikka qaytish" %}</a>
+                        {% elif c.status == 'done' %}
+                        <div class="d-flex gap-1">
+                            <a href="{% url 'ambulatory_consultation_form' c.patient_card.pk %}" class="btn btn-sm btn-outline-secondary text-nowrap">{% trans "Ko'rish" %}</a>
+                            {% if c.patient_card.ambulatory_consultation %}
+                            <a href="{% url 'ambulatory_consultation_print' c.patient_card.ambulatory_consultation.pk %}" class="btn btn-sm btn-outline-secondary text-nowrap" target="_blank">🖨 {% trans "Chop etish" %}</a>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <span class="text-muted small">{% trans "Yakunlangan" %}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-muted py-4">{% trans "Sizga yuborilgan konsultatsiya so'rovlari yo'q" %} ✅</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function toggleCancelBox(pk) {
+    const box = document.getElementById('cancel-box-' + pk);
+    box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

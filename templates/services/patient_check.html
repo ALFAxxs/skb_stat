@@ -1,8 +1,9 @@
+{% load i18n %}
 <!DOCTYPE html>
 <html lang="uz">
 <head>
 <meta charset="UTF-8">
-<title>Check — {{ patient.full_name }}</title>
+<title>{% blocktrans with name=patient.full_name %}Check — {{ name }}{% endblocktrans %}</title>
 <style>
   @page {
     size: 80mm auto;
@@ -130,21 +131,21 @@
 
 <!-- Shifoxona boshlig'i -->
 <div class="header-name">
-  Markaziy klinik<br>kasalxonasi filiali
+  {% trans "Markaziy klinik" %}<br>{% trans "kasalxonasi filiali" %}
 </div>
 <div class="header-sub">
-  Yashnobod t-n., Pahlavon Mahmud ko'ch. 36B<br>
-  Tel: (99871) 299-62-90
+  {% trans "Yashnobod t-n., Pahlavon Mahmud ko'ch. 36B" %}<br>
+  {% trans "Tel: (99871) 299-62-90" %}
 </div>
 
 <div class="divider-solid"></div>
 
 <!-- Bemor -->
 <div class="patient-block">
-  <div class="label">Bemor:</div>
+  <div class="label">{% trans "Bemor:" %}</div>
   <div class="value">{{ patient.full_name }}</div>
   {% if patient.medical_record_number %}
-  <div class="label" style="margin-top:2px;">Karta №: <span style="font-weight:normal">{{ patient.medical_record_number }}</span></div>
+  <div class="label" style="margin-top:2px;">{% trans "Karta №:" %} <span style="font-weight:normal">{{ patient.medical_record_number }}</span></div>
   {% endif %}
 </div>
 
@@ -152,7 +153,7 @@
 
 <!-- Sana -->
 <div style="font-size:9px; margin-bottom:3px;">
-  Sana: {{ now|date:"d.m.Y H:i" }}
+  {% blocktrans with d=now|date:"d.m.Y H:i" %}Sana: {{ d }}{% endblocktrans %}
 </div>
 
 <div class="divider"></div>
@@ -161,22 +162,22 @@
 <table class="services">
   <thead>
     <tr>
-      <th class="svc-name">Xizmat</th>
-      <th class="qty-col">Son</th>
-      <th class="price-col">Summa</th>
+      <th class="svc-name">{% trans "Xizmat" %}</th>
+      <th class="qty-col">{% trans "Son" %}</th>
+      <th class="price-col">{% trans "Summa" %}</th>
     </tr>
   </thead>
   <tbody>
     {% for s in services %}
     <tr>
-      <td class="svc-name">{{ s.service.name }}</td>
+      <td class="svc-name">{{ s.service.display_name }}</td>
       <td class="qty-col">{{ s.quantity }}</td>
       <td class="price-col">{{ s.total_price|floatformat:0 }}</td>
     </tr>
     {% empty %}
     <tr>
       <td colspan="3" style="text-align:center; color:#888; padding:6px 0;">
-        Xizmatlar yo'q
+        {% trans "Xizmatlar yo'q" %}
       </td>
     </tr>
     {% endfor %}
@@ -187,15 +188,15 @@
 
 <!-- Jami -->
 <div class="total-row">
-  <span>JAMI:</span>
-  <span>{{ total|floatformat:0 }} so'm</span>
+  <span>{% trans "JAMI:" %}</span>
+  <span>{% blocktrans with sum=total|floatformat:0 %}{{ sum }} so'm{% endblocktrans %}</span>
 </div>
 
 <div class="divider"></div>
 
 <!-- Footer -->
 <div class="footer">
-  Xizmat uchun rahmat!<br>
+  {% trans "Xizmat uchun rahmat!" %}<br>
   {{ now|date:"d.m.Y" }}
 </div>
 
@@ -203,7 +204,7 @@
 
 <!-- Ekran tugmasi -->
 <div class="no-print">
-  <button onclick="window.print()">🖨 Chop etish</button>
+  <button onclick="window.print()">🖨 {% trans "Chop etish" %}</button>
 </div>
 
 <script>

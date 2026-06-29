@@ -1,0 +1,94 @@
+{% load static %}
+{% load i18n %}
+<div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
+    <ul class="nav nav-pills">
+        <li class="nav-item">
+            <a class="nav-link {% if active == 'dashboard' %}active{% endif %}" href="{% url 'doctor_dashboard' %}">🏠 {% trans "Bosh sahifa" %}</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if active == 'inpatient' %}active{% endif %}" href="{% url 'doctor_inpatients' %}">🛏 {% trans "Statsionar" %}</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if active == 'outpatient' %}active{% endif %}" href="{% url 'doctor_outpatients' %}">🚶 {% trans "Ambulator" %}</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if active == 'reports' %}active{% endif %}" href="{% url 'statistics_dashboard' %}">📊 {% trans "Hisobotlar" %}</a>
+        </li>
+        {% if doctor.is_head %}
+        <li class="nav-item">
+            <a class="nav-link {% if active == 'assign' %}active{% endif %} text-success" href="{% url 'doctor_assign_patients' %}">🗂 {% trans "Bemor biriktirish" %}</a>
+        </li>
+        {% endif %}
+        <li class="nav-item">
+            <a class="nav-link {% if active == 'consultations' %}active{% endif %}" href="{% url 'doctor_consultation_inbox' %}">🩺 {% trans "Konsultatsiya so'rovlari" %}</a>
+        </li>
+    </ul>
+
+    <div class="dropdown">
+        <button class="btn btn-outline-secondary position-relative" type="button" id="notifBell" data-bs-toggle="dropdown" aria-expanded="false">
+            🔔
+            <span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">0</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end p-0" style="min-width: 320px; max-height: 380px; overflow-y: auto;" id="notifList">
+            <li><span class="dropdown-item-text text-muted small">{% trans "Bildirishnomalar yo'q" %}</span></li>
+        </ul>
+    </div>
+</div>
+
+<script>
+(function () {
+    const badge = document.getElementById('notifBadge');
+    const list  = document.getElementById('notifList');
+    const bell  = document.getElementById('notifBell');
+
+    function getCookie(name) {
+        const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+        return m ? decodeURIComponent(m.pop()) : '';
+    }
+
+    function render(data) {
+        if (data.unread > 0) {
+            badge.textContent = data.unread;
+            badge.classList.remove('d-none');
+        } else {
+            badge.classList.add('d-none');
+        }
+        if (!data.notifications.length) {
+            list.innerHTML = '<li><span class="dropdown-item-text text-muted small">Bildirishnomalar yo\'q</span></li>';
+            return;
+        }
+        list.innerHTML = data.notifications.map(n => {
+            const isConsultationRequest = n.message.indexOf("Sizga konsultatsiya so'rovi") === 0;
+            const url = isConsultationRequest
+                ? "{% url 'doctor_consultation_inbox' %}"
+                : (n.patient_id ? '/patients/doctor/bemor/' + n.patient_id + '/' : '#');
+            return `
+            <li>
+                <a class="dropdown-item ${n.is_read ? '' : 'fw-semibold bg-light'}" href="${url}">
+                    <div class="small">${n.message}</div>
+                    <div class="text-muted" style="font-size:.75rem;">${n.created_at}</div>
+                </a>
+            </li>`;
+        }).join('');
+    }
+
+    function load() {
+        fetch("{% url 'doctor_notifications_ajax' %}")
+            .then(r => r.json())
+            .then(render)
+            .catch(() => {});
+    }
+
+    bell.addEventListener('click', function () {
+        if (!badge.classList.contains('d-none')) {
+            fetch("{% url 'doctor_notifications_read' %}", {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') }
+            }).then(() => { badge.classList.add('d-none'); });
+        }
+    });
+
+    load();
+    setInterval(load, 30000);
+})();
+</script>

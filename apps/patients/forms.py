@@ -270,15 +270,19 @@ class ReceptionForm(forms.ModelForm):
         model = PatientCard
         fields = [
             'admission_date', 'full_name', 'birth_date', 'gender',
-            'admission_diagnosis', 'department', 'patient_category',
+            'admission_diagnosis', 'department', 'case_sheet_number', 'patient_category',
             'social_status', 'passport_serial', 'JSHSHIR', 'phone',
             'resident_status', 'country', 'region', 'district', 'city',
             'street_address', 'workplace', 'position', 'hospital_type',
             'referral_type', 'referral_organization', 'hours_after_illness',
             'is_emergency', 'is_paid',
             'is_war_veteran', 'is_pensioner',
-            'attending_doctor',
-            'department_head',
+            'attending_doctor', 'department_head',
+            # Yotish ma'lumotlari
+            'room_number', 'mobility_type', 'transport_type',
+            # Tibbiy ko'rsatkichlar
+            'blood_group', 'rh_factor', 'drug_allergy',
+            'height_cm', 'weight_kg', 'body_temperature',
         ]
         widgets = {
             'admission_date': forms.DateTimeInput(
@@ -286,6 +290,7 @@ class ReceptionForm(forms.ModelForm):
                 format='%Y-%m-%dT%H:%M'
             ),
             'birth_date': forms.DateInput(attrs={'type': 'date'}),
+            'case_sheet_number': forms.TextInput(attrs={'placeholder': '№', 'maxlength': '50'}),
             'resident_status': forms.RadioSelect,
             'admission_diagnosis': forms.Textarea(attrs={'rows': 2}),
         }
@@ -296,6 +301,7 @@ class ReceptionForm(forms.ModelForm):
             'gender': 'Jinsi',
             'admission_diagnosis': 'Qabulxona tashxisi',
             'department': "Yotqizilgan bo'lim",
+            'case_sheet_number': 'Kasallik varaqasi tartib raqami',
             'patient_category': 'Bemor kategoriyasi',
             'social_status': 'Ijtimoiy holati',
             'passport_serial': 'Passport seriyasi',

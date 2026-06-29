@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
-{% block title %}Ambulator bemor qabuli{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Ambulator bemor qabuli" %}{% endblock %}
 
 {% block content %}
 <style>
@@ -29,17 +30,20 @@
 </style>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3>🚶 Ambulator bemor qabuli</h3>
-    <span class="badge bg-info fs-6">Kunlik tashrif</span>
+    <h3>🚶 {% trans "Ambulator bemor qabuli" %}</h3>
+    <span class="badge bg-info fs-6">{% trans "Kunlik tashrif" %}</span>
 </div>
 
 <div id="repeat-patient-alert" class="alert alert-warning" style="display:none;"></div>
 
-{% if form.errors %}
+{% if errors or form.errors %}
 <div class="alert alert-danger">
-    <strong>Xatoliklar:</strong>
-    {% for field, errors in form.errors.items %}
-    <div>• <b>{{ field }}</b>: {{ errors|join:", " }}</div>
+    <strong>{% trans "Xatoliklar:" %}</strong>
+    {% for field, msg in errors.items %}
+    <div>• <b>{{ field }}</b>: {{ msg }}</div>
+    {% endfor %}
+    {% for field, field_errors in form.errors.items %}
+    <div>• <b>{{ field }}</b>: {{ field_errors|join:", " }}</div>
     {% endfor %}
 </div>
 {% endif %}
@@ -55,50 +59,50 @@
 
     <!-- Bemor ma'lumotlari -->
     <div class="form-section">
-        <h5>👤 Bemor ma'lumotlari</h5>
+        <h5>👤 {% trans "Bemor ma'lumotlari" %}</h5>
 
         <div class="alert alert-info py-2 mb-3">
-            <small>📋 Bayonnoma raqami: <strong>{{ auto_record_number }}</strong> (avtomatik)</small>
+            <small>📋 {% blocktrans with record_number=auto_record_number %}Bayonnoma raqami: <strong>{{ record_number }}</strong> (avtomatik){% endblocktrans %}</small>
         </div>
 
         <div class="row">
             <div class="col-md-8 mb-3">
-                <label class="form-label fw-bold">To'liq ism-familiya <span class="text-danger">*</span></label>
+                <label class="form-label fw-bold">{% trans "To'liq ism-familiya" %} <span class="text-danger">*</span></label>
                 {{ form.full_name }}
                 <div class="text-danger small">{{ form.full_name.errors }}</div>
             </div>
             <div class="col-md-4 mb-3">
-                <label class="form-label fw-bold">Jinsi <span class="text-danger">*</span></label>
+                <label class="form-label fw-bold">{% trans "Jinsi" %} <span class="text-danger">*</span></label>
                 {{ form.gender }}
                 <div class="text-danger small">{{ form.gender.errors }}</div>
             </div>
             <div class="col-md-4 mb-3">
-                <label class="form-label">Tug'ilgan sana</label>
+                <label class="form-label">{% trans "Tug'ilgan sana" %}</label>
                 {{ form.birth_date }}
             </div>
             <div class="col-md-4 mb-3">
-                <label class="form-label">JSHSHIR</label>
+                <label class="form-label">{% trans "JSHSHIR" %}</label>
                 {{ form.JSHSHIR }}
             </div>
             <div class="col-md-4 mb-3">
-                <label class="form-label">Telefon</label>
+                <label class="form-label">{% trans "Telefon" %}</label>
                 {{ form.phone }}
             </div>
 
             <!-- Kategoriya: faqat Rezident / Norezident -->
             <div class="col-md-4 mb-3">
-                <label class="form-label fw-bold d-block">Rezidentlik</label>
+                <label class="form-label fw-bold d-block">{% trans "Rezidentlik" %}</label>
                 <div class="toggle-group mt-2">
-                    <button type="button" class="toggle-btn active-yes" id="res-yes">🏠 Rezident</button>
-                    <button type="button" class="toggle-btn" id="res-no">🌍 Norezident</button>
+                    <button type="button" class="toggle-btn active-yes" id="res-yes">🏠 {% trans "Rezident" %}</button>
+                    <button type="button" class="toggle-btn" id="res-no">🌍 {% trans "Norezident" %}</button>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="d-flex gap-2 mb-5">
-        <button type="submit" class="btn btn-primary btn-lg">💾 Saqlash</button>
-        <a href="{% url 'patient_list' %}" class="btn btn-secondary btn-lg">Bekor qilish</a>
+        <button type="submit" class="btn btn-primary btn-lg">💾 {% trans "Saqlash" %}</button>
+        <a href="{% url 'patient_list' %}" class="btn btn-secondary btn-lg">{% trans "Bekor qilish" %}</a>
     </div>
 </form>
 {% endblock %}
@@ -135,6 +139,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Qayta kelgan bemor tekshiruvi
     const jshshirInput = document.getElementById('id_JSHSHIR');
     const alertDiv = document.getElementById('repeat-patient-alert');
+    const MSG_REPEAT_PATIENT_SHORT = "{% trans "Bu bemor avval ham kelgan:" %}";
     let checkTimer;
 
     function checkPatient() {
@@ -144,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(r => r.json())
             .then(data => {
                 if (!data.found) { alertDiv.style.display = 'none'; return; }
-                var html = '<strong>⚠️ Bu bemor avval ham kelgan:</strong><ul class="mb-0 mt-2">';
+                var html = '<strong>⚠️ ' + MSG_REPEAT_PATIENT_SHORT + '</strong><ul class="mb-0 mt-2">';
                 data.patients.forEach(p => {
                     html += '<li><a href="/patients/' + p.pk + '/" target="_blank" class="fw-semibold">'
                           + p.medical_record_number + '</a> — ' + p.full_name
@@ -171,6 +176,10 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', function() {
 
 const CHECK_URL = '/patients/ajax/check-patient/';
+const MSG_REPEAT_PATIENT = "{% trans "Bu bemor avval ham murojaat qilgan:" %}";
+const TXT_COPY_BTN = "{% trans "Ko'chirish" %}";
+const TXT_VIEW_BTN = "{% trans "Ko'rish" %}";
+const MSG_DATA_COPIED_SUFFIX = "{% trans "ma'lumotlari ko'chirildi." %}";
 let alertDiv = document.getElementById('repeat-patient-alert-amb');
 if (!alertDiv) {
     alertDiv = document.createElement('div');
@@ -194,7 +203,7 @@ function checkExistingPatient() {
         .then(r => r.json())
         .then(data => {
             if (!data.found) { alertDiv.style.display = 'none'; return; }
-            let html = '<strong>&#9888;&#65039; Bu bemor avval ham murojaat qilgan:</strong><ul class="mb-0 mt-2" style="list-style:none;padding:0;">';
+            let html = '<strong>&#9888;&#65039; ' + MSG_REPEAT_PATIENT + '</strong><ul class="mb-0 mt-2" style="list-style:none;padding:0;">';
             data.patients.forEach(p => {
                 html += `<li class="d-flex align-items-center gap-2 py-1 border-bottom">
                     <div class="flex-grow-1">
@@ -203,10 +212,10 @@ function checkExistingPatient() {
                     </div>
                     <button type="button" class="btn btn-sm btn-primary flex-shrink-0"
                             class="btn-copy-amb" data-patient="${encodeURIComponent(JSON.stringify(p))}">
-                        &#128203; Ko'chirish
+                        &#128203; ${TXT_COPY_BTN}
                     </button>
                     <a href="/patients/${p.pk}/" target="_blank"
-                       class="btn btn-sm btn-outline-secondary flex-shrink-0">&#128065; Ko'rish</a>
+                       class="btn btn-sm btn-outline-secondary flex-shrink-0">&#128065; ${TXT_VIEW_BTN}</a>
                 </li>`;
             });
             html += '</ul>';
@@ -247,7 +256,7 @@ function copyToAmbForm(p) {
     const msg = document.createElement('div');
     msg.className = 'alert alert-success alert-dismissible fade show';
     msg.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;min-width:350px;box-shadow:0 4px 12px rgba(0,0,0,.15);';
-    msg.innerHTML = '&#9989; <strong>' + p.full_name + '</strong> ma&#39;lumotlari ko&#39;chirildi.' +
+    msg.innerHTML = '&#9989; <strong>' + p.full_name + '</strong> ' + MSG_DATA_COPIED_SUFFIX +
         '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
     document.body.appendChild(msg);
     setTimeout(function(){ if(msg.parentNode) msg.remove(); }, 4000);
@@ -286,7 +295,7 @@ document.querySelectorAll('form').forEach(function(form) {
     form.addEventListener('submit', function() {
         form.querySelectorAll('[type="submit"]').forEach(function(btn) {
             btn.disabled = true;
-            btn.innerHTML = '⏳ Saqlanmoqda...';
+            btn.innerHTML = '⏳ {% trans "Saqlanmoqda..." %}';
         });
     });
 });

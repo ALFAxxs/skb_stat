@@ -1,14 +1,15 @@
 {% extends 'base.html' %}
-{% block title %}Operatsiyalar statistikasi{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Operatsiyalar statistikasi" %}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3>🔪 Operatsiyalar statistikasi</h3>
+    <h3>🔪 {% trans "Operatsiyalar statistikasi" %}</h3>
     <div class="d-flex gap-2">
         <a href="{% url 'export_operation_excel' %}?{{ current_filters }}"
-           class="btn btn-success btn-sm">📥 Excel yuklab olish</a>
-        <a href="{% url 'medicine_statistics' %}" class="btn btn-outline-warning btn-sm">💊 Dorilar</a>
-        <a href="{% url 'service_statistics' %}" class="btn btn-outline-info btn-sm">🏥 Xizmatlar</a>
+           class="btn btn-success btn-sm">📥 {% trans "Excel yuklab olish" %}</a>
+        <a href="{% url 'medicine_statistics' %}" class="btn btn-outline-warning btn-sm">💊 {% trans "Dorilar" %}</a>
+        <a href="{% url 'service_statistics' %}" class="btn btn-outline-info btn-sm">🏥 {% trans "Xizmatlar" %}</a>
     </div>
 </div>
 
@@ -18,17 +19,17 @@
         <form method="get">
             <div class="row g-2 align-items-end">
                 <div class="col-md-2">
-                    <label class="form-label small fw-bold">Boshlanish sanasi</label>
+                    <label class="form-label small fw-bold">{% trans "Boshlanish sanasi" %}</label>
                     <input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from }}">
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small fw-bold">Tugash sanasi</label>
+                    <label class="form-label small fw-bold">{% trans "Tugash sanasi" %}</label>
                     <input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to }}">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label small fw-bold">Operatsiya turi</label>
+                    <label class="form-label small fw-bold">{% trans "Operatsiya turi" %}</label>
                     <select name="op_type" class="form-select form-select-sm">
-                        <option value="">Barchasi</option>
+                        <option value="">{% trans "Barchasi" %}</option>
                         {% for op in op_types_list %}
                         <option value="{{ op.pk }}"
                             {% if selected_op_type == op.pk|stringformat:"s" %}selected{% endif %}>
@@ -38,16 +39,16 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small fw-bold">Narkoz turi</label>
+                    <label class="form-label small fw-bold">{% trans "Narkoz turi" %}</label>
                     <select name="anesthesia" class="form-select form-select-sm">
-                        <option value="">Barchasi</option>
-                        <option value="yes"   {% if selected_anesthesia == 'yes'   %}selected{% endif %}>Narkoz bilan</option>
-                        <option value="local" {% if selected_anesthesia == 'local' %}selected{% endif %}>Mahalliy</option>
-                        <option value="no"    {% if selected_anesthesia == 'no'    %}selected{% endif %}>Narkozsiz</option>
+                        <option value="">{% trans "Barchasi" %}</option>
+                        <option value="yes"   {% if selected_anesthesia == 'yes'   %}selected{% endif %}>{% trans "Narkoz bilan" %}</option>
+                        <option value="local" {% if selected_anesthesia == 'local' %}selected{% endif %}>{% trans "Mahalliy" %}</option>
+                        <option value="no"    {% if selected_anesthesia == 'no'    %}selected{% endif %}>{% trans "Narkozsiz" %}</option>
                     </select>
                 </div>
                 <div class="col-md-3 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary btn-sm flex-fill">🔍 Filtrlash</button>
+                    <button type="submit" class="btn btn-primary btn-sm flex-fill">🔍 {% trans "Filtrlash" %}</button>
                     <a href="{% url 'operation_statistics' %}" class="btn btn-outline-secondary btn-sm">✕</a>
                 </div>
             </div>
@@ -60,44 +61,44 @@
     <div class="col-md-2">
         <div class="card border-0 shadow-sm text-center py-3">
             <div class="h3 fw-bold text-primary mb-1">{{ totals.total|default:0 }}</div>
-            <div class="small text-muted">Jami operatsiyalar</div>
+            <div class="small text-muted">{% trans "Jami operatsiyalar" %}</div>
         </div>
     </div>
     <div class="col-md-2">
         <div class="card border-0 shadow-sm text-center py-3" style="border-left:4px solid #0d6efd !important;">
             <div class="h4 fw-bold text-primary mb-1">{{ totals.railway|default:0 }}</div>
-            <div class="small text-muted">🚂 Temir yo'lchi</div>
+            <div class="small text-muted">🚂 {% trans "Temir yo'lchi" %}</div>
         </div>
     </div>
     <div class="col-md-2">
         <div class="card border-0 shadow-sm text-center py-3" style="border-left:4px solid #198754 !important;">
             <div class="h4 fw-bold text-success mb-1">{{ totals.paid|default:0 }}</div>
-            <div class="small text-muted">💳 Pullik</div>
+            <div class="small text-muted">💳 {% trans "Pullik" %}</div>
         </div>
     </div>
     <div class="col-md-2">
         <div class="card border-0 shadow-sm text-center py-3" style="border-left:4px solid #dc3545 !important;">
             <div class="h4 fw-bold text-danger mb-1">{{ totals.nonresident|default:0 }}</div>
-            <div class="small text-muted">🌍 Norezident</div>
+            <div class="small text-muted">🌍 {% trans "Norezident" %}</div>
         </div>
     </div>
     <div class="col-md-2">
         <div class="card border-0 shadow-sm text-center py-3">
             <div class="h4 fw-bold text-warning mb-1">{{ totals.with_anesthesia|default:0 }}</div>
-            <div class="small text-muted">💉 Narkoz bilan</div>
+            <div class="small text-muted">💉 {% trans "Narkoz bilan" %}</div>
         </div>
     </div>
     <div class="col-md-2">
         <div class="card border-0 shadow-sm text-center py-3">
             <div class="h4 fw-bold text-secondary mb-1">{{ totals.local_anesthesia|default:0 }}</div>
-            <div class="small text-muted">🩺 Mahalliy narkoz</div>
+            <div class="small text-muted">🩺 {% trans "Mahalliy narkoz" %}</div>
         </div>
     </div>
 </div>
 
 <!-- Trend grafigi -->
 <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white"><strong>📈 Oylik dinamika</strong></div>
+    <div class="card-header bg-white"><strong>📈 {% trans "Oylik dinamika" %}</strong></div>
     <div class="card-body">
         <canvas id="trendChart" height="70"></canvas>
     </div>
@@ -106,8 +107,8 @@
 <!-- Operatsiya turlari jadvali -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white d-flex justify-content-between">
-        <strong>🔪 Operatsiya turlari bo'yicha</strong>
-        <span class="badge bg-primary">{{ op_stats|length }} tur</span>
+        <strong>🔪 {% trans "Operatsiya turlari bo'yicha" %}</strong>
+        <span class="badge bg-primary">{% blocktrans with cnt=op_stats|length %}{{ cnt }} tur{% endblocktrans %}</span>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -115,35 +116,35 @@
             <thead class="table-light">
                 <tr>
                     <th class="ps-3" style="width:40px">№</th>
-                    <th style="width:80px">Kod</th>
-                    <th>Operatsiya nomi</th>
+                    <th style="width:80px">{% trans "Kod" %}</th>
+                    <th>{% trans "Operatsiya nomi" %}</th>
                     <th class="text-center" style="width:80px">
-                        <span class="d-block">Jami</span>
-                        <small class="text-muted">soni</small>
+                        <span class="d-block">{% trans "Jami" %}</span>
+                        <small class="text-muted">{% trans "soni" %}</small>
                     </th>
                     <th class="text-center" style="width:90px">
-                        <span class="d-block text-primary">🚂 TY</span>
-                        <small class="text-muted">soni</small>
+                        <span class="d-block text-primary">🚂 {% trans "TY" %}</span>
+                        <small class="text-muted">{% trans "soni" %}</small>
                     </th>
                     <th class="text-center" style="width:90px">
-                        <span class="d-block text-success">💳 Pullik</span>
-                        <small class="text-muted">soni</small>
+                        <span class="d-block text-success">💳 {% trans "Pullik" %}</span>
+                        <small class="text-muted">{% trans "soni" %}</small>
                     </th>
                     <th class="text-center" style="width:90px">
-                        <span class="d-block text-danger">🌍 Nores.</span>
-                        <small class="text-muted">soni</small>
+                        <span class="d-block text-danger">🌍 {% trans "Nores." %}</span>
+                        <small class="text-muted">{% trans "soni" %}</small>
                     </th>
                     <th class="text-center" style="width:90px">
-                        <span class="d-block">💉 Narkoz</span>
-                        <small class="text-muted">bilan</small>
+                        <span class="d-block">💉 {% trans "Narkoz" %}</span>
+                        <small class="text-muted">{% trans "bilan" %}</small>
                     </th>
                     <th class="text-center" style="width:90px">
-                        <span class="d-block">🩺 Mahalliy</span>
-                        <small class="text-muted">narkoz</small>
+                        <span class="d-block">🩺 {% trans "Mahalliy" %}</span>
+                        <small class="text-muted">{% trans "narkoz" %}</small>
                     </th>
                     <th class="text-center" style="width:90px">
-                        <span class="d-block">Narkozsiz</span>
-                        <small class="text-muted">soni</small>
+                        <span class="d-block">{% trans "Narkozsiz" %}</span>
+                        <small class="text-muted">{% trans "soni" %}</small>
                     </th>
                 </tr>
             </thead>
@@ -193,14 +194,14 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="10" class="text-center text-muted py-4">Ma'lumot topilmadi</td>
+                    <td colspan="10" class="text-center text-muted py-4">{% trans "Ma'lumot topilmadi" %}</td>
                 </tr>
                 {% endfor %}
             </tbody>
             {% if totals.total %}
             <tfoot class="table-light fw-bold">
                 <tr>
-                    <td colspan="3" class="ps-3">JAMI:</td>
+                    <td colspan="3" class="ps-3">{% trans "JAMI:" %}</td>
                     <td class="text-center">{{ totals.total }}</td>
                     <td class="text-center text-primary">{{ totals.railway }}</td>
                     <td class="text-center text-success">{{ totals.paid }}</td>

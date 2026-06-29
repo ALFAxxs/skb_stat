@@ -1,10 +1,11 @@
 {% load static %}
+{% load i18n %}
 <!DOCTYPE html>
 <html lang="uz">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Senga — Yurakdan</title>
+<title>{% trans "Senga — Yurakdan" %}</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -77,34 +78,34 @@ canvas#petals { position:fixed; top:0; left:0; width:100%; height:100%; z-index:
       </svg>
       <span></span>
     </div>
-    <div class="badge">Yurakdan — faqat senga</div>
+    <div class="badge">{% trans "Yurakdan — faqat senga" %}</div>
   </div>
 
-  <div class="letter-title">Ko'zingga qarab aytolmadim…</div>
-  <div class="letter-sub">Shuning uchun yozib qoldim.</div>
+  <div class="letter-title">{% trans "Ko'zingga qarab aytolmadim…" %}</div>
+  <div class="letter-sub">{% trans "Shuning uchun yozib qoldim." %}</div>
 
   <div class="letter-card">
     <div class="letter-body">
-      <p>Bu gaplarni ko'zingga qarab aytolmasdim, shuning uchun eshit.</p>
-      <p>Men faqat senga <span class="accent">uyimni tozalab, qornimni to'ydiradigan xizmatchi, ehtiyojlarimni qondiradigan vosita</span> kerakligi uchun uylanmoqchi emasman.</p>
-      <p>Bilasanmi, seni 3 ta qolipga solib ko'rganman — <span class="accent">Onam, Opam va qizim</span>. Ularning hech biriga buni ravo ko'rmaganimdek, senga ham o'sha taqdirniy ilinmayman. Otamdan shunaqа o'rgandim.</p>
-      <p>Lekin iltimos — <span class="accent">shirin ovqat qilishni o'rgan.</span> Mahrga kutubxona so'rasang, romanga arzigulik hayotni ham qo'shib beraman senga.</p>
-      <p>Senga <span class="accent">har kun gullar berishga tayyorman</span> va albatta sayohatlarga chiqamiz — buni majburiy deb bil.</p>
-      <p>Ishlash masalasiga kelsak — oyoq tirab turib olmayman. Agar men qo'ygan shartlar ostida bo'lsa, nega yo'q? <span class="accent">Ishlashing mumkin.</span></p>
-      <p>Otangnikida bo'lganing kabi menikida ham <span class="accent">o'zingni xavfsiz his qilishing</span> uchun maksimal darajada harakat qilaman. Bizning munosabatlarimiz <span class="accent">hurmat ustiga quriladi, qo'rquv emas.</span></p>
-      <p>Senga 100% ishonaman, ammo <span class="accent">qizg'anishimni normal qabul qilishingni</span> istardim — chunki ikkimizga ham bog'liq bo'lmagan asoslar bor bunda.</p>
-      <p>Senga qulog'inga faqat yaxshi kunlar vadasi bilan lagmon osmayman — <span class="accent">yozilgani bo'ladi.</span> Lekin bu harakat qilmayman degani emas.</p>
-      <p>Agar shunga rozi bo'lsang — uyingdagilar sening fikringni so'raganida, <span class="accent">"o'zlari bilishadi"</span> deb qo'ysang bo'ldi.</p>
+      <p>{% trans "Bu gaplarni ko'zingga qarab aytolmasdim, shuning uchun eshit." %}</p>
+      <p>{% blocktrans %}Men faqat senga <span class="accent">uyimni tozalab, qornimni to'ydiradigan xizmatchi, ehtiyojlarimni qondiradigan vosita</span> kerakligi uchun uylanmoqchi emasman.{% endblocktrans %}</p>
+      <p>{% blocktrans %}Bilasanmi, seni 3 ta qolipga solib ko'rganman — <span class="accent">Onam, Opam va qizim</span>. Ularning hech biriga buni ravo ko'rmaganimdek, senga ham o'sha taqdirniy ilinmayman. Otamdan shunaqа o'rgandim.{% endblocktrans %}</p>
+      <p>{% blocktrans %}Lekin iltimos — <span class="accent">shirin ovqat qilishni o'rgan.</span> Mahrga kutubxona so'rasang, romanga arzigulik hayotni ham qo'shib beraman senga.{% endblocktrans %}</p>
+      <p>{% blocktrans %}Senga <span class="accent">har kun gullar berishga tayyorman</span> va albatta sayohatlarga chiqamiz — buni majburiy deb bil.{% endblocktrans %}</p>
+      <p>{% blocktrans %}Ishlash masalasiga kelsak — oyoq tirab turib olmayman. Agar men qo'ygan shartlar ostida bo'lsa, nega yo'q? <span class="accent">Ishlashing mumkin.</span>{% endblocktrans %}</p>
+      <p>{% blocktrans %}Otangnikida bo'lganing kabi menikida ham <span class="accent">o'zingni xavfsiz his qilishing</span> uchun maksimal darajada harakat qilaman. Bizning munosabatlarimiz <span class="accent">hurmat ustiga quriladi, qo'rquv emas.</span>{% endblocktrans %}</p>
+      <p>{% blocktrans %}Senga 100% ishonaman, ammo <span class="accent">qizg'anishimni normal qabul qilishingni</span> istardim — chunki ikkimizga ham bog'liq bo'lmagan asoslar bor bunda.{% endblocktrans %}</p>
+      <p>{% blocktrans %}Senga qulog'inga faqat yaxshi kunlar vadasi bilan lagmon osmayman — <span class="accent">yozilgani bo'ladi.</span> Lekin bu harakat qilmayman degani emas.{% endblocktrans %}</p>
+      <p>{% blocktrans %}Agar shunga rozi bo'lsang — uyingdagilar sening fikringni so'raganida, <span class="accent">"o'zlari bilishadi"</span> deb qo'ysang bo'ldi.{% endblocktrans %}</p>
     </div>
     <div class="closing-line">
       <span></span>
-      <div class="closing-text">Seni hurmat bilan, samimiy yurakdan.</div>
+      <div class="closing-text">{% trans "Seni hurmat bilan, samimiy yurakdan." %}</div>
       <span></span>
     </div>
   </div>
 
   <div class="music-section">
-    <div class="music-label">♩ Musiqa</div>
+    <div class="music-label">♩ {% trans "Musiqa" %}</div>
     <div class="music-wrap">
       <button class="play-btn" id="playBtn" onclick="toggleMusic()">▶</button>
       <div class="waves" id="waves">
@@ -115,8 +116,8 @@ canvas#petals { position:fixed; top:0; left:0; width:100%; height:100%; z-index:
         <div class="wb paused"></div>
       </div>
       <div class="music-info">
-        <div class="music-name" id="musicName">♪ Faqat senga</div>
-        <div class="music-hint">▶ bosing</div>
+        <div class="music-name" id="musicName">♪ {% trans "Faqat senga" %}</div>
+        <div class="music-hint">▶ {% trans "bosing" %}</div>
       </div>
     </div>
     <audio id="bgAudio" loop src="{% static 'music/song.mp3' %}"></audio>

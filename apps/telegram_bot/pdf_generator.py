@@ -50,14 +50,16 @@ def _build_print_context(result) -> dict:
     }
 
     params_with_values = []
-    for i, param in enumerate(parameters, 1):
+    for param in parameters:
         rv = values_map.get(param.pk)
+        if not rv or not rv.value:
+            continue
         params_with_values.append({
-            'num':          i,
+            'num':          len(params_with_values) + 1,
             'param':        param,
-            'value':        rv.value if rv else '',
-            'value_status': rv.value_status if rv else 'normal',
-            'comment':      rv.comment if rv else '',
+            'value':        rv.value,
+            'value_status': rv.value_status,
+            'comment':      rv.comment,
             'normal_display': param.get_normal_display(result.patient_card.gender),
         })
 
@@ -98,7 +100,7 @@ def _build_context(result) -> dict:
     ungrouped = []
     for p in params:
         rv = values.get(p.pk)
-        if not rv:
+        if not rv or not rv.value:
             continue
         entry = {
             'param':         p,

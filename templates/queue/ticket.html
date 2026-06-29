@@ -1,9 +1,10 @@
+{% load i18n %}
 <!DOCTYPE html>
 <html lang="uz">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Navbat chipta #{{ ticket.ticket_number }}</title>
+<title>{% blocktrans with num=ticket.ticket_number %}Navbat chipta #{{ num }}{% endblocktrans %}</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f1f5f9; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
@@ -32,45 +33,45 @@ hr { border: none; border-top: 1px dashed #e2e8f0; margin: 20px 0; }
 </head>
 <body>
 <div class="ticket">
-  <div class="hospital">🏥 Markaziy klinik kasalxona<br>MRT bo'limi</div>
+  <div class="hospital">🏥 {% trans "Markaziy klinik kasalxona" %}<br>{% trans "MRT bo'limi" %}</div>
 
-  <div class="label">Sizning navbat raqamingiz</div>
+  <div class="label">{% trans "Sizning navbat raqamingiz" %}</div>
   <div class="number">{{ ticket.ticket_number }}</div>
   <div class="room">{{ ticket.room }}</div>
 
   <hr>
 
   <div class="info-row">
-    <span class="info-label">Bemor</span>
+    <span class="info-label">{% trans "Bemor" %}</span>
     <span class="info-value">{{ ticket.patient_card.full_name }}</span>
   </div>
   <div class="info-row">
-    <span class="info-label">Sana</span>
+    <span class="info-label">{% trans "Sana" %}</span>
     <span class="info-value">{{ ticket.created_at|date:"d.m.Y H:i" }}</span>
   </div>
   {% if ticket.service %}
   <div class="info-row">
-    <span class="info-label">Xizmat</span>
-    <span class="info-value">{{ ticket.service.service.name }}</span>
+    <span class="info-label">{% trans "Xizmat" %}</span>
+    <span class="info-value">{{ ticket.service.service.display_name }}</span>
   </div>
   {% endif %}
 
   <div id="status-block">
     {% if ticket.status == 'waiting' %}
-    <span class="status-badge status-waiting">⏳ Kutmoqda</span>
+    <span class="status-badge status-waiting">⏳ {% trans "Kutmoqda" %}</span>
     {% if ahead > 0 %}
-    <div class="ahead-badge">Sizdan oldin: {{ ahead }} kishi</div>
+    <div class="ahead-badge">{% blocktrans %}Sizdan oldin: {{ ahead }} kishi{% endblocktrans %}</div>
     {% else %}
-    <div class="ahead-badge" style="background:#d1fae5;color:#065f46;">Siz keyingisiz!</div>
+    <div class="ahead-badge" style="background:#d1fae5;color:#065f46;">{% trans "Siz keyingisiz!" %}</div>
     {% endif %}
     {% elif ticket.status == 'calling' %}
-    <span class="status-badge status-calling">📢 SIZI CHAQIRISHYAPTI!</span>
+    <span class="status-badge status-calling">📢 {% trans "SIZI CHAQIRISHYAPTI!" %}</span>
     {% else %}
-    <span class="status-badge status-done">✅ Yakunlandi</span>
+    <span class="status-badge status-done">✅ {% trans "Yakunlandi" %}</span>
     {% endif %}
   </div>
 
-  <div class="refresh-note">Sahifa avtomatik yangilanadi</div>
+  <div class="refresh-note">{% trans "Sahifa avtomatik yangilanadi" %}</div>
 </div>
 
 <script>

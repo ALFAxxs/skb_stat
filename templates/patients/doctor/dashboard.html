@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}{% trans "Shifokor kabineti" %}{% endblock %}
+
+{% block content %}
+<style>.patient-row:hover { background: #f0f4ff; }</style>
+{% include 'patients/doctor/_nav.html' with active='dashboard' %}
+
+{% if not doctor %}
+    <div class="alert alert-warning">
+        ⚠️ {% trans "Sizning shifokor profilingiz hali shakllantirilmagan. Administrator bilan bog'laning." %}
+    </div>
+{% else %}
+
+<h4 class="mb-1">👨‍⚕️ {{ doctor.full_name }}{% if doctor.is_head %} <span class="badge bg-success">{% trans "Bo'lim mudiri" %}</span>{% endif %}</h4>
+<p class="text-muted mb-4">
+    {% if doctor.department %}🏢 {% blocktrans with dept=doctor.department.name %}{{ dept }} bo'limi{% endblocktrans %}{% endif %}
+    {% if doctor.is_head %} — {% trans "statistikalar butun bo'lim bo'yicha ko'rsatilmoqda" %}{% else %} — {% trans "sizga biriktirilgan bemorlar bo'yicha statistikalar" %}{% endif %}
+</p>
+
+<!-- STATISTIKA KARTALARI -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
+            <div class="text-muted small">{% trans "Jami bemorlar" %}</div>
+            <div class="fs-3 fw-bold text-primary">{{ stats.total }}</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
+            <div class="text-muted small">{% trans "Statsionar" %}</div>
+            <div class="fs-3 fw-bold text-info">{{ stats.inpatient }}</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
+            <div class="text-muted small">{% trans "Ambulator" %}</div>
+            <div class="fs-3 fw-bold text-secondary">{{ stats.outpatient }}</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
+            <div class="text-muted small">{% trans "Faol bemorlar" %}</div>
+            <div class="fs-3 fw-bold text-warning">{{ stats.active }}</div>
+        </div></div>
+    </div>
+
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
+            <div class="text-muted small">{% trans "Temir yo'lchi" %}</div>
+            <div class="fs-4 fw-bold">{{ stats.railway }}</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
+            <div class="text-muted small">{% trans "Pullik" %}</div>
+            <div class="fs-4 fw-bold">{{ stats.paid }}</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
+            <div class="text-muted small">{% trans "Norezident" %}</div>
+            <div class="fs-4 fw-bold">{{ stats.non_resident }}</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
+            <div class="text-muted small">{% trans "Bugun qabul qilingan" %}</div>
+            <div class="fs-4 fw-bold text-success">{{ stats.admitted_today }}</div>
+        </div></div>
+    </div>
+
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
+            <div class="text-muted small">{% trans "Bugungi yangi" %}</div>
+            <div class="fs-4 fw-bold text-success">{{ stats.new_today }}</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
+            <div class="text-muted small">{% trans "Chiqarilgan" %}</div>
+            <div class="fs-4 fw-bold">{{ stats.discharged }}</div>
+        </div></div>
+    </div>
+    {% if doctor.is_head %}
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
+            <div class="text-muted small">{% trans "Bo'lim shifokorlari" %}</div>
+            <div class="fs-4 fw-bold">{{ stats.doctors_count }}</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100 {% if stats.unassigned %}border border-danger{% endif %}">
+            <div class="card-body text-center">
+                <div class="text-muted small">{% trans "Biriktirilmagan bemorlar" %}</div>
+                <div class="fs-4 fw-bold {% if stats.unassigned %}text-danger{% endif %}">{{ stats.unassigned }}</div>
+                {% if stats.unassigned %}
+                <a href="{% url 'doctor_assign_patients' %}" class="small">{% trans "Biriktirish →" %}</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- DIAGRAMMALAR -->
+<div class="row g-3 mb-4">
+    <div class="col-md-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-light"><strong>📈 {% trans "So'nggi 7 kunlik bemorlar oqimi" %}</strong></div>
+            <div class="card-body"><canvas id="flowChart" height="120"></canvas></div>
+        </div>
+    </div>
+    <div class="col-md-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-light"><strong>🥧 {% trans "Bemor toifalari" %}</strong></div>
+            <div class="card-body"><canvas id="categoryChart" height="120"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<!-- SO'NGGI FAOLIYAT -->
+<div class="row g-3">
+    <div class="col-md-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light d-flex justify-content-between">
+                <strong>🆕 {% trans "So'nggi bemorlar" %}</strong>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead><tr><th>{% trans "F.I.Sh." %}</th><th>{% trans "Bayonnoma" %}</th><th>{% trans "Turi" %}</th><th>{% trans "Holat" %}</th><th></th></tr></thead>
+                    <tbody>
+                        {% for p in recent_patients %}
+                        <tr class="patient-row" style="cursor:pointer;" onclick="window.location.href='{% url 'doctor_patient_card' p.pk %}'">
+                            <td>{{ p.full_name }}</td>
+                            <td>{{ p.medical_record_number }}</td>
+                            <td>{% if p.visit_type == 'inpatient' %}{% trans "Statsionar" %}{% else %}{% trans "Ambulator" %}{% endif %}</td>
+                            <td><span class="badge bg-{% if p.status == 'completed' %}secondary{% elif p.status == 'admitted' %}info{% else %}warning{% endif %}">{{ p.get_status_display }}</span></td>
+                            <td><a href="{% url 'doctor_patient_card' p.pk %}" class="btn btn-sm btn-outline-primary">{% trans "Ochish" %}</a></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center text-muted py-3">{% trans "Bemorlar topilmadi" %}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light"><strong>🔔 {% trans "So'nggi bildirishnomalar" %}</strong></div>
+            <ul class="list-group list-group-flush">
+                {% for n in notifications %}
+                <li class="list-group-item {% if not n.is_read %}fw-semibold bg-light{% endif %}">
+                    <div class="small">{{ n.message }}</div>
+                    <div class="text-muted" style="font-size:.75rem;">{{ n.created_at|date:"d.m.Y H:i" }}</div>
+                </li>
+                {% empty %}
+                <li class="list-group-item text-muted small text-center py-3">{% trans "Bildirishnomalar yo'q" %}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if doctor %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('flowChart'), {
+    type: 'line',
+    data: {
+        labels: {{ flow_labels|safe }},
+        datasets: [{
+            label: 'Qabul qilingan bemorlar',
+            data: {{ flow_counts|safe }},
+            borderColor: '#0d6efd',
+            backgroundColor: 'rgba(13,110,253,.15)',
+            tension: .3,
+            fill: true,
+        }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+});
+
+new Chart(document.getElementById('categoryChart'), {
+    type: 'doughnut',
+    data: {
+        labels: ["Temir yo'lchi", 'Pullik', 'Norezident'],
+        datasets: [{ data: {{ category_data|safe }}, backgroundColor: ['#0d6efd', '#198754', '#ffc107'] }]
+    },
+    options: { responsive: true }
+});
+</script>
+{% endif %}
+{% endblock %}

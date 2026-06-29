@@ -1,9 +1,10 @@
+{% load i18n %}
 <!DOCTYPE html>
 <html lang="uz">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shartnoma tekshiruvi — {{ contract.contract_number }}</title>
+<title>{% blocktrans with num=contract.contract_number %}Shartnoma tekshiruvi — {{ num }}{% endblocktrans %}</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <style>
   body { background: #f0f4f8; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
@@ -31,47 +32,47 @@
 <div class="verify-card">
 
   <div class="verified-icon">🏥</div>
-  <p class="hospital-name text-center">"Temir yo`l ijtimoiy xizmatlar" MCHJ<br>Markaziy klinik kasalxona filiali</p>
+  <p class="hospital-name text-center">{% trans '"Temir yo`l ijtimoiy xizmatlar" MCHJ' %}<br>{% trans "Markaziy klinik kasalxona filiali" %}</p>
   <hr>
 
   <div class="text-center mb-3">
     <div class="contract-num">{{ contract.contract_number }}</div>
-    <div style="font-size:13px; color:#888;">Shartnoma raqami</div>
+    <div style="font-size:13px; color:#888;">{% trans "Shartnoma raqami" %}</div>
     <div class="mt-2">
       {% if contract.status == 'active' %}
-        <span class="badge-active">✅ Shartnoma haqiqiy</span>
+        <span class="badge-active">✅ {% trans "Shartnoma haqiqiy" %}</span>
       {% elif contract.status == 'cancelled' %}
-        <span class="badge-cancel">❌ Bekor qilingan</span>
+        <span class="badge-cancel">❌ {% trans "Bekor qilingan" %}</span>
       {% else %}
-        <span class="badge-active" style="background:#fef3c7; color:#92400e;">📋 Loyiha</span>
+        <span class="badge-active" style="background:#fef3c7; color:#92400e;">📋 {% trans "Loyiha" %}</span>
       {% endif %}
     </div>
   </div>
 
   <div class="info-row">
-    <span class="info-label">Bemor:</span>
+    <span class="info-label">{% trans "Bemor:" %}</span>
     <span class="info-value">{{ short_name }}</span>
   </div>
   <div class="info-row">
-    <span class="info-label">Shartnoma sanasi:</span>
+    <span class="info-label">{% trans "Shartnoma sanasi:" %}</span>
     <span class="info-value">{{ contract.contract_date|date:"d.m.Y" }}</span>
   </div>
   <div class="info-row">
-    <span class="info-label">Shartnoma turi:</span>
+    <span class="info-label">{% trans "Shartnoma turi:" %}</span>
     <span class="info-value">{{ contract.get_contract_type_display }}</span>
   </div>
   <div class="info-row" style="border:none;">
-    <span class="info-label">Kasalxona:</span>
-    <span class="info-value">MKK filiali, Toshkent</span>
+    <span class="info-label">{% trans "Kasalxona:" %}</span>
+    <span class="info-value">{% trans "MKK filiali, Toshkent" %}</span>
   </div>
 
   <a href="/contracts/verify/{{ contract.verify_token }}/pdf/" class="btn-download">
-    📄 Shartnomani yuklab olish (PDF)
+    📄 {% trans "Shartnomani yuklab olish (PDF)" %}
   </a>
 
   <p style="font-size:11px; color:#aaa; text-align:center; margin-top:16px;">
-    Bu sahifa shartnomaning haqiqiyligini tasdiqlovchi<br>
-    rasmiy elektron tekshiruv sahifasi hisoblanadi.
+    {% trans "Bu sahifa shartnomaning haqiqiyligini tasdiqlovchi" %}<br>
+    {% trans "rasmiy elektron tekshiruv sahifasi hisoblanadi." %}
   </p>
 </div>
 </body>

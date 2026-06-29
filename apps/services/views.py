@@ -16,6 +16,7 @@ from django.http import JsonResponse, HttpResponse
 from django.db.models import Count, Sum, Q, ExpressionWrapper, DecimalField, F
 from django.db.models.functions import TruncDay, TruncMonth, TruncYear
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from apps.users.decorators import role_required
 from apps.patients.models import PatientCard, Doctor
@@ -30,16 +31,19 @@ def service_search(request):
     """AJAX — xizmat qidirish"""
     q = request.GET.get('q', '')
     category_id = request.GET.get('category', '')
+    category_type = request.GET.get('category_type', '')
     patient_id = request.GET.get('patient_id', '')
 
     qs = Service.objects.filter(is_active=True).select_related('category').order_by('name')
+    if category_type:
+        qs = qs.filter(category__category_type__in=category_type.split(','))
     if q:
         qs = qs.filter(Q(name__icontains=q) | Q(name_ru__icontains=q) | Q(code__icontains=q))
     if category_id and category_id != '__my_packages__':
         qs = qs.filter(category_id=category_id)
     # Bo'sh qidiruv — faqat 20 ta ko'rsatish
     # Kategoriya tanlangan bo'lsa — hammasi
-    limit = 50 if category_id else 20
+    limit = 50 if (category_id or category_type) else 20
 
     # Bemor kategoriyasiga qarab narx hisoblash
     patient_category = 'normal'
@@ -64,6 +68,19 @@ def service_search(request):
             'price_railway': float(s.price_railway),
         })
 
+    return JsonResponse(data, safe=False)
+
+
+@login_required
+def service_doctors(request, pk):
+    """AJAX — ushbu xizmatga (masalan, konsultatsiya turiga) biriktirilgan faol shifokorlar."""
+    service = get_object_or_404(Service, pk=pk)
+    doctors = service.assigned_doctors.filter(is_active=True).select_related('department').order_by('department__name', 'full_name')
+    data = [{
+        'id':         d.pk,
+        'full_name':  d.full_name,
+        'department': d.department.name if d.department_id else '',
+    } for d in doctors]
     return JsonResponse(data, safe=False)
 
 
@@ -144,7 +161,7 @@ def patient_services(request, patient_pk):
 
 
 @login_required
-@role_required('admin', 'doctor', 'statistician', 'reception')
+@role_required('admin', 'doctor', 'statistician', 'reception', 'head_nurse', 'old')
 def add_service(request, patient_pk):
     """Bemorga xizmat qo'shish — AJAX"""
     patient = get_object_or_404(PatientCard, pk=patient_pk)
@@ -169,6 +186,28 @@ def add_service(request, patient_pk):
                 ordered_by_id=ordered_by_id if ordered_by_id else None,
                 notes=notes,
             )
+
+            # Ambulator bemor uchun — xizmatni buyurtma qilgan shifokor avtomatik
+            # davolovchi shifokor sifatida biriktiriladi, shunda bemor uning
+            # kabinetida (Mening kabinetim) ko'rinadi.
+            if ordered_by_id and patient.visit_type == 'ambulatory' and not patient.attending_doctor_id:
+                ordering_doctor = Doctor.objects.filter(pk=ordered_by_id, is_active=True).first()
+                if ordering_doctor:
+                    patient.attending_doctor = ordering_doctor
+                    patient.attending_doctor_confirmed = True
+                    if not patient.department_head_id and ordering_doctor.department_id:
+                        patient.department_head = Doctor.objects.filter(
+                            department_id=ordering_doctor.department_id, is_head=True, is_active=True
+                        ).first()
+                    patient.save(update_fields=['attending_doctor', 'attending_doctor_confirmed', 'department_head'])
+
+                    from apps.patients.models import DoctorNotification
+                    if ordering_doctor.user_id:
+                        DoctorNotification.objects.create(
+                            recipient=ordering_doctor.user,
+                            patient_card=patient,
+                            message=f"Sizga yangi ambulator bemor biriktirildi: {patient.full_name} ({patient.medical_record_number})"
+                        )
 
             # MRT xizmati bo'lsa navbat yaratish/olish
             queue_info = {}
@@ -200,17 +239,17 @@ def add_service(request, patient_pk):
             })
 
         except Service.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Xizmat topilmadi'})
+            return JsonResponse({'success': False, 'error': _('Xizmat topilmadi')})
         except Exception as e:
             import logging
             logging.getLogger(__name__).error(f"add_service error: {e}", exc_info=True)
-            return JsonResponse({'success': False, 'error': 'Xizmat qo\'shishda xato yuz berdi'})
+            return JsonResponse({'success': False, 'error': _('Xizmat qo\'shishda xato yuz berdi')})
 
-    return JsonResponse({'success': False, 'error': 'POST required'})
+    return JsonResponse({'success': False, 'error': _('POST required')})
 
 
 @login_required
-@role_required('admin', 'doctor', 'statistician')
+@role_required('admin', 'doctor', 'statistician', 'old')
 def update_service(request, pk):
     """Xizmat holatini yangilash — AJAX"""
     ps = get_object_or_404(PatientService, pk=pk)
@@ -241,13 +280,13 @@ def update_service(request, pk):
         except Exception as e:
             import logging
             logging.getLogger(__name__).error(f"update_service error: {e}", exc_info=True)
-            return JsonResponse({'success': False, 'error': 'Xizmatni yangilashda xato yuz berdi'})
+            return JsonResponse({'success': False, 'error': _('Xizmatni yangilashda xato yuz berdi')})
 
     return JsonResponse({'success': False})
 
 
 @login_required
-@role_required('admin', 'doctor', 'reception')
+@role_required('admin', 'doctor', 'reception', 'old')
 def delete_service(request, pk):
     """Xizmatni o'chirish"""
     ps = get_object_or_404(PatientService, pk=pk)
@@ -259,7 +298,7 @@ def delete_service(request, pk):
             return JsonResponse({'success': True})
         return JsonResponse({
             'success': False,
-            'error': "Bajarilgan xizmatni o'chirib bo'lmaydi"
+            'error': _("Bajarilgan xizmatni o'chirib bo'lmaydi")
         })
 
     return JsonResponse({'success': False})
@@ -520,19 +559,83 @@ def export_services_excel(request):
 
 @login_required
 def medicine_search(request):
-    """AJAX — dori qidirish"""
+    """AJAX — dori qidirish (savdo nomi, МНН, doza bo'yicha)"""
     from .models import Medicine
-    q = request.GET.get('q', '').strip()
+    from django.db.models import Q
+    q        = request.GET.get('q', '').strip()
+    category = request.GET.get('category', '')
+    field    = request.GET.get('field', '')    # 'mnn' | 'form' | 'strength' — distinct list uchun
+
     qs = Medicine.objects.filter(is_active=True)
+    if category:
+        qs = qs.filter(category=category)
+
+    if field == 'mnn':
+        # МНН autocomplete — unique МНН ro'yxati
+        if q:
+            qs = qs.filter(mnn__icontains=q).exclude(mnn='')
+        else:
+            qs = qs.exclude(mnn='')
+        values = list(qs.values_list('mnn', flat=True).distinct().order_by('mnn')[:30])
+        return JsonResponse(values, safe=False)
+
+    if field == 'form':
+        # Форма выпуска autocomplete — unique dosage_form display ro'yxati
+        if q:
+            qs = qs.filter(dosage_form__icontains=q).exclude(dosage_form='')
+        else:
+            qs = qs.exclude(dosage_form='')
+        values = list(
+            qs.values_list('dosage_form', flat=True).distinct().order_by('dosage_form')[:20]
+        )
+        choices = dict(Medicine.DOSAGE_FORM_CHOICES)
+        labels  = list({choices.get(v, v) for v in values})
+        return JsonResponse(sorted(labels), safe=False)
+
+    if field == 'strength':
+        # Дозировка autocomplete
+        if q:
+            qs = qs.filter(strength__icontains=q).exclude(strength='')
+        else:
+            qs = qs.exclude(strength='')
+        values = list(qs.values_list('strength', flat=True).distinct().order_by('strength')[:30])
+        return JsonResponse(values, safe=False)
+
+    # Default: savdo nomi + МНН bo'yicha to'liq qidiruv
     if q:
-        qs = qs.filter(name__icontains=q)
-    qs = qs[:30]
-    data = [{'id': m.id, 'name': m.name, 'unit': m.unit} for m in qs]
+        qs = qs.filter(Q(name__icontains=q) | Q(mnn__icontains=q) | Q(strength__icontains=q))
+    qs = qs.order_by('name')[:30]
+    data = [
+        {
+            'id':          m.id,
+            'name':        m.name,
+            'mnn':         m.mnn,
+            'dosage_form': m.get_dosage_form_display() if m.dosage_form else '',
+            'strength':    m.strength,
+            'unit':        m.unit,
+            'category':    m.category,
+        }
+        for m in qs
+    ]
     return JsonResponse(data, safe=False)
 
 
+def _bounded_decimal(value, max_digits, decimal_places):
+    """Decimal'ga o'giradi va maydon max_digits/decimal_places chegarasini tekshiradi.
+    Chegaradan oshsa yoki noto'g'ri qiymat bo'lsa — None qaytaradi."""
+    from decimal import Decimal, InvalidOperation
+    try:
+        d = Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        return None
+    limit = Decimal(10) ** (max_digits - decimal_places)
+    if abs(d) >= limit:
+        return None
+    return d
+
+
 @login_required
-@role_required('admin', 'doctor', 'statistician', 'reception')
+@role_required('admin', 'doctor', 'statistician', 'reception', 'old')
 def add_medicine(request, patient_pk):
     """Bemorga dori qo'shish — AJAX POST"""
     from .models import Medicine, PatientMedicine
@@ -547,13 +650,19 @@ def add_medicine(request, patient_pk):
             ordered_by_id = data.get('ordered_by_id')
             notes        = data.get('notes', '')
 
-            from decimal import Decimal
+            quantity_dec = _bounded_decimal(quantity, 10, 2)
+            price_dec    = _bounded_decimal(price, 12, 2)
+            if quantity_dec is None:
+                return JsonResponse({'success': False, 'error': _("Miqdori noto'g'ri yoki juda katta")})
+            if price_dec is None:
+                return JsonResponse({'success': False, 'error': _("Narx noto'g'ri yoki juda katta (maksimal 9999999999.99 so'm)")})
+
             medicine = Medicine.objects.get(pk=medicine_id, is_active=True)
             pm = PatientMedicine.objects.create(
                 patient_card  = patient,
                 medicine      = medicine,
-                quantity      = Decimal(str(quantity)),
-                price         = Decimal(str(price)),
+                quantity      = quantity_dec,
+                price         = price_dec,
                 ordered_by_id = ordered_by_id or None,
                 notes         = notes,
             )
@@ -569,28 +678,34 @@ def add_medicine(request, patient_pk):
                 'ordered_at': pm.ordered_at.strftime('%d.%m.%Y %H:%M'),
             })
         except Medicine.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Dori topilmadi'})
+            return JsonResponse({'success': False, 'error': _('Dori topilmadi')})
         except Exception as e:
             import logging
             logging.getLogger(__name__).error(f"add_medicine error: {e}", exc_info=True)
-            return JsonResponse({'success': False, 'error': 'Dori qo\'shishda xato yuz berdi'})
+            return JsonResponse({'success': False, 'error': _('Dori qo\'shishda xato yuz berdi')})
 
     return JsonResponse({'success': False})
 
 
 @login_required
-@role_required('admin', 'doctor', 'statistician', 'reception')
+@role_required('admin', 'doctor', 'statistician', 'reception', 'old')
 def update_medicine(request, pk):
     """Dori yangilash — AJAX POST"""
     from .models import PatientMedicine
-    from decimal import Decimal
     pm = get_object_or_404(PatientMedicine, pk=pk)
 
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            pm.quantity      = Decimal(str(data.get('quantity', pm.quantity)))
-            pm.price         = Decimal(str(data.get('price', pm.price)))
+            quantity_dec = _bounded_decimal(data.get('quantity', pm.quantity), 10, 2)
+            price_dec    = _bounded_decimal(data.get('price', pm.price), 12, 2)
+            if quantity_dec is None:
+                return JsonResponse({'success': False, 'error': _("Miqdori noto'g'ri yoki juda katta")})
+            if price_dec is None:
+                return JsonResponse({'success': False, 'error': _("Narx noto'g'ri yoki juda katta (maksimal 9999999999.99 so'm)")})
+
+            pm.quantity      = quantity_dec
+            pm.price         = price_dec
             pm.ordered_by_id = data.get('ordered_by_id') or None
             pm.notes         = data.get('notes', pm.notes)
             pm.save()
@@ -602,12 +717,12 @@ def update_medicine(request, pk):
         except Exception as e:
             import logging
             logging.getLogger(__name__).error(f"update_medicine error: {e}", exc_info=True)
-            return JsonResponse({'success': False, 'error': 'Dorini yangilashda xato yuz berdi'})
+            return JsonResponse({'success': False, 'error': _('Dorini yangilashda xato yuz berdi')})
     return JsonResponse({'success': False})
 
 
 @login_required
-@role_required('admin', 'doctor', 'statistician', 'reception')
+@role_required('admin', 'doctor', 'statistician', 'reception', 'old')
 def delete_medicine(request, pk):
     """Dori o'chirish — AJAX DELETE"""
     from .models import PatientMedicine
@@ -1777,11 +1892,11 @@ def mark_operations(request):
             is_op = (action == 'mark')
             updated = Service.objects.filter(pk__in=service_ids).update(is_operation=is_op)
             if is_op:
-                messages.success(request, f"✅ {updated} ta xizmat operatsiya deb belgilandi.")
+                messages.success(request, _("✅ %(count)s ta xizmat operatsiya deb belgilandi.") % {'count': updated})
             else:
-                messages.warning(request, f"❌ {updated} ta xizmatdan operatsiya belgisi olib tashlandi.")
+                messages.warning(request, _("❌ %(count)s ta xizmatdan operatsiya belgisi olib tashlandi.") % {'count': updated})
         else:
-            messages.error(request, "Hech bir xizmat tanlanmadi.")
+            messages.error(request, _("Hech bir xizmat tanlanmadi."))
         return redirect('mark_operations')
 
     # Kategoriyalar va ularning xizmatlari (bitta so'rov bilan)
@@ -1850,11 +1965,11 @@ def package_add(request):
     try:
         body = json.loads(request.body)
     except Exception:
-        return JsonResponse({'success': False, 'error': 'JSON xato'})
+        return JsonResponse({'success': False, 'error': _('JSON xato')})
     name     = body.get('name', '').strip()
     services = body.get('services', [])
     if not name:
-        return JsonResponse({'success': False, 'error': 'Nom kiritilmagan'})
+        return JsonResponse({'success': False, 'error': _('Nom kiritilmagan')})
     pkg = ServicePackage.objects.create(name=name, owner=request.user)
     for i, svc in enumerate(services):
         try:
@@ -1900,10 +2015,10 @@ def package_toggle_service(request):
         body = json.loads(request.body)
         service_id = body.get('service_id')
     except Exception:
-        return JsonResponse({'success': False, 'error': 'JSON xato'})
+        return JsonResponse({'success': False, 'error': _('JSON xato')})
 
     if not service_id:
-        return JsonResponse({'success': False, 'error': 'service_id yo\'q'})
+        return JsonResponse({'success': False, 'error': _('service_id yo\'q')})
 
     service = get_object_or_404(Service, pk=service_id, is_active=True)
 

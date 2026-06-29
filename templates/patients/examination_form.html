@@ -1,0 +1,788 @@
+<!-- templates/patients/examination_form.html -->
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}{% blocktrans with et=exam_type_display name=patient.full_name %}{{ et }} — {{ name }}{% endblocktrans %}{% endblock %}
+
+{% block content %}
+<style>
+  body { background: #f3f4f6; }
+  .exam-wrap { max-width: 900px; margin: 0 auto; padding-bottom: 100px; }
+
+  /* Header */
+  .exam-topbar {
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 12px 0;
+    margin-bottom: 24px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .exam-breadcrumb { font-size:13px; color:#6b7280; }
+  .exam-breadcrumb a { color:#2563eb; text-decoration:none; }
+  .exam-breadcrumb span { margin: 0 6px; color:#d1d5db; }
+
+  /* Patient info bar */
+  .patient-bar {
+    background:#fff; border:1px solid #e5e7eb; border-radius:12px;
+    padding:16px 24px; margin-bottom:20px;
+    display:flex; gap:32px; align-items:center;
+  }
+  .patient-bar-item { display:flex; flex-direction:column; }
+  .patient-bar-item .lbl { font-size:11px; color:#9ca3af; text-transform:uppercase; letter-spacing:.05em; }
+  .patient-bar-item .val { font-size:15px; font-weight:600; color:#111827; margin-top:2px; }
+
+  /* Section card */
+  .exam-card {
+    background:#fff; border:1px solid #e5e7eb; border-radius:12px;
+    margin-bottom:12px; overflow:hidden;
+  }
+  .exam-card-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 20px; cursor:pointer; user-select:none;
+    border-bottom:1px solid #f3f4f6;
+  }
+  .exam-card-header:hover { background:#fafafa; }
+  .exam-card-label {
+    font-size:13px; font-weight:600; color:#6b7280;
+    text-transform:uppercase; letter-spacing:.05em;
+  }
+  .exam-card-body { padding:0 20px 16px; }
+  .exam-card textarea {
+    width:100%; border:none; outline:none; resize:vertical;
+    font-size:15px; line-height:1.7; color:#111827;
+    background:transparent; padding:14px 0;
+    min-height:100px; max-height:400px;
+  }
+  .exam-card textarea:focus { outline:none; }
+  .shablon-btn {
+    color:#9ca3af; cursor:pointer; font-size:16px;
+    background:none; border:none; padding:2px 6px; border-radius:4px;
+    transition:color .15s;
+  }
+  .shablon-btn:hover { color:#2563eb; background:#eff6ff; }
+
+  /* Specialist rows */
+  .spec-row { display:flex; gap:8px; margin-bottom:8px; align-items:start; }
+  .spec-row textarea {
+    min-height:60px !important; border:1px solid #e5e7eb !important;
+    border-radius:8px !important; padding:8px 12px !important;
+    font-size:14px !important;
+  }
+  .btn-add-spec {
+    font-size:13px; color:#2563eb; background:none; border:1px solid #dbeafe;
+    border-radius:6px; padding:6px 12px; cursor:pointer; white-space:nowrap;
+    transition:background .15s;
+  }
+  .btn-add-spec:hover { background:#eff6ff; }
+
+  /* Lab/diagnostic natijalar checklist */
+  .lab-inv-item {
+    display:flex; gap:10px; align-items:start; padding:10px 12px;
+    border:1px solid #e5e7eb; border-radius:8px; margin-bottom:8px; cursor:pointer;
+  }
+  .lab-inv-item:hover { background:#fafafa; }
+  .lab-inv-item input[type=checkbox] { margin-top:3px; flex-shrink:0; }
+  .lab-inv-item .lab-inv-title { font-weight:600; font-size:14px; color:#111827; }
+  .lab-inv-item .lab-inv-date { font-size:12px; color:#9ca3af; margin-left:8px; }
+  .lab-inv-item .lab-inv-text { font-size:13px; color:#374151; margin-top:4px; }
+  .lab-inv-item .lab-inv-reco { font-size:12px; color:#6b7280; margin-top:2px; }
+  .lab-inv-empty { color:#9ca3af; font-size:13px; padding:8px 0; }
+
+  /* Diagnosis section */
+  .diag-section { background:#fff; border:1px solid #e5e7eb; border-radius:12px; margin-bottom:12px; }
+  .diag-header { padding:16px 20px; border-bottom:1px solid #f3f4f6; }
+  .diag-header h6 { margin:0; font-weight:700; color:#111827; }
+  .diag-form-area { padding:20px; }
+  .diag-row { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+  .diag-row > * { flex:1; min-width:180px; }
+  .char-counter { font-size:11px; color:#9ca3af; text-align:right; }
+  .diag-table-wrap { padding:0 20px 20px; }
+
+  /* Sticky footer */
+  .exam-sticky-footer {
+    position:fixed; bottom:0; left:0; right:0; z-index:200;
+    background:#fff; border-top:1px solid #e5e7eb;
+    padding:12px 24px;
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+  }
+  .btn-finish {
+    background:#2563eb; color:#fff; border:none;
+    padding:10px 28px; border-radius:8px; font-size:15px;
+    font-weight:600; cursor:pointer; transition:background .2s;
+  }
+  .btn-finish:hover { background:#1d4ed8; }
+  .btn-finish:disabled { background:#9ca3af; cursor:not-allowed; }
+  .btn-cancel-red {
+    background:none; color:#dc2626; border:1px solid #fca5a5;
+    padding:10px 20px; border-radius:8px; font-size:14px;
+    cursor:pointer; transition:background .2s;
+  }
+  .btn-cancel-red:hover { background:#fef2f2; }
+  .btn-outline-action {
+    background:none; border:1px solid #d1d5db; color:#374151;
+    padding:10px 16px; border-radius:8px; font-size:14px; cursor:pointer;
+    transition:background .15s;
+  }
+  .btn-outline-action:hover { background:#f9fafb; }
+
+  /* Required star */
+  .req { color:#ef4444; margin-left:2px; }
+</style>
+
+<!-- BREADCRUMB BAR -->
+<div class="exam-topbar">
+  <div class="container-fluid px-4">
+    <div class="exam-breadcrumb">
+      <a href="{% url 'patient_list' %}">{% trans "Bemorlar" %}</a>
+      <span>›</span>
+      <a href="{% url 'patient_detail' patient.pk %}">{{ patient.full_name }}</a>
+      <span>›</span>
+      <strong style="color:#111827;">{{ exam_type_display }}</strong>
+    </div>
+  </div>
+</div>
+
+<div class="exam-wrap container-fluid px-4">
+
+  <!-- PATIENT INFO BAR -->
+  <div class="patient-bar">
+    <div class="patient-bar-item">
+      <span class="lbl">{% trans "F.I.Sh" %}</span>
+      <span class="val">{{ patient.full_name }}</span>
+    </div>
+    <div class="patient-bar-item">
+      <span class="lbl">{% trans "Tug'ilgan sana" %}</span>
+      <span class="val">{{ patient.birth_date|date:"d.m.Y" }}</span>
+    </div>
+    <div class="patient-bar-item">
+      <span class="lbl">{% trans "Bayonnoma" %}</span>
+      <span class="val">#{{ patient.medical_record_number }}</span>
+    </div>
+    {% if patient.department %}
+    <div class="patient-bar-item">
+      <span class="lbl">{% trans "Bo'lim" %}</span>
+      <span class="val">{{ patient.department }}</span>
+    </div>
+    {% endif %}
+    <div class="patient-bar-item ms-auto">
+      <span class="lbl">{% trans "Shifokor" %}</span>
+      <span class="val">{{ request.user.get_full_name|default:request.user.username }}</span>
+    </div>
+  </div>
+
+  {% if messages %}{% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}{% endif %}
+
+  <form method="post" id="exam-main-form">
+    {% csrf_token %}
+    <input type="hidden" name="examination_type" value="{{ exam_type }}">
+    <input type="hidden" name="next" value="{{ next_url }}">
+
+    <!-- BO'LIM MUDIRI (faqat epikrizlarda) -->
+    {% if is_epicrisis %}
+    <div class="exam-card">
+      <div class="exam-card-body" style="padding:16px 20px;">
+        <label class="form-label fw-semibold">
+          {% trans "Bo'lim mudiri" %}<span class="req">*</span>
+          {% if patient.department %}
+          <span class="text-muted fw-normal" style="font-size:12px;">
+            {% blocktrans with dept=patient.department %}({{ dept }} bo'limi){% endblocktrans %}
+          </span>
+          {% endif %}
+        </label>
+        <input type="text" name="department_head_name" class="form-control"
+               placeholder="{% trans "F.I.Sh kiriting..." %}"
+               value="{{ dept_head_default }}"
+               id="dept-head-input"
+               list="dept-heads-list"
+               autocomplete="off"
+               required>
+        <!-- Barcha bo'lim mudirlari datalist -->
+        <datalist id="dept-heads-list">
+          {% for doc in dept_heads %}
+          <option value="{{ doc.full_name }}"
+                  label="{% if doc.department %}{{ doc.department }}{% endif %}">
+          {% endfor %}
+        </datalist>
+        <div class="invalid-feedback">{% trans "Bu majburiy maydondir" %}</div>
+        {% if dept_head_default %}
+        <div class="form-text text-success small mt-1">
+          ✅ {% blocktrans with dept=patient.department %}{{ dept }} bo'lim mudiri avtomatik to'ldirildi{% endblocktrans %}
+        </div>
+        {% else %}
+        <div class="form-text text-warning small mt-1">
+          ⚠️ {% trans "Bo'lim mudiri topilmadi — qo'lda kiriting" %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- VAQT -->
+    <div class="exam-card">
+      <div class="exam-card-body" style="padding:16px 20px;">
+        <label class="form-label fw-semibold">{% trans "Ko'rikdan o'tkazilgan vaqti" %}</label>
+        <input type="time" name="examination_time_only" class="form-control" style="max-width:160px;"
+               id="exam-time-only"
+               value="{% if exam and exam.examination_datetime %}{{ exam.examination_datetime|time:'H:i' }}{% else %}{{ now|time:'H:i' }}{% endif %}">
+        <input type="hidden" name="examination_datetime" id="exam-dt-hidden"
+               value="{% if exam and exam.examination_datetime %}{{ exam.examination_datetime|date:'Y-m-d' }}T{{ exam.examination_datetime|time:'H:i' }}{% else %}{{ now|date:'Y-m-d' }}T{{ now|time:'H:i' }}{% endif %}">
+      </div>
+    </div>
+
+    <!-- ASOSIY MAYDONLAR (view dan filtrlangan) -->
+    {% for fname, label in visible_fields %}
+
+    {% if fname == 'specialist_consultations' %}
+    <!-- Specialist consultations — ko'p qatorli -->
+    <div class="exam-card">
+      <div class="exam-card-header" onclick="toggleCard('body-spec','icon-spec')">
+        <span class="exam-card-label">{{ label }}</span>
+        <span id="icon-spec" style="color:#9ca3af;font-size:18px;">＋</span>
+      </div>
+      <div class="exam-card-body" id="body-spec" style="display:none;">
+        <div id="spec-rows">
+          {% if exam and exam.specialist_consultations %}
+            {% for line in exam.specialist_consultations.splitlines %}
+            <div class="spec-row">
+              <textarea class="form-control spec-input" rows="2">{{ line }}</textarea>
+              <button type="button" class="btn btn-sm btn-outline-danger mt-1"
+                      onclick="this.closest('.spec-row').remove()">✕</button>
+            </div>
+            {% endfor %}
+          {% else %}
+          <div class="spec-row">
+            <textarea class="form-control spec-input" rows="2"
+                      placeholder="{% trans "Mutaxassis va xulosa..." %}"></textarea>
+            <button type="button" class="btn btn-sm btn-outline-danger mt-1"
+                    onclick="this.closest('.spec-row').remove()">✕</button>
+          </div>
+          {% endif %}
+        </div>
+        <input type="hidden" name="specialist_consultations" id="spec-hidden">
+        <button type="button" class="btn-add-spec mt-2" onclick="addSpecRow()">＋ {% trans "Qo'shish" %}</button>
+      </div>
+    </div>
+
+    {% elif fname == 'lab_investigations' %}
+    <!-- Laboratoriya/diagnostika natijalari — checkbox orqali tanlash -->
+    <div class="exam-card">
+      <div class="exam-card-header" onclick="toggleCard('body-labinv','icon-labinv')">
+        <span class="exam-card-label">{{ label }}</span>
+        <span id="icon-labinv" style="color:#9ca3af;font-size:18px;">＋</span>
+      </div>
+      <div class="exam-card-body" id="body-labinv" style="display:none;">
+        {% for item in available_lab_results %}
+        {% with log=item.result_logs.first %}
+        <label class="lab-inv-item">
+          <input type="checkbox" name="selected_lab_ids" value="{{ item.pk }}"
+                 {% if item.pk in selected_lab_ids %}checked{% endif %}>
+          <div>
+            <span class="lab-inv-title">🧪 {{ item.test_name }}</span>
+            <span class="lab-inv-date">{{ item.created_at|date:"d.m.Y" }}</span>
+            {% if log %}
+              {% if log.result_text %}<div class="lab-inv-text">{{ log.result_text }}</div>{% endif %}
+              {% if log.recommendation %}<div class="lab-inv-reco">{% trans "Tavsiya" %}: {{ log.recommendation }}</div>{% endif %}
+            {% endif %}
+          </div>
+        </label>
+        {% endwith %}
+        {% endfor %}
+        {% for item in available_diag_results %}
+        {% with log=item.result_logs.first %}
+        <label class="lab-inv-item">
+          <input type="checkbox" name="selected_diag_ids" value="{{ item.pk }}"
+                 {% if item.pk in selected_diag_ids %}checked{% endif %}>
+          <div>
+            <span class="lab-inv-title">🔬 {{ item.get_diagnostic_type_display }}</span>
+            <span class="lab-inv-date">{{ item.created_at|date:"d.m.Y" }}</span>
+            {% if log %}
+              {% if log.conclusion %}<div class="lab-inv-text">{{ log.conclusion }}</div>{% endif %}
+              {% if log.recommendation %}<div class="lab-inv-reco">{% trans "Tavsiya" %}: {{ log.recommendation }}</div>{% endif %}
+            {% endif %}
+          </div>
+        </label>
+        {% endwith %}
+        {% endfor %}
+        {% if not available_lab_results and not available_diag_results %}
+        <div class="lab-inv-empty">{% trans "Tayyor natijalar yo'q" %}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% else %}
+    <!-- Oddiy textarea maydon -->
+    <div class="exam-card">
+      <div class="exam-card-header" onclick="toggleCard('body-{{ fname }}','icon-{{ fname }}')">
+        <div class="d-flex align-items-center gap-2">
+          <span class="exam-card-label">{{ label }}</span>
+          <button type="button" class="shablon-btn"
+                  onclick="event.stopPropagation();openShablon('{{ fname }}')"
+                  title="{% trans "Shablondan qo'shish" %}">📋</button>
+        </div>
+        <span id="icon-{{ fname }}" style="color:#9ca3af;font-size:18px;">＋</span>
+      </div>
+      <div class="exam-card-body" id="body-{{ fname }}" style="display:none;">
+        <textarea name="{{ fname }}" id="examfield-{{ fname }}" placeholder="{% trans "Yozing..." %}">{% if exam %}{% if fname == 'complaints' %}{{ exam.complaints }}{% elif fname == 'anamnesis_morbi' %}{{ exam.anamnesis_morbi }}{% elif fname == 'epidemiological_anamnesis' %}{{ exam.epidemiological_anamnesis }}{% elif fname == 'anamnesis_vitae' %}{{ exam.anamnesis_vitae }}{% elif fname == 'status_praesens' %}{{ exam.status_praesens }}{% elif fname == 'neurological_status' %}{{ exam.neurological_status }}{% elif fname == 'status_localis' %}{{ exam.status_localis }}{% elif fname == 'allergy_anamnesis' %}{{ exam.allergy_anamnesis }}{% elif fname == 'conclusion' %}{{ exam.conclusion }}{% elif fname == 'drug_justification' %}{{ exam.drug_justification }}{% endif %}{% endif %}</textarea>
+      </div>
+    </div>
+    {% endif %}
+
+    {% endfor %}
+
+    <!-- TASHXIS BO'LIMI -->
+    <div class="diag-section">
+      <div class="diag-header d-flex align-items-center justify-content-between">
+        <h6>🏷 {% trans "Barcha tashxislar (ICD-10)" %}</h6>
+      </div>
+      <div class="diag-form-area">
+        <div id="diag-alert-exam"></div>
+        <div class="diag-row">
+          <div>
+            <label class="form-label fw-semibold" style="font-size:13px;">{% trans "Tashxisni tanlang" %}</label>
+            <div class="position-relative">
+              <input type="text" id="diag-icd-input" class="form-control"
+                     placeholder="🔍 {% trans "Kod yoki nom..." %}" autocomplete="off">
+              <div id="diag-icd-drop"
+                   style="display:none;position:absolute;top:100%;left:0;right:0;z-index:500;
+                          background:#fff;border:1px solid #e5e7eb;border-radius:8px;
+                          max-height:260px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.12);">
+              </div>
+            </div>
+            <input type="hidden" id="diag-icd-val" value="">
+            <div id="diag-icd-badge" class="mt-1"></div>
+          </div>
+          <div>
+            <label class="form-label fw-semibold" style="font-size:13px;">{% trans "Tashxis turi" %}</label>
+            <select id="diag-type-ex" class="form-select">
+              {% for val, lbl in diag_type_choices %}
+              <option value="{{ val }}">{{ lbl }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="form-label fw-semibold" style="font-size:13px;">{% trans "Turini tanlang" %}</label>
+            <select id="diag-role-ex" class="form-select">
+              {% for val, lbl in diag_role_choices %}
+              <option value="{{ val }}">{{ lbl }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="form-label fw-semibold" style="font-size:13px;">{% trans "Kasallikning kechishi" %}</label>
+            <select id="diag-course-ex" class="form-select">
+              {% for val, lbl in disease_course_choices %}
+              <option value="{{ val }}">{{ lbl }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="mb-2">
+          <label class="form-label fw-semibold" style="font-size:13px;">
+            {% trans "Klinik tashxis (ixtiyoriy)" %}
+          </label>
+          <textarea id="diag-clinical-ex" class="form-control" rows="2" maxlength="3000"
+                    placeholder="{% trans "Klinik tashxis matni..." %}" oninput="updateCounter(this)"></textarea>
+          <div class="char-counter"><span id="diag-counter">0</span> / 3000</div>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm px-4" id="btn-add-diag-ex">
+          {% trans "Tashxisni qo'shish" %}
+        </button>
+      </div>
+
+      <!-- Mavjud tashxislar jadvali -->
+      <div class="diag-table-wrap">
+        {% if existing_diagnoses %}
+        <table class="table table-sm table-bordered align-middle mb-0" id="diag-ex-table">
+          <thead class="table-light">
+            <tr>
+              <th>{% trans "Tashxislar" %}</th>
+              <th>{% trans "Tashxis turi" %}</th>
+              <th>{% trans "Kechishi" %}</th>
+              <th>{% trans "Sana" %}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="diag-ex-tbody">
+            {% for d in existing_diagnoses %}
+            <tr data-id="{{ d.id }}">
+              <td>
+                {% if d.icd10_code %}<span class="badge bg-primary me-1">{{ d.icd10_code.code }}</span>{% endif %}
+                <span class="small">{{ d.icd10_code.title_uz|default:"—" }}</span>
+                {% if d.clinical_text %}
+                <div class="text-muted small mt-1">{{ d.clinical_text|truncatechars:80 }}</div>
+                {% endif %}
+              </td>
+              <td><span class="badge bg-secondary">{{ d.get_diagnosis_type_display }}</span></td>
+              <td class="small">{{ d.get_disease_course_display|default:"—" }}</td>
+              <td class="small text-muted">{{ d.created_at|date:"d.m.Y" }}</td>
+              <td>
+                <button type="button" class="btn btn-sm btn-outline-danger btn-del-diag-ex"
+                        data-id="{{ d.id }}">🗑</button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div id="diag-ex-tbody-empty" class="text-muted small text-center py-3">
+          {% trans "Tashxislar qo'shilmagan" %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </form><!-- /exam-main-form -->
+</div>
+
+<!-- STICKY FOOTER -->
+<div class="exam-sticky-footer">
+  <button type="button" class="btn-cancel-red"
+          onclick="if(confirm('{% trans "Bekor qilinsinmi?" %}')) window.location='{% url 'patient_detail' patient.pk %}'">
+    {% trans "Qabulga yozuvni bekor qilish" %}
+  </button>
+  <div class="ms-auto d-flex gap-2">
+    {% if exam %}
+    <a href="{% url 'examination_print' patient.pk exam.pk %}" class="btn-outline-action text-decoration-none" target="_blank">🖨 {% trans "Chop etish" %}</a>
+    {% else %}
+    <button type="button" class="btn-outline-action" disabled title="{% trans "Avval ko'rikni saqlang" %}">🖨 {% trans "Chop etish" %}</button>
+    {% endif %}
+    <a href="{% url 'patient_detail' patient.pk %}" class="btn-outline-action text-decoration-none">
+      {% trans "Bekor qilish" %}
+    </a>
+    <button type="submit" form="exam-main-form" class="btn-finish" id="btn-submit-exam">
+      {% if is_epicrisis %}💾 {% trans "Saqlash" %}{% else %}💾 {% trans "Ko'rikni saqlash" %}{% endif %}
+    </button>
+  </div>
+</div>
+
+<!-- SHABLON MODALI -->
+<div class="modal fade" id="shablonModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title fw-bold">📋 {% trans "Shablonlar" %}</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="tmpl-kind">
+
+        {% for fname, label, tmpls in visible_fields_with_templates %}
+        <div id="tmpl-list-{{ fname }}" class="tmpl-list" style="display:none;">
+          {% for t in tmpls %}
+          <button type="button" class="btn btn-outline-primary btn-sm w-100 text-start mb-1 tmpl-option"
+                  data-kind="{{ fname }}" data-body="{{ t.body }}">{{ t.title }}</button>
+          {% empty %}
+          <div class="text-muted small mb-2">{% trans "Shablonlar yo'q." %}</div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+
+        <hr>
+        <button type="button" class="btn btn-sm btn-outline-success mb-2" id="tmpl-add-toggle">+ {% trans "Yangi shablon qo'shish" %}</button>
+        <div id="tmpl-add-form" style="display:none;">
+          <input type="text" id="tmpl-new-title" class="form-control form-control-sm mb-2" placeholder="{% trans "Shablon nomi..." %}">
+          <textarea id="tmpl-new-body" class="form-control form-control-sm mb-2" rows="3" placeholder="{% trans "Shablon matni..." %}"></textarea>
+          <button type="button" class="btn btn-sm btn-success" id="tmpl-new-save">{% trans "Saqlash" %}</button>
+          <div id="tmpl-add-msg" class="small mt-1"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const PATIENT_ID   = {{ patient.pk }};
+const DIAG_URL     = `/patients/ajax/episode-diagnoses/${PATIENT_ID}/`;
+const ICD10_URL    = `/patients/ajax/icd10-search/`;
+const CSRF         = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+let   activeField  = null;
+const TXT_SPEC_PLACEHOLDER = "{% trans "Mutaxassis va xulosa..." %}";
+const MSG_SAVING = "⏳ {% trans 'Saqlanmoqda...' %}";
+const MSG_NO_DIAGNOSES = "{% trans "Tashxislar qo'shilmagan" %}";
+const MSG_DELETE_CONFIRM = "{% trans "O'chirilsinmi?" %}";
+const MSG_ICD_NOT_SELECTED = "❌ {% trans "MKB-10 kodi tanlanmagan" %}";
+const MSG_DIAGNOSIS_ADDED = "✅ {% trans "Tashxis qo'shildi" %}";
+const MSG_ERROR_PREFIX = "❌ ";
+const MSG_ERROR = "{% trans 'Xato' %}";
+
+// ===== ACCORDION TOGGLE =====
+function toggleCard(bodyId, iconId) {
+  const body = document.getElementById(bodyId);
+  const icon = document.getElementById(iconId);
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  if (icon) icon.textContent = isOpen ? '＋' : '－';
+}
+
+// Birinchi maydonni ochiq ko'rsatish
+document.addEventListener('DOMContentLoaded', function() {
+  const firstBody = document.querySelector('.exam-card-body[id^="body-"]');
+  if (firstBody) {
+    firstBody.style.display = 'block';
+    const id = firstBody.id.replace('body-', '');
+    const icon = document.getElementById('icon-' + id);
+    if (icon) icon.textContent = '－';
+  }
+
+  // Auto-resize textareas
+  document.querySelectorAll('.exam-card textarea').forEach(ta => {
+    ta.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.max(100, this.scrollHeight) + 'px';
+    });
+    ta.style.height = Math.max(100, ta.scrollHeight) + 'px';
+  });
+
+  // Vaqt inputi → hidden datetime yangilash
+  const timeOnly = document.getElementById('exam-time-only');
+  const dtHidden = document.getElementById('exam-dt-hidden');
+  if (timeOnly && dtHidden) {
+    timeOnly.addEventListener('change', function() {
+      const cur = dtHidden.value || '';
+      const datePart = cur.split('T')[0] || '{{ now|date:"Y-m-d" }}';
+      dtHidden.value = `${datePart}T${this.value}`;
+    });
+  }
+
+  // Bo'lim mudiri validation
+  const headInput = document.getElementById('dept-head-input');
+  if (headInput) {
+    headInput.closest('form')?.addEventListener('submit', function(e) {
+      if (!headInput.value.trim()) {
+        e.preventDefault();
+        headInput.classList.add('is-invalid');
+        headInput.focus();
+      }
+    });
+    headInput.addEventListener('input', () => headInput.classList.remove('is-invalid'));
+  }
+});
+
+// ===== SPECIALIST CONSULTATIONS =====
+function addSpecRow() {
+  const rows = document.getElementById('spec-rows');
+  const div  = document.createElement('div');
+  div.className = 'spec-row';
+  div.innerHTML = `<textarea class="form-control spec-input" rows="2" placeholder="${TXT_SPEC_PLACEHOLDER}"></textarea>
+    <button type="button" class="btn btn-sm btn-outline-danger mt-1"
+            onclick="this.closest('.spec-row').remove()">✕</button>`;
+  rows?.appendChild(div);
+}
+
+// Before submit — collect spec rows
+document.getElementById('exam-main-form')?.addEventListener('submit', function(e) {
+  // Collect specialist rows
+  const specInputs = document.querySelectorAll('.spec-input');
+  const specVal    = Array.from(specInputs).map(t => t.value.trim()).filter(Boolean).join('\n');
+  const specHidden = document.getElementById('spec-hidden');
+  if (specHidden) specHidden.value = specVal;
+
+  // Submit protection
+  const btn = document.getElementById('btn-submit-exam');
+  if (btn) { btn.disabled = true; btn.textContent = MSG_SAVING; }
+});
+
+// ===== SHABLON =====
+const TEMPLATE_CREATE_URL = "{% url 'doctor_template_create' %}";
+
+function openShablon(fieldName) {
+  activeField = fieldName;
+  document.getElementById('tmpl-kind').value = fieldName;
+  document.querySelectorAll('.tmpl-list').forEach(el => el.style.display = 'none');
+  document.getElementById('tmpl-list-' + fieldName).style.display = 'block';
+  document.getElementById('tmpl-add-form').style.display = 'none';
+  document.getElementById('tmpl-add-msg').textContent = '';
+  new bootstrap.Modal(document.getElementById('shablonModal')).show();
+}
+
+function insertTmplOption(btn) {
+  const kind  = btn.dataset.kind;
+  const field = document.getElementById('examfield-' + kind);
+  if (field) field.value = field.value ? field.value + '\n' + btn.dataset.body : btn.dataset.body;
+  bootstrap.Modal.getInstance(document.getElementById('shablonModal'))?.hide();
+}
+
+document.querySelectorAll('.tmpl-option').forEach(btn => {
+  btn.addEventListener('click', function() { insertTmplOption(this); });
+});
+
+document.getElementById('tmpl-add-toggle')?.addEventListener('click', function() {
+  const form = document.getElementById('tmpl-add-form');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+});
+
+document.getElementById('tmpl-new-save')?.addEventListener('click', async function() {
+  const kind  = document.getElementById('tmpl-kind').value;
+  const title = document.getElementById('tmpl-new-title').value.trim();
+  const body  = document.getElementById('tmpl-new-body').value.trim();
+  const msgEl = document.getElementById('tmpl-add-msg');
+  if (!title || !body) {
+    msgEl.className = 'small mt-1 text-danger';
+    msgEl.textContent = "{% trans 'Nomi va matnini kiriting' %}";
+    return;
+  }
+  try {
+    const resp = await fetch(TEMPLATE_CREATE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ kind, title, body }),
+    });
+    const data = await resp.json();
+    if (data.success) {
+      const list = document.getElementById('tmpl-list-' + kind);
+      const newBtn = document.createElement('button');
+      newBtn.type = 'button';
+      newBtn.className = 'btn btn-outline-primary btn-sm w-100 text-start mb-1 tmpl-option';
+      newBtn.dataset.kind = kind;
+      newBtn.dataset.body = data.body;
+      newBtn.textContent = data.title;
+      newBtn.addEventListener('click', function() { insertTmplOption(this); });
+      list.appendChild(newBtn);
+      document.getElementById('tmpl-new-title').value = '';
+      document.getElementById('tmpl-new-body').value = '';
+      document.getElementById('tmpl-add-form').style.display = 'none';
+      msgEl.className = 'small mt-1 text-success';
+      msgEl.textContent = "{% trans 'Saqlandi' %}";
+    } else {
+      msgEl.className = 'small mt-1 text-danger';
+      msgEl.textContent = data.error || "{% trans 'Xato' %}";
+    }
+  } catch (e) {
+    msgEl.className = 'small mt-1 text-danger';
+    msgEl.textContent = "{% trans 'Tarmoq xatosi' %}: " + e.message;
+  }
+});
+
+// ===== ICD-10 AUTOCOMPLETE =====
+const icdInp  = document.getElementById('diag-icd-input');
+const icdDrop = document.getElementById('diag-icd-drop');
+const icdVal  = document.getElementById('diag-icd-val');
+const icdBadge= document.getElementById('diag-icd-badge');
+let icdTimer;
+
+icdInp?.addEventListener('input', function() {
+  clearTimeout(icdTimer);
+  const q = this.value.trim();
+  if (q.length < 2) { icdDrop.style.display='none'; return; }
+  icdTimer = setTimeout(() => {
+    fetch(`${ICD10_URL}?q=${encodeURIComponent(q)}`)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.length) { icdDrop.style.display='none'; return; }
+        icdDrop.innerHTML = data.map(d => `
+          <div class="icd-item" data-code="${d.code}"
+               data-uz="${(d.title_uz||'').replace(/"/g,'&quot;')}"
+               style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:13px;">
+            <strong style="color:#2563eb;">${d.code}</strong>
+            <span class="ms-2">${d.title_uz}</span>
+            ${d.title_ru ? `<div class="text-muted" style="font-size:11px;">${d.title_ru}</div>` : ''}
+          </div>`).join('');
+        icdDrop.style.display = 'block';
+        icdDrop.querySelectorAll('.icd-item').forEach(item => {
+          item.addEventListener('mouseenter', () => item.style.background='#eff6ff');
+          item.addEventListener('mouseleave', () => item.style.background='');
+          item.addEventListener('click', () => {
+            icdVal.value  = item.dataset.code;
+            icdInp.value  = '';
+            icdDrop.style.display = 'none';
+            icdBadge.innerHTML = `<span class="badge px-3 py-2" style="background:#2563eb;font-size:13px;">
+              ${item.dataset.code} — ${item.dataset.uz}
+              <button type="button" onclick="clearIcd()" class="btn-close btn-close-white ms-2"
+                      style="font-size:9px;"></button></span>`;
+          });
+        });
+      });
+  }, 250);
+});
+document.addEventListener('click', e => {
+  if (!icdInp?.contains(e.target) && !icdDrop?.contains(e.target))
+    icdDrop.style.display = 'none';
+});
+function clearIcd() { icdVal.value=''; icdBadge.innerHTML=''; }
+
+// ===== CHAR COUNTER =====
+function updateCounter(ta) {
+  document.getElementById('diag-counter').textContent = ta.value.length;
+}
+
+// ===== TASHXIS QO'SHISH =====
+function reloadDiags() {
+  fetch(DIAG_URL).then(r=>r.json()).then(d=>{
+    const tbody = document.getElementById('diag-ex-tbody');
+    const empty = document.getElementById('diag-ex-tbody-empty');
+    if (!tbody && !empty) return;
+    const diags = d.diagnoses || [];
+    if (diags.length && tbody) {
+      tbody.innerHTML = diags.map(d=>`
+        <tr data-id="${d.id}">
+          <td>
+            ${d.icd10_code?`<span class="badge bg-primary me-1">${d.icd10_code}</span>`:''}
+            <span class="small">${d.icd10_title||'—'}</span>
+            ${d.clinical_text?`<div class="text-muted small mt-1">${d.clinical_text.substring(0,80)}</div>`:''}
+          </td>
+          <td><span class="badge bg-secondary">${d.diagnosis_type_display}</span></td>
+          <td class="small">${d.diagnosis_role_display||'—'}</td>
+          <td class="small text-muted">${d.created_at||''}</td>
+          <td><button type="button" class="btn btn-sm btn-outline-danger btn-del-diag-ex"
+                      data-id="${d.id}">🗑</button></td>
+        </tr>`).join('');
+      attachDelHandlers();
+    } else if (empty) {
+      empty.textContent = MSG_NO_DIAGNOSES;
+    }
+  });
+}
+
+function attachDelHandlers() {
+  document.querySelectorAll('.btn-del-diag-ex').forEach(btn => {
+    btn.onclick = function() {
+      if (!confirm(MSG_DELETE_CONFIRM)) return;
+      fetch(`/patients/ajax/episode-diagnosis/${this.dataset.id}/delete/`,{
+        method:'POST',headers:{'X-CSRFToken':CSRF}
+      }).then(r=>r.json()).then(d=>{if(d.success) reloadDiags();});
+    };
+  });
+}
+attachDelHandlers();
+
+document.getElementById('btn-add-diag-ex')?.addEventListener('click', function() {
+  const code = icdVal.value;
+  if (!code) {
+    showDiagAlert(MSG_ICD_NOT_SELECTED, 'danger'); return;
+  }
+  const body = {
+    icd10_code:     code,
+    diagnosis_type: document.getElementById('diag-type-ex').value,
+    diagnosis_role: document.getElementById('diag-role-ex').value,
+    disease_course: document.getElementById('diag-course-ex').value,
+    clinical_text:  document.getElementById('diag-clinical-ex').value,
+  };
+  fetch(DIAG_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+    body: JSON.stringify(body)
+  }).then(r=>r.json()).then(d=>{
+    if(d.success){
+      showDiagAlert(MSG_DIAGNOSIS_ADDED,'success');
+      clearIcd();
+      document.getElementById('diag-clinical-ex').value='';
+      document.getElementById('diag-counter').textContent='0';
+      reloadDiags();
+    } else showDiagAlert(MSG_ERROR_PREFIX+(d.error||MSG_ERROR),'danger');
+  });
+});
+
+function showDiagAlert(msg, type) {
+  const el = document.getElementById('diag-alert-exam');
+  el.innerHTML = `<div class="alert alert-${type} py-2 mb-2">${msg}</div>`;
+  if (type==='success') setTimeout(()=>el.innerHTML='',2500);
+}
+</script>
+{% endblock %}

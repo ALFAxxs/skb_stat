@@ -75,7 +75,7 @@ class LabResultDetailSerializer(serializers.ModelSerializer):
         ungrouped = []
         for p in params:
             rv = values.get(p.pk)
-            if not rv:
+            if not rv or not rv.value:
                 continue
             entry = {
                 'name':         p.name,

@@ -5,7 +5,8 @@ from .models import (
     PatientCard, DeathCause, SurgicalOperation,
     Organization, Department, Doctor, DischargeConclusion,
     Country, Region, District, City, Village,
-    HospitalType, OperationType, ICD10Code      # ← qo'shish
+    HospitalType, OperationType, ICD10Code,
+    InitialExamination, EpisodeDiagnosis,
 )
 
 # ==================== INLINE ADMINLAR ====================
@@ -41,7 +42,7 @@ class PatientCardAdmin(admin.ModelAdmin):
         'admission_count', 'is_war_veteran', 'resident_status',
         'patient_category'
     ]
-    search_fields = ['full_name', 'medical_record_number', 'passport_serial', 'JSHSHIR', 'phone']
+    search_fields = ['full_name', 'medical_record_number', 'case_sheet_number', 'passport_serial', 'JSHSHIR', 'phone']
     list_per_page = 50
     date_hierarchy = 'admission_date'
     ordering      = ['-admission_date']
@@ -148,8 +149,8 @@ class DepartmentAdmin(admin.ModelAdmin):
 
 @admin.register(Doctor)
 class DoctorAdmin(admin.ModelAdmin):
-    list_display = ['full_name', 'department', 'is_head', 'is_active']
-    list_filter = ['department', 'is_head', 'is_active']
+    list_display = ['full_name', 'department', 'is_head', 'is_general_practitioner', 'is_active']
+    list_filter = ['department', 'is_head', 'is_general_practitioner', 'is_active']
     search_fields = ['full_name']
 
 
@@ -185,3 +186,27 @@ class ICD10CodeAdmin(admin.ModelAdmin):
     list_display = ['code', 'title_uz', 'category']
     search_fields = ['code', 'title_uz']
     list_filter = ['category']
+
+
+@admin.register(InitialExamination)
+class InitialExaminationAdmin(admin.ModelAdmin):
+    list_display  = ['patient_card', 'created_at', 'updated_at']
+    search_fields = ['patient_card__full_name', 'patient_card__medical_record_number']
+    readonly_fields = ['created_at', 'updated_at']
+    fieldsets = (
+        (None, {'fields': ('patient_card',)}),
+        ("Ko'rik ma'lumotlari", {'fields': (
+            'complaints', 'anamnesis_morbi', 'anamnesis_vitae',
+            'status_localis', 'epidemiological_anamnesis', 'status_praesens',
+            'allergy_anamnesis', 'neurological_status', 'lab_investigations',
+        )}),
+        ("Tizim", {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
+    )
+
+
+@admin.register(EpisodeDiagnosis)
+class EpisodeDiagnosisAdmin(admin.ModelAdmin):
+    list_display  = ['patient_card', 'icd10_code', 'diagnosis_type', 'diagnosis_role', 'created_at']
+    list_filter   = ['diagnosis_type', 'diagnosis_role']
+    search_fields = ['patient_card__full_name', 'icd10_code__code', 'clinical_text']
+    autocomplete_fields = ['icd10_code']

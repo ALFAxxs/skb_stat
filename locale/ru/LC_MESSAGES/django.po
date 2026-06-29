@@ -1,0 +1,4843 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: skb_stat\n"
+"Report-Msgid-Bugs-To: \n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "\"Temir yo`l ijtimoiy xizmatlar\" MCHJ"
+msgstr "ООО «Темир йул ижтимоий хизматлар»"
+
+msgid "%(age)s yosh (%(birth)s)"
+msgstr "%(age)s лет (%(birth)s)"
+
+msgid "%(cnt)s bemor"
+msgstr "%(cnt)s пациент"
+
+msgid "%(cnt)s ta"
+msgstr "%(cnt)s шт."
+
+msgid "%(cnt)s ta &mdash; %(total)s so'm"
+msgstr "%(cnt)s шт. &mdash; %(total)s сум"
+
+msgid "%(cnt)s ta bemor ko'rsatilmoqda"
+msgstr "Показано %(cnt)s пациентов"
+
+msgid "%(cnt)s ta log"
+msgstr "%(cnt)s записей лога"
+
+msgid "%(cnt)s ta xizmat — %(total)s so'm"
+msgstr "%(cnt)s услуг — %(total)s сум"
+
+msgid "%(cnt)s ta yangi so'rov"
+msgstr "%(cnt)s новых запросов"
+
+msgid "%(cnt)s ta yozuv"
+msgstr "%(cnt)s записей"
+
+msgid "%(cnt)s ta{% plural %}%(cnt)s ta"
+msgstr "%(cnt)s шт.{% plural %}%(cnt)s шт."
+
+msgid "%(cnt)s tur"
+msgstr "%(cnt)s вид"
+
+msgid "%(count)s kutmoqda"
+msgstr "%(count)s в ожидании"
+
+msgid "%(counter)s ta ko'chirish{% plural %}%(counter)s ta ko'chirish"
+msgstr "%(counter)s перемещение{% plural %}%(counter)s перемещений"
+
+msgid "%(d)s — Laboratoriya buyurtmalari"
+msgstr "%(d)s — Заказы лаборатории"
+
+msgid "%(days)s kun"
+msgstr "%(days)s дн."
+
+msgid "%(dept)s bo'lim mudiri avtomatik to'ldirildi"
+msgstr "Заведующий отделением %(dept)s заполнен автоматически"
+
+msgid "%(dept)s bo'limi"
+msgstr "Отделение %(dept)s"
+
+msgid "%(et)s — %(name)s"
+msgstr "%(et)s — %(name)s"
+
+msgid "%(label)s bemorlar"
+msgstr "%(label)s пациенты"
+
+msgid "%(label)s bo'yicha jami"
+msgstr "Итого по %(label)s"
+
+msgid "%(label)s jami"
+msgstr "Итого %(label)s"
+
+msgid "%(name)s %(status)s."
+msgstr "%(name)s %(status)s."
+
+msgid "%(name)s (%(wl)s ta bemor)"
+msgstr "%(name)s (%(wl)s пациентов)"
+
+msgid "%(name)s — Shablon"
+msgstr "%(name)s — Шаблон"
+
+msgid "%(name)s — Xizmatlar"
+msgstr "%(name)s — Услуги"
+
+msgid "%(name)s — bemor kartasi"
+msgstr "%(name)s — карта пациента"
+
+msgid "%(number)s sonli shartnoma"
+msgstr "Договор № %(number)s"
+
+msgid "%(overdue_hours)s soatdan ko'p \"tayinlangan\" holatda turgan muolajalar"
+msgstr ""
+"Процедуры, находящиеся в статусе «назначено» более %(overdue_hours)s часов"
+
+msgid "%(p)s so'm"
+msgstr "%(p)s сум"
+
+msgid "%(pending_count)s ta yangi tayinlangan"
+msgstr "%(pending_count)s новых назначений"
+
+msgid "%(price)s so'm"
+msgstr "%(price)s сум"
+
+msgid "%(room)s-xona"
+msgstr "Кабинет %(room)s"
+
+msgid "%(start)s–%(end)s / %(total)s ta bemor"
+msgstr "%(start)s–%(end)s / %(total)s пациентов"
+
+msgid "%(sum)s so'm"
+msgstr "%(sum)s сум"
+
+msgid "%(t)s oldin"
+msgstr "%(t)s назад"
+
+msgid "%(total)s so'm"
+msgstr "%(total)s сум"
+
+msgid "%(wl)s ta bemor"
+msgstr "%(wl)s пациентов"
+
+msgid "&quot;Bemor&quot;"
+msgstr "&quot;Пациент&quot;"
+
+msgid ""
+"&quot;Bemor&quot; &quot;Ijrochi&quot;ning barcha pullik xizmatlari "
+"ko'rsatilgan preyskurant bilan tanishib chiqgandan so'ng, ko'rsatilgan "
+"tibbiy xizmatlarning miqdori va narxlari bilan kelishib, mazkur shartnomani "
+"imzolaydi."
+msgstr ""
+"&quot;Пациент&quot;, ознакомившись с прейскурантом всех платных услуг "
+"&quot;Исполнителя&quot;, согласившись с объёмом и стоимостью указанных "
+"медицинских услуг, подписывает настоящий договор."
+
+msgid "&quot;Bemor&quot; quyidagi huquqlarga ega:"
+msgstr "&quot;Пациент&quot; имеет следующие права:"
+
+msgid "&quot;Bemor&quot;ning majburiyatlari:"
+msgstr "Обязанности &quot;Пациента&quot;:"
+
+msgid "&quot;Ijrochi&quot;"
+msgstr "&quot;Исполнитель&quot;"
+
+msgid "&quot;Ijrochi&quot; quyidagi huquqlarga ega:"
+msgstr "&quot;Исполнитель&quot; имеет следующие права:"
+
+msgid "&quot;Ijrochi&quot;ning majburiyatlari:"
+msgstr "Обязанности &quot;Исполнителя&quot;:"
+
+msgid "&quot;Temir yo`l ijtimoiy xizmatlar&quot; MCHJ"
+msgstr "ООО &quot;Темир йул ижтимоий хизматлар&quot;"
+
+msgid ""
+"&quot;Temir yo`l ijtimoiy xizmatlar&quot; MCHJ Markaziy klinik kasalxona "
+"filiali"
+msgstr ""
+"Филиал Центральной клинической больницы ООО &quot;Темир йул ижтимоий "
+"хизматлар&quot;"
+
+msgid "(%(dept)s bo'limi)"
+msgstr "(отделение %(dept)s)"
+
+msgid "(yashash joyi)"
+msgstr "(место проживания)"
+
+msgid "0 so'm"
+msgstr "0 сум"
+
+msgid "1. SHARTNOMA MAVZUSI."
+msgstr "1. ПРЕДМЕТ ДОГОВОРА."
+
+msgid "14 raqamli kod"
+msgstr "14-значный код"
+
+msgid "16 yoshdan katta"
+msgstr "Старше 16 лет"
+
+msgid "16 yoshdan katta bemorlar"
+msgstr "Пациенты старше 16 лет"
+
+msgid "16 yoshdan katta bemorlar:"
+msgstr "Пациенты старше 16 лет:"
+
+msgid "16 yoshgacha"
+msgstr "До 16 лет"
+
+msgid "16 yoshgacha bemorlar"
+msgstr "Пациенты до 16 лет"
+
+msgid "16 yoshgacha bemorlar:"
+msgstr "Пациенты до 16 лет:"
+
+msgid "2. SHARTNOMANING BAHOSI VA HISOB-KITOB TARTIBI."
+msgstr "2. ЦЕНА ДОГОВОРА И ПОРЯДОК РАСЧЁТОВ."
+
+msgid "24 soatdan keyin"
+msgstr "Через 24 часа"
+
+msgid "3. TOMONLARNING HUQUQ VA MAJBURIYATLARI."
+msgstr "3. ПРАВА И ОБЯЗАННОСТИ СТОРОН."
+
+msgid "4. TOMONLARNING KORRUPSIYAGA QARSHI KURASHISH BO`YICHA MAJBURIYATLARI"
+msgstr "4. ОБЯЗАТЕЛЬСТВА СТОРОН ПО ПРОТИВОДЕЙСТВИЮ КОРРУПЦИИ"
+
+msgid ""
+"4.1. Shartnoma bo`yicha o`z majburiyatlarini bajarishda tomonlar "
+"korrupsiyaga qarshi kurashish bo`yicha qoidalarga, shu jumladan "
+"poraxo`rlikka yo`l qo`ymaslik talablariga rioya qilish majburiyatini "
+"oladilar."
+msgstr ""
+"4.1. При исполнении своих обязательств по договору стороны обязуются "
+"соблюдать правила по противодействию коррупции, в том числе требования о "
+"недопущении взяточничества."
+
+msgid ""
+"4.2. Yoki ishonch telefoni orqali bir-birini xabardor qilish majburiyatini "
+"oladi."
+msgstr "4.2. Либо обязуется уведомлять друг друга по телефону доверия."
+
+msgid ""
+"4.3. Mazkur bobning talablari bajarilmaganda, shu jumladan belgilangan "
+"muddatda korrupsion xavf-xatar bartaraf etilmasa, shartnoma bir tomonlama "
+"bekor qilinishi mumkin."
+msgstr ""
+"4.3. При невыполнении требований настоящего раздела, в том числе если "
+"коррупционный риск не устранён в установленный срок, договор может быть "
+"расторгнут в одностороннем порядке."
+
+msgid "403 — Kirish taqiqlangan"
+msgstr "403 — Доступ запрещён"
+
+msgid "404 — Sahifa topilmadi"
+msgstr "404 — Страница не найдена"
+
+msgid "5. TOMONLARNING JAVOBGARLIGI."
+msgstr "5. ОТВЕТСТВЕННОСТЬ СТОРОН."
+
+msgid ""
+"5.1. Tomonlar ushbu shartnoma bo'yicha o'z vazifalarini lozim darajada "
+"bajarmagan taqdirda ular O'zbekiston Respublikasi qonun hujjatlariga muvofiq"
+" javobgar bo'ladilar."
+msgstr ""
+"5.1. В случае ненадлежащего исполнения сторонами своих обязанностей по "
+"настоящему договору они несут ответственность в соответствии с "
+"законодательством Республики Узбекистан."
+
+msgid "500 — Server xatosi"
+msgstr "500 — Ошибка сервера"
+
+msgid "6. NIZOLARNI HAL ETISH TARTIBI."
+msgstr "6. ПОРЯДОК РАЗРЕШЕНИЯ СПОРОВ."
+
+msgid "7-24 soat ichida"
+msgstr "В течение 7-24 часов"
+
+msgid "7. SHARTNOMANING BOSHQA SHARTLARI."
+msgstr "7. ПРОЧИЕ УСЛОВИЯ ДОГОВОРА."
+
+msgid ""
+"7.1. Bemorga qo'shimcha diagnostik va terapevtik yordam, dori-darmonlar va "
+"oziq-ovqat bilan ta'minlash xarajatlari, agar ular ushbu Shartnomada "
+"ko'rsatilmagan bo'lsa, alohida haq to'lanadi."
+msgstr ""
+"7.1. Расходы на дополнительную диагностическую и терапевтическую помощь, "
+"лекарственные средства и питание пациента, если они не указаны в настоящем "
+"Договоре, оплачиваются отдельно."
+
+msgid ""
+"7.2. Ushbu shartnoma bilan tartibga solinmagan masalalarda tomonlar "
+"O'zbekiston Respublikasi qonunchiligiga amal qiladilar."
+msgstr ""
+"7.2. По вопросам, не урегулированным настоящим договором, стороны "
+"руководствуются законодательством Республики Узбекистан."
+
+msgid ""
+"7.3. Ushbu shartnomaga kiritilgan har qanday o'zgartirish va qo'shimchalar "
+"amal qiladi va shartnomaning ajralmas qismini faqat ikkala tomon imzolagan "
+"taqdirda tashkil etadi."
+msgstr ""
+"7.3. Любые изменения и дополнения, внесённые в настоящий договор, "
+"действительны и являются его неотъемлемой частью только при подписании "
+"обеими сторонами."
+
+msgid ""
+"7.4. Bu shartnoma barcha tomonlar tomonidan imzolangan paytdan boshlab "
+"kuchga kiradi va davolanish tugagunga qadar amal qiladi."
+msgstr ""
+"7.4. Настоящий договор вступает в силу с момента подписания всеми сторонами "
+"и действует до окончания лечения."
+
+msgid ""
+"7.5. Bu shartnoma tomonlarning har biri uchun bittadan ikki nusxada "
+"tuziladi."
+msgstr ""
+"7.5. Настоящий договор составлен в двух экземплярах, по одному для каждой из"
+" сторон."
+
+msgid ""
+"7.6. Xizmatlar Ijrochi va Bemor tomonidan xizmatga qabul qilish "
+"dalolatnomasi imzolanganidan keyin ko'rsatilgan hisoblanadi."
+msgstr ""
+"7.6. Услуги считаются оказанными после подписания Исполнителем и Пациентом "
+"акта приёма услуги."
+
+msgid "8. TOMONLARNING HUQUQIY MANZILLARI"
+msgstr "8. ЮРИДИЧЕСКИЕ АДРЕСА СТОРОН"
+
+msgid "A"
+msgstr "A"
+
+msgid "Admin da xizmatlarga <strong>is_operation=True</strong> belgilang."
+msgstr "Отметьте у услуг <strong>is_operation=True</strong> в админке."
+
+msgid "Administrator"
+msgstr "Администратор"
+
+msgid "Administrator xabardor qilindi. Iltimos, keyinroq urinib ko'ring."
+msgstr "Администратор уведомлён. Пожалуйста, попробуйте позже."
+
+msgid "Aerozol"
+msgstr "Аэрозоль"
+
+msgid "Agar bu xato deb hisoblasangiz, administratorga murojaat qiling."
+msgstr "Если вы считаете это ошибкой, обратитесь к администратору."
+
+msgid ""
+"Agar nizolarni muzokaralar yo'li bilan hal qilishning iloji bo'lmasa, ular "
+"O'zbekiston Respublikasi qonunchiligiga muvofiq sudda hal qilinadi."
+msgstr ""
+"Если споры не могут быть урегулированы путём переговоров, они разрешаются в "
+"судебном порядке в соответствии с законодательством Республики Узбекистан."
+
+msgid ""
+"Agar shunga rozi bo'lsang — uyingdagilar sening fikringni so'raganida, <span"
+" class=\"accent\">\"o'zlari bilishadi\"</span> deb qo'ysang bo'ldi."
+msgstr ""
+"Если вы с этим согласны — когда домашние спросят ваше мнение, можно просто "
+"ответить <span class=\"accent\">«сами разберутся»</span>."
+
+msgid "Allergik reaksiya"
+msgstr "Аллергическая реакция"
+
+msgid "Allergoanamnesis"
+msgstr "Аллергоанамнез"
+
+msgid "Allergologik anamnez"
+msgstr "Аллергологический анамнез"
+
+msgid "Amal"
+msgstr "Действие"
+
+msgid "Amaliyot nomi"
+msgstr "Название операции"
+
+msgid "Amaliyot qo'shish"
+msgstr "Добавить операцию"
+
+msgid "Amaliyot turi"
+msgstr "Тип операции"
+
+msgid "Amaliyot turlari"
+msgstr "Типы операций"
+
+msgid "Amaliyot yozuvlari yo'q"
+msgstr "Записей об операциях нет"
+
+msgid "Amallar"
+msgstr "Действия"
+
+msgid "Amb"
+msgstr "Амб."
+
+msgid "Ambulator"
+msgstr "Амбулаторный"
+
+msgid "Ambulator (kunlik)"
+msgstr "Амбулаторный (дневной)"
+
+msgid "Ambulator bemor %(name)s qabul qilindi. Bayonnoma: %(record_number)s"
+msgstr "Амбулаторный пациент %(name)s принят. Протокол: %(record_number)s"
+
+msgid "Ambulator bemor chiqarilmaydi."
+msgstr "Амбулаторный пациент не выписывается."
+
+msgid "Ambulator bemor ko'chirilmaydi."
+msgstr "Амбулаторный пациент не переводится."
+
+msgid "Ambulator bemor qabuli"
+msgstr "Приём амбулаторного пациента"
+
+msgid "Ambulator qabul"
+msgstr "Амбулаторный приём"
+
+msgid "Anesteziologning jarrohlik amaliyotidan oldingi ko'rigi"
+msgstr "Осмотр анестезиолога перед хирургической операцией"
+
+msgid "Aprel"
+msgstr "Апрель"
+
+msgid "Aravachada"
+msgstr "На коляске"
+
+msgid "Asorat"
+msgstr "Осложнение"
+
+msgid "Asorati"
+msgstr "Осложнение"
+
+msgid "Asoratlar"
+msgstr "Осложнения"
+
+msgid "Asosiy"
+msgstr "Основной"
+
+msgid "Asosiy bo'lim"
+msgstr "Основное отделение"
+
+msgid "Asosiy ma'lumotlar"
+msgstr "Основные данные"
+
+msgid "Asosiy tashxis (MKB-10)"
+msgstr "Основной диагноз (МКБ-10)"
+
+msgid "Audio rejim"
+msgstr "Аудио режим"
+
+msgid "Audio:"
+msgstr "Аудио:"
+
+msgid "Audit jurnali"
+msgstr "Журнал аудита"
+
+msgid "Audit log"
+msgstr "Лог аудита"
+
+msgid "Audit loglar"
+msgstr "Логи аудита"
+
+msgid "Audit yozuvi"
+msgstr "Запись аудита"
+
+msgid "Avgust"
+msgstr "Август"
+
+msgid "Avval shablon tanlang"
+msgstr "Сначала выберите шаблон"
+
+msgid ""
+"Avval xizmatlarni Admin panelda <strong>is_operation=True</strong> qilib "
+"belgilang."
+msgstr ""
+"Сначала отметьте услуги в панели администратора как "
+"<strong>is_operation=True</strong>."
+
+msgid "Avvalgi bo'lim"
+msgstr "Предыдущее отделение"
+
+msgid "Avvalgi bo'lim mudiri"
+msgstr "Предыдущий заведующий отделением"
+
+msgid "Avvalgi holat"
+msgstr "Предыдущий статус"
+
+msgid "Avvalgi shifokor"
+msgstr "Предыдущий врач"
+
+msgid "Ayol"
+msgstr "Женский"
+
+msgid "Ayol max"
+msgstr "Жен. макс."
+
+msgid "Ayol min"
+msgstr "Жен. мин."
+
+msgid "BEMOR"
+msgstr "ПАЦИЕНТ"
+
+msgid "Bajardi"
+msgstr "Выполнил"
+
+msgid "Bajargan shifokor"
+msgstr "Врач, выполнивший"
+
+msgid "Bajarildi"
+msgstr "Выполнено"
+
+msgid "Bajarildi (log)"
+msgstr "Выполнено (лог)"
+
+msgid "Bajarilgan"
+msgstr "Выполнено"
+
+msgid "Bajarilgan deb belgilash"
+msgstr "Отметить как выполненное"
+
+msgid "Bajarilgan sana"
+msgstr "Дата выполнения"
+
+msgid "Bajarilgan vaqt"
+msgstr "Время выполнения"
+
+msgid "Bajarilgan xizmatlar"
+msgstr "Выполненные услуги"
+
+msgid "Bajarilgan xizmatni o'chirib bo'lmaydi"
+msgstr "Выполненную услугу нельзя удалить"
+
+msgid "Bajarilish loglari"
+msgstr "Логи выполнения"
+
+msgid "Bajarilmoqda"
+msgstr "Выполняется"
+
+msgid "Bajarish vaqti"
+msgstr "Время выполнения"
+
+msgid "Bajaruvchi"
+msgstr "Исполнитель"
+
+msgid "Bajaruvchi hamshira"
+msgstr "Исполняющая медсестра"
+
+msgid "Bajaruvchi laborant"
+msgstr "Исполняющий лаборант"
+
+msgid "Bank o'tkazmasi"
+msgstr "Банковский перевод"
+
+msgid "Barcha bo'limlar"
+msgstr "Все отделения"
+
+msgid "Barcha holatlar"
+msgstr "Все статусы"
+
+msgid "Barcha kategoriyalar"
+msgstr "Все категории"
+
+msgid "Barcha shifokorlar"
+msgstr "Все врачи"
+
+msgid "Barcha tashxislar (ICD-10)"
+msgstr "Все диагнозы (МКБ-10)"
+
+msgid "Barcha turlar"
+msgstr "Все типы"
+
+msgid "Barcha yakunlar"
+msgstr "Все исходы"
+
+msgid "Barchasi"
+msgstr "Все"
+
+msgid "Barchasini saqlash"
+msgstr "Сохранить все"
+
+msgid "Bayonnoma"
+msgstr "Протокол"
+
+msgid "Bayonnoma / Kasallik varaqasi"
+msgstr "Протокол / История болезни"
+
+msgid "Bayonnoma raqami"
+msgstr "Номер протокола"
+
+msgid "Bayonnoma raqami: <strong>%(record_number)s</strong> (avtomatik)"
+msgstr "Номер протокола: <strong>%(record_number)s</strong> (автоматически)"
+
+msgid "Bayonnoma № / Kasallik varaqasi №"
+msgstr "Протокол № / История болезни №"
+
+msgid "Bayonnoma: %(record_number)s | %(admission)s"
+msgstr "Протокол: %(record_number)s | %(admission)s"
+
+msgid "Behushlik turi"
+msgstr "Вид анестезии"
+
+msgid "Bekor"
+msgstr "Отмена"
+
+msgid "Bekor qilindi"
+msgstr "Отменено"
+
+msgid "Bekor qilingan"
+msgstr "Отменён"
+
+msgid "Bekor qilinsinmi?"
+msgstr "Отменить?"
+
+msgid "Bekor qilish"
+msgstr "Отменить"
+
+msgid "Belgilanganlarni savatga qo'shish"
+msgstr "Добавить выбранное в корзину"
+
+msgid "Belgilanmagan"
+msgstr "Не указано"
+
+msgid ""
+"Belgilansa, shifokor o'z bo'limining barcha statistikasi va bemorlarini "
+"ko'radi hamda yangi bemorlarni shifokorlarga biriktiradi."
+msgstr ""
+"Если отметить, врач будет видеть всю статистику и пациентов своего "
+"отделения, а также распределять новых пациентов между врачами."
+
+msgid "Bemor"
+msgstr "Пациент"
+
+msgid "Bemor %(dept_name)s bo'limiga ko'chirildi."
+msgstr "Пациент переведён в отделение %(dept_name)s."
+
+msgid ""
+"Bemor 16 yoshga to'lgan — kategoriya avtomatik <strong>Pullik</strong> ga "
+"o'zgartirildi."
+msgstr ""
+"Пациенту исполнилось 16 лет — категория автоматически изменена на "
+"<strong>Платную</strong>."
+
+msgid "Bemor F.I.Sh."
+msgstr "Ф.И.О. пациента"
+
+msgid "Bemor biriktirish"
+msgstr "Закрепление пациента"
+
+msgid "Bemor dorilari"
+msgstr "Лекарства пациента"
+
+msgid "Bemor dorisi"
+msgstr "Лекарство пациента"
+
+msgid "Bemor imzosi"
+msgstr "Подпись пациента"
+
+msgid "Bemor kartalari"
+msgstr "Карты пациентов"
+
+msgid "Bemor kartasi"
+msgstr "Карта пациента"
+
+msgid "Bemor kartasi o'chirildi."
+msgstr "Карта пациента удалена."
+
+msgid "Bemor kartasi saqlandi!"
+msgstr "Карта пациента сохранена!"
+
+msgid "Bemor kartasi yangilandi!"
+msgstr "Карта пациента обновлена!"
+
+msgid "Bemor kartasiga qaytish"
+msgstr "Вернуться к карте пациента"
+
+msgid "Bemor kategoriyasi"
+msgstr "Категория пациента"
+
+msgid "Bemor ma'lumotlari"
+msgstr "Данные пациента"
+
+msgid ""
+"Bemor majburiyatlariga rioya qilmagan holda ushbu shartnomani bir tomonlama "
+"bekor qilish."
+msgstr ""
+"Расторгнуть настоящий договор в одностороннем порядке в случае невыполнения "
+"пациентом своих обязательств."
+
+msgid "Bemor o'zi olib keldi"
+msgstr "Пациент доставлен самостоятельно"
+
+msgid "Bemor rad etdi"
+msgstr "Пациент отказался"
+
+msgid "Bemor statusi"
+msgstr "Статус пациента"
+
+msgid "Bemor toifalari"
+msgstr "Категории пациентов"
+
+msgid "Bemor toifasi"
+msgstr "Категория пациента"
+
+msgid "Bemor tomonidan olib kelingan"
+msgstr "Доставлен пациентом"
+
+msgid "Bemor topilmadi"
+msgstr "Пациент не найден"
+
+msgid "Bemor turi"
+msgstr "Тип пациента"
+
+msgid "Bemor va yotqizilish ma'lumotlari"
+msgstr "Данные пациента и госпитализации"
+
+msgid "Bemor xizmati"
+msgstr "Услуга пациента"
+
+msgid "Bemor xizmatlari"
+msgstr "Услуги пациента"
+
+msgid "Bemor yo'q edi"
+msgstr "Пациента не было"
+
+msgid "Bemor:"
+msgstr "Пациент:"
+
+msgid ""
+"Bemordan moddiy zarar, bemorning aybi bilan yetkazilgan zararlarni to'liq "
+"hajmda qoplashni talab qilish va olish."
+msgstr ""
+"Требовать и получать с пациента полное возмещение материального ущерба, "
+"причинённого по его вине."
+
+msgid "Bemorga biriktirilgan barcha ma'lumotlar ham o'chiriladi."
+msgstr "Все данные, связанные с пациентом, также будут удалены."
+
+msgid "Bemorga navbat raqamini ayting"
+msgstr "Сообщите пациенту номер очереди"
+
+msgid "Bemorga sarflangan material"
+msgstr "Материал, израсходованный на пациента"
+
+msgid "Bemorga sarflangan materiallar"
+msgstr "Материалы, израсходованные на пациента"
+
+msgid ""
+"Bemorga taqdim etilgan tibbiy xizmatlar, dori-darmonlar va oziq-ovqat uchun "
+"hisob-fakturani bemorga/homiyga taqdim etish."
+msgstr ""
+"Предоставить пациенту/спонсору счёт-фактуру за оказанные медицинские услуги,"
+" лекарства и питание."
+
+msgid "Bemorlar"
+msgstr "Пациенты"
+
+msgid "Bemorlar / %(name)s / Moliya"
+msgstr "Пациенты / %(name)s / Финансы"
+
+msgid "Bemorlar ro'yxati"
+msgstr "Список пациентов"
+
+msgid "Bemorlar soni"
+msgstr "Количество пациентов"
+
+msgid "Bemorlar topilmadi"
+msgstr "Пациенты не найдены"
+
+msgid "Bemorlarni biriktirish"
+msgstr "Закрепление пациентов"
+
+msgid "Bemorni chiqarish"
+msgstr "Выписка пациента"
+
+msgid "Bemorni ko'chirish"
+msgstr "Перевод пациента"
+
+msgid "Bemorni o'chirish"
+msgstr "Удаление пациента"
+
+msgid "Bemorning ahvoli og'irlashdi"
+msgstr "Состояние пациента ухудшилось (тяжёлое)"
+
+msgid "Bemorning ahvoli yomonlashdi"
+msgstr "Состояние пациента ухудшилось"
+
+msgid "Bemorning sog'ligi haqidagi tibbiy sirlarni oshkor qilmaslik."
+msgstr "Не раскрывать врачебную тайну о состоянии здоровья пациента."
+
+msgid ""
+"Bilasanmi, seni 3 ta qolipga solib ko'rganman — <span class=\"accent\">Onam,"
+" Opam va qizim</span>. Ularning hech biriga buni ravo ko'rmaganimdek, senga "
+"ham o'sha taqdirniy ilinmayman. Otamdan shunaqа o'rgandim."
+msgstr ""
+"Знаешь, я примерял тебя к трём образам — <span class=\"accent\">моей матери,"
+" сестре и дочери</span>. И как я не пожелал бы такой судьбы ни одной из них,"
+" так не пожелаю и тебе. Этому меня научил отец."
+
+msgid "Bildirishnoma"
+msgstr "Уведомление"
+
+msgid "Bildirishnomalar"
+msgstr "Уведомления"
+
+msgid "Bildirishnomalar yo'q"
+msgstr "Уведомлений нет"
+
+msgid "Biokimyo"
+msgstr "Биохимия"
+
+msgid "Bir martalik doza"
+msgstr "Разовая доза"
+
+msgid "Bir nechta bo'lim tanlash mumkin"
+msgstr "Можно выбрать несколько отделений"
+
+msgid "Biriktirilgan shifokorlar"
+msgstr "Закреплённые врачи"
+
+msgid "Biriktirilmagan bemorlar"
+msgstr "Незакреплённые пациенты"
+
+msgid "Biriktirish"
+msgstr "Закрепить"
+
+msgid "Biriktirish / qayta biriktirish"
+msgstr "Закрепление / переназначение"
+
+msgid "Biriktirish →"
+msgstr "Закрепить →"
+
+msgid "Birinchi ko'rikni qo'shish"
+msgstr "Добавить первичный осмотр"
+
+msgid "Birinchi marta"
+msgstr "Впервые"
+
+msgid "Birlik"
+msgstr "Единица"
+
+msgid "Birlik narxi (so'm)"
+msgstr "Цена за единицу (сум)"
+
+msgid "Bloklangan"
+msgstr "Блокирован"
+
+msgid "Bloklash"
+msgstr "Блокировать"
+
+msgid "Bo&lsquo;lim:"
+msgstr "Отделение:"
+
+msgid "Bo'lim"
+msgstr "Отделение"
+
+msgid "Bo'lim / Xona"
+msgstr "Отделение / Палата"
+
+msgid "Bo'lim bo'yicha"
+msgstr "По отделениям"
+
+msgid "Bo'lim dorixonasi"
+msgstr "Аптека отделения"
+
+msgid "Bo'lim ko'chirish"
+msgstr "Перевод отделения"
+
+msgid "Bo'lim ko'chirishlar"
+msgstr "Переводы между отделениями"
+
+msgid "Bo'lim mudiri"
+msgstr "Заведующий отделением"
+
+msgid "Bo'lim mudiri topilmadi — qo'lda kiriting"
+msgstr "Заведующий отделением не найден — введите вручную"
+
+msgid "Bo'lim mudiri:"
+msgstr "Заведующий отделением:"
+
+msgid "Bo'lim shifokorlari"
+msgstr "Врачи отделения"
+
+msgid "Bo'lim shifokorlari va yuklamasi"
+msgstr "Врачи отделения и их нагрузка"
+
+msgid "Bo'lim tanlanmagan."
+msgstr "Отделение не выбрано."
+
+msgid "Bo'lim topilmadi."
+msgstr "Отделение не найдено."
+
+msgid "Bo'lim:"
+msgstr "Отделение:"
+
+msgid "Bo'limda faol shifokorlar topilmadi"
+msgstr "В отделении не найдено активных врачей"
+
+msgid "Bo'limda faol statsionar bemor yo'q"
+msgstr "В отделении нет активных стационарных пациентов"
+
+msgid "Bo'limda hamshiralar topilmadi"
+msgstr "В отделении не найдено медсестёр"
+
+msgid "Bo'limda tekshirish"
+msgstr "Осмотр в отделении"
+
+msgid "Bo'limdagi faol statsionar bemorlar"
+msgstr "Активные стационарные пациенты отделения"
+
+msgid ""
+"Bo'limga yangi yotqizilgan bemorlar dastlab faqat sizga ko'rinadi. Tegishli "
+"shifokorni tanlab biriktiring. Agar avval boshqa shifokorga noto'g'ri "
+"biriktirilgan bo'lsa — ro'yxatda uning ismi ko'rsatiladi va siz yangi "
+"shifokorni tanlab <b>qayta biriktirishingiz</b> mumkin: eski va yangi "
+"shifokorga avtomatik xabar yuboriladi."
+msgstr ""
+"Пациенты, вновь поступившие в отделение, первоначально видны только вам. "
+"Выберите и закрепите нужного врача. Если пациент был ошибочно закреплён за "
+"другим врачом ранее — его имя будет показано в списке, и вы можете выбрать "
+"нового врача и <b>переназначить</b> пациента: прежнему и новому врачу будет "
+"автоматически отправлено уведомление."
+
+msgid "Bo'limlar"
+msgstr "Отделения"
+
+msgid "Bo'limlar bo'yicha"
+msgstr "По отделениям"
+
+msgid "Bo'yi (sm)"
+msgstr "Рост (см)"
+
+msgid "Bog'liq bo'lmagan boshqa muhim kasalliklar:"
+msgstr "Другие важные сопутствующие заболевания:"
+
+msgid "Bosh hisobchi imzosi"
+msgstr "Подпись главного бухгалтера"
+
+msgid "Bosh sahifa"
+msgstr "Главная страница"
+
+msgid "Bosh sahifaga"
+msgstr "На главную страницу"
+
+msgid "Boshlang'ich ko'rik"
+msgstr "Первичный осмотр"
+
+msgid "Boshlang'ich ko'riklar"
+msgstr "Первичные осмотры"
+
+msgid "Boshlanish"
+msgstr "Начало"
+
+msgid "Boshlanish sanasi"
+msgstr "Дата начала"
+
+msgid "Boshlash"
+msgstr "Начать"
+
+msgid "Boshqa"
+msgstr "Другое"
+
+msgid "Boshqa parametrlar"
+msgstr "Прочие параметры"
+
+msgid "Boshqa sabab"
+msgstr "Другая причина"
+
+msgid "Boshqa shifoxonaga o'tkazildi"
+msgstr "Переведён в другую больницу"
+
+msgid "Boshqa xizmatlar"
+msgstr "Прочие услуги"
+
+msgid "Boshqarish"
+msgstr "Управление"
+
+msgid "Boshqaruv tizimiga kirish"
+msgstr "Вход в систему управления"
+
+msgid "Bosqichli epikriz"
+msgstr "Этапный эпикриз"
+
+msgid "Bu amal qaytarib bo'lmaydi."
+msgstr "Это действие нельзя отменить."
+
+msgid "Bu bemor uchun laboratoriya xizmatlari topilmadi."
+msgstr "Лабораторные услуги для данного пациента не найдены."
+
+msgid "Bu davrda xizmat qo'shilmagan"
+msgstr "За этот период услуги не добавлялись"
+
+msgid "Bu gaplarni ko'zingga qarab aytolmasdim, shuning uchun eshit."
+msgstr "Я не мог сказать тебе это, глядя в глаза, поэтому просто выслушай."
+
+msgid "Bu majburiy maydondir"
+msgstr "Это обязательное поле"
+
+msgid "Bu maydon majburiy."
+msgstr "Это поле обязательно для заполнения."
+
+msgid "Bu sahifa shartnomaning haqiqiyligini tasdiqlovchi"
+msgstr "Эта страница подтверждает действительность договора"
+
+msgid "Bu yil birinchi marta surunkali"
+msgstr "В этом году впервые выявлено хроническое"
+
+msgid "Bugun"
+msgstr "Сегодня"
+
+msgid "Bugun bajarilgan"
+msgstr "Выполнено сегодня"
+
+msgid "Bugun qabul qilingan"
+msgstr "Принято сегодня"
+
+msgid "Bugungi yangi"
+msgstr "Новые за сегодня"
+
+msgid "Buyurtma"
+msgstr "Заказ"
+
+msgid "Buyurtma #%(oid)s"
+msgstr "Заказ №%(oid)s"
+
+msgid "Buyurtma bergan"
+msgstr "Заказавший"
+
+msgid "Buyurtma bergan shifokor"
+msgstr "Врач, назначивший заказ"
+
+msgid "Buyurtma berildi"
+msgstr "Заказ оформлен"
+
+msgid "Buyurtma elementi"
+msgstr "Позиция заказа"
+
+msgid "Buyurtma elementlari"
+msgstr "Позиции заказа"
+
+msgid "Buyurtma paytidagi bemor kategoriyasi"
+msgstr "Категория пациента на момент заказа"
+
+msgid "Buyurtma sanasi"
+msgstr "Дата заказа"
+
+msgid "Buyurtma vaqti"
+msgstr "Время заказа"
+
+msgid "Chapdan xizmat tanlang ➜"
+msgstr "Выберите услугу слева ➜"
+
+msgid "Chaqirilmoqda"
+msgstr "Вызывается"
+
+msgid "Chaqirish"
+msgstr "Вызвать"
+
+msgid "Check"
+msgstr "Чек"
+
+msgid "Check — %(name)s"
+msgstr "Чек — %(name)s"
+
+msgid "Chegirma"
+msgstr "Скидка"
+
+msgid "Chegirma qo'shildi"
+msgstr "Скидка добавлена"
+
+msgid "Chegirma qo'shish"
+msgstr "Добавить скидку"
+
+msgid "Chegirma summasi (so'm)"
+msgstr "Сумма скидки (сум)"
+
+msgid "Chegirmalar"
+msgstr "Скидки"
+
+msgid "Chegirmani saqlashda xato yuz berdi"
+msgstr "Ошибка при сохранении скидки"
+
+msgid "Chet el"
+msgstr "Зарубежье"
+
+msgid "Chiqarildi"
+msgstr "Выписан(а)"
+
+msgid "Chiqarilgan"
+msgstr "Выписан(а)"
+
+msgid "Chiqarilgan sana"
+msgstr "Дата выписки"
+
+msgid "Chiqarilganlar"
+msgstr "Выписанные"
+
+msgid "Chiqarish"
+msgstr "Выписка"
+
+msgid "Chiqarish epikrizi"
+msgstr "Выписной эпикриз"
+
+msgid "Chiqarish shakli"
+msgstr "Форма выпуска"
+
+msgid "Chiqgan sana:"
+msgstr "Дата выписки:"
+
+msgid "Chiqish ma'lumotlari"
+msgstr "Данные о выписке"
+
+msgid "Chiqish sanasi"
+msgstr "Дата выписки"
+
+msgid "Chiqish xulosalari"
+msgstr "Заключения о выписке"
+
+msgid "Chiqish xulosasi"
+msgstr "Заключение о выписке"
+
+msgid "Chiqish xulosasi:"
+msgstr "Заключение о выписке:"
+
+msgid "Chop etildi"
+msgstr "Распечатано"
+
+msgid "Chop etilgan vaqt"
+msgstr "Время печати"
+
+msgid "Chop etilgan: %(d)s"
+msgstr "Распечатано: %(d)s"
+
+msgid "Chop etish"
+msgstr "Печать"
+
+msgid "Chop etish / Ko'rish"
+msgstr "Печать / Просмотр"
+
+msgid "Dan sana"
+msgstr "Дата с"
+
+msgid "Daromad (so'm)"
+msgstr "Доход (сум)"
+
+msgid "Daromad dinamikasi"
+msgstr "Динамика доходов"
+
+msgid "Dastlabki"
+msgstr "Первичный"
+
+msgid "Dastlabki 6 soat ichida"
+msgstr "В первые 6 часов"
+
+msgid "Dastlabki ko'rik"
+msgstr "Первичный осмотр"
+
+msgid "Dastlabki ko'rik — %(name)s"
+msgstr "Первичный осмотр — %(name)s"
+
+msgid "Davlat"
+msgstr "Государство"
+
+msgid "Davlatlar"
+msgstr "Государства"
+
+msgid "Davolash davomiyligi (kun)"
+msgstr "Продолжительность лечения (дни)"
+
+msgid "Davolash yakuni"
+msgstr "Итог лечения"
+
+msgid "Davolovchi shifokor"
+msgstr "Лечащий врач"
+
+msgid "Davolovchi shifokor tasdiqlangan"
+msgstr "Подтверждено лечащим врачом"
+
+msgid "Davolovchi shifokor:"
+msgstr "Лечащий врач:"
+
+msgid "Davom"
+msgstr "Продолжить"
+
+msgid "Davom etish"
+msgstr "Продолжить"
+
+msgid "Davr"
+msgstr "Период"
+
+msgid "Dekabr"
+msgstr "Декабрь"
+
+msgid "Diagnost"
+msgstr "Диагност"
+
+msgid "Diagnostik tekshiruv"
+msgstr "Диагностическое обследование"
+
+msgid "Diagnostika"
+msgstr "Диагностика"
+
+msgid "Diagnostika kabineti"
+msgstr "Кабинет диагностики"
+
+msgid "Diagnostika natijalari loglari"
+msgstr "Журналы результатов диагностики"
+
+msgid "Diagnostika natijasi logi"
+msgstr "Журнал результата диагностики"
+
+msgid "Diagnostika tekshiruvi"
+msgstr "Диагностическое обследование"
+
+msgid "Diagnostika tekshiruvlari"
+msgstr "Диагностические обследования"
+
+msgid "Dinamika"
+msgstr "Динамика"
+
+msgid "Diqqat!"
+msgstr "Внимание!"
+
+msgid "Direktor ____________ I.K.Yangiboyev"
+msgstr "Директор ____________ И.К.Янгибоев"
+
+msgid "Dori"
+msgstr "Лекарство"
+
+msgid "Dori / muolaja"
+msgstr "Лекарство / процедура"
+
+msgid "Dori berish"
+msgstr "Выдача лекарства"
+
+msgid "Dori dozasi"
+msgstr "Доза лекарства"
+
+msgid "Dori manbasi"
+msgstr "Источник лекарства"
+
+msgid "Dori mavjud emas"
+msgstr "Лекарство отсутствует"
+
+msgid "Dori nomi"
+msgstr "Название лекарства"
+
+msgid "Dori qo'shish"
+msgstr "Добавить лекарство"
+
+msgid "Dori qo'shishda xato yuz berdi"
+msgstr "Ошибка при добавлении лекарства"
+
+msgid "Dori topilmadi"
+msgstr "Лекарство не найдено"
+
+msgid "Dori turi"
+msgstr "Тип лекарства"
+
+msgid "Dori vositalari uchun asoslar"
+msgstr "Основания для лекарственных средств"
+
+msgid "Dori vositasi nomi"
+msgstr "Название лекарственного средства"
+
+msgid "Dori vositasi nomini kiriting."
+msgstr "Введите название лекарственного средства."
+
+msgid "Dori-darmon"
+msgstr "Лекарственные препараты"
+
+msgid "Dori-darmon qo'shilmagan"
+msgstr "Лекарственные препараты не добавлены"
+
+msgid ""
+"Dori-darmon tayinlash endi <strong>«Рецепт»</strong> bo'limi orqali amalga "
+"oshiriladi."
+msgstr ""
+"Назначение лекарственных препаратов теперь осуществляется через раздел "
+"<strong>«Рецепт»</strong>."
+
+msgid "Dori-darmonlar"
+msgstr "Лекарственные препараты"
+
+msgid "Dori-darmonlar qo'shilmagan"
+msgstr "Лекарственные препараты не добавлены"
+
+msgid "Dori-darmonlar statistikasi"
+msgstr "Статистика лекарственных препаратов"
+
+msgid "Dori-muolaja"
+msgstr "Лекарства и процедуры"
+
+msgid "Dori/muolaja tayinlash"
+msgstr "Назначение лекарства/процедуры"
+
+msgid "Dori/muolaja tayinlashlar"
+msgstr "Назначения лекарств/процедур"
+
+msgid "Dorilar"
+msgstr "Лекарства"
+
+msgid "Dorilar bo'yicha jami"
+msgstr "Итого по лекарствам"
+
+msgid "Dorilar jami"
+msgstr "Итого лекарств"
+
+msgid "Dorilar jami:"
+msgstr "Итого лекарств:"
+
+msgid "Dorilar summasi"
+msgstr "Сумма по лекарствам"
+
+msgid "Dorilarga allergiya"
+msgstr "Аллергия на лекарства"
+
+msgid "Dorini yangilashda xato yuz berdi"
+msgstr "Ошибка при обновлении лекарства"
+
+msgid "Doza / konsentratsiya"
+msgstr "Доза / концентрация"
+
+msgid "Doza / soni"
+msgstr "Доза / количество"
+
+msgid "E"
+msgstr "М"
+
+msgid "EKG"
+msgstr "ЭКГ"
+
+msgid "Ekrandan raqamingizni kuzating."
+msgstr "Следите за своим номером на экране."
+
+msgid "Endokrinologiya"
+msgstr "Эндокринология"
+
+msgid "Endoskopiya"
+msgstr "Эндоскопия"
+
+msgid "Eng ko'p ishlatiladigan dorilar"
+msgstr "Наиболее часто используемые лекарства"
+
+msgid "Eng ko'p ishlatiladigan dorilar (Top 15)"
+msgstr "Наиболее часто используемые лекарства (Топ 15)"
+
+msgid "Epidemiologik anamnez"
+msgstr "Эпидемиологический анамнез"
+
+msgid "Epizod tashxisi"
+msgstr "Диагноз эпизода"
+
+msgid "Epizod tashxislari"
+msgstr "Диагнозы эпизода"
+
+msgid "Eritma (inyeksiya uchun)"
+msgstr "Раствор (для инъекций)"
+
+msgid "Erkak"
+msgstr "Мужчина"
+
+msgid "Erkak max"
+msgstr "Мужчина макс."
+
+msgid "Erkak min"
+msgstr "Мужчина мин."
+
+msgid "Eski qiymat"
+msgstr "Старое значение"
+
+msgid "Excel (eski)"
+msgstr "Excel (старый)"
+
+msgid "Excel yuklab olish"
+msgstr "Скачать Excel"
+
+msgid "F.I.O.:"
+msgstr "Ф.И.О.:"
+
+msgid "F.I.Sh"
+msgstr "Ф.И.О."
+
+msgid "F.I.Sh kiriting..."
+msgstr "Введите Ф.И.О...."
+
+msgid "F.I.Sh."
+msgstr "Ф.И.О."
+
+msgid "F.I.Sh. (A-Z)"
+msgstr "Ф.И.О. (А-Я)"
+
+msgid "F.I.Sh. (Z-A)"
+msgstr "Ф.И.О. (Я-А)"
+
+msgid "F.I.Sh:"
+msgstr "Ф.И.О.:"
+
+msgid "Familiya"
+msgstr "Фамилия"
+
+msgid "Faol"
+msgstr "Активный"
+
+msgid "Faol (tayinlangan + bajarilmoqda)"
+msgstr "Активные (назначено + выполняется)"
+
+msgid "Faol (tayinlangan + jarayonda)"
+msgstr "Активные (назначено + в процессе)"
+
+msgid "Faol bemorlar"
+msgstr "Активные пациенты"
+
+msgid "Faollashtirish"
+msgstr "Активировать"
+
+msgid "Faolmi"
+msgstr "Активен"
+
+msgid "Faqat <code>is_operation=True</code> belgilangan xizmatlar"
+msgstr "Только услуги с отметкой <code>is_operation=True</code>"
+
+msgid "Faqat GET/POST"
+msgstr "Только GET/POST"
+
+msgid "Faqat POST"
+msgstr "Только POST"
+
+msgid "Faqat ko'rish"
+msgstr "Только просмотр"
+
+msgid "Faqat ko'rish rejimi."
+msgstr "Режим только для просмотра."
+
+msgid "Faqat laborant yoki admin tahrirlaya oladi"
+msgstr "Редактировать может только лаборант или администратор"
+
+msgid "Faqat menga biriktirilganlar"
+msgstr "Только закреплённые за мной"
+
+msgid "Faqat senga"
+msgstr "Только для тебя"
+
+msgid "Farqi yo'q"
+msgstr "Не важно"
+
+msgid "Favqulodda holat"
+msgstr "Экстренная ситуация"
+
+msgid "Favqulodda holatlar"
+msgstr "Экстренные ситуации"
+
+msgid "Fevral"
+msgstr "Февраль"
+
+msgid "Filial"
+msgstr "Филиал"
+
+msgid "Filial kodi"
+msgstr "Код филиала"
+
+msgid "Filial nomi"
+msgstr "Название филиала"
+
+msgid "Filter"
+msgstr "Фильтр"
+
+msgid "Filterlar"
+msgstr "Фильтры"
+
+msgid "Filtrlash"
+msgstr "Фильтрация"
+
+msgid "Filtrni olib tashlash"
+msgstr "Убрать фильтр"
+
+msgid "Fizioterapiya"
+msgstr "Физиотерапия"
+
+msgid "Fon kasalligi"
+msgstr "Фоновое заболевание"
+
+msgid "Formada xatoliklar bor."
+msgstr "В форме есть ошибки."
+
+msgid "Formada xatoliklar bor. Tekshiring."
+msgstr "В форме есть ошибки. Проверьте."
+
+msgid "Foydalanuvchi topilmadi"
+msgstr "Пользователь не найден"
+
+msgid "Foydalanuvchi yangilandi."
+msgstr "Пользователь обновлён."
+
+msgid "Foydalanuvchi yaratildi."
+msgstr "Пользователь создан."
+
+msgid "Foydalanuvchilar"
+msgstr "Пользователи"
+
+msgid "Foydalanuvchilar ro'yxati"
+msgstr "Список пользователей"
+
+msgid "Gacha sana"
+msgstr "Дата по"
+
+msgid "Gel"
+msgstr "Гель"
+
+msgid "Gemolizlangan namuna"
+msgstr "Гемолизированный образец"
+
+msgid "Gormonlar"
+msgstr "Гормоны"
+
+msgid "Guruh"
+msgstr "Группа"
+
+msgid "Guruh nomi"
+msgstr "Название группы"
+
+msgid "Ha"
+msgstr "Да"
+
+msgid "Ha, o'chirish"
+msgstr "Да, удалить"
+
+msgid "Hal qilindi"
+msgstr "Решено"
+
+msgid "Hal qilingan vaqt"
+msgstr "Время решения"
+
+msgid "Hali bajarilmagan"
+msgstr "Еще не выполнено"
+
+msgid "Hali diagnostika tayinlanmagan"
+msgstr "Диагностика еще не назначена"
+
+msgid "Hali javob yo'q"
+msgstr "Ответа еще нет"
+
+msgid "Hali konsultatsiya so'rovi yuborilmagan"
+msgstr "Запрос на консультацию еще не отправлен"
+
+msgid "Hali muolaja tayinlanmagan"
+msgstr "Процедура еще не назначена"
+
+msgid "Hali natija kiritilmagan"
+msgstr "Результат еще не введен"
+
+msgid "Hali parametr yo'q. Parametr qo'shing."
+msgstr "Параметров еще нет. Добавьте параметр."
+
+msgid "Hali shablon yo'q. Yangi shablon yarating."
+msgstr "Шаблонов еще нет. Создайте новый шаблон."
+
+msgid "Hali tahlil tayinlanmagan"
+msgstr "Анализ еще не назначен"
+
+msgid "Hali xizmat qo'shilmagan."
+msgstr "Услуга еще не добавлена."
+
+msgid "Hali xizmat tanlanmagan."
+msgstr "Услуга еще не выбрана."
+
+msgid "Hali xulosa kiritilmagan"
+msgstr "Заключение еще не введено"
+
+msgid "Hamroh kasallik"
+msgstr "Сопутствующее заболевание"
+
+msgid "Hamshira"
+msgstr "Медсестра"
+
+msgid "Hamshira kabineti"
+msgstr "Кабинет медсестры"
+
+msgid "Hamshira vazifalari"
+msgstr "Задачи медсестры"
+
+msgid "Hamshira vazifasi"
+msgstr "Задача медсестры"
+
+msgid "Hamshiralar nazorati — bugungi bajarilganlar"
+msgstr "Контроль медсестер — выполненное за сегодня"
+
+msgid "Har bir operatsiya"
+msgstr "Каждая операция"
+
+msgid "Har bir operatsiya bo'yicha"
+msgstr "По каждой операции"
+
+msgid "Harakatlanish turi"
+msgstr "Вид передвижения"
+
+msgid "Harorat (°C)"
+msgstr "Температура (°C)"
+
+msgid "Hayot anamnezi (Anamnesis vitae)"
+msgstr "Анамнез жизни (Anamnesis vitae)"
+
+msgid "Hayot tarixi"
+msgstr "История жизни"
+
+msgid "Hayot tarixi (Anamnesis vitae)"
+msgstr "История жизни (Anamnesis vitae)"
+
+msgid "Hayotda birinchi marta surunkali"
+msgstr "Впервые в жизни хроническое"
+
+msgid "Hech bir xizmat tanlanmadi."
+msgstr "Ни одна услуга не выбрана."
+
+msgid "Hech kim chaqirilmayapti"
+msgstr "Никто не вызывается"
+
+msgid "Hech narsa tayinlanmadi"
+msgstr "Ничего не назначено"
+
+msgid "Hisob-faktura"
+msgstr "Счет-фактура"
+
+msgid ""
+"Hisob-faktura bilan rasmiylashtirilgan xaqiqiy xarajatlar natijalari "
+"bo'yicha foydalanilmagan mablag'larni bemorga/homiyga qaytarish."
+msgstr ""
+"Возврат пациенту/спонсору неиспользованных средств по результатам "
+"фактических расходов, оформленных счетом-фактурой."
+
+msgid ""
+"Hisob-faktura bo'yicha berilgan xaqiqiy xarajatlar natijalari asosida qolgan"
+" foydalanilmagan mablag'larning qaytarilishi."
+msgstr ""
+"Возврат оставшихся неиспользованных средств на основании результатов "
+"фактических расходов, указанных в счете-фактуре."
+
+msgid "Hisob-faktura raqami"
+msgstr "Номер счета-фактуры"
+
+msgid "Hisob-faktura yaratildi"
+msgstr "Счет-фактура создан"
+
+msgid "Hisob-faktura — %(name)s"
+msgstr "Счет-фактура — %(name)s"
+
+msgid "Hisob-faktura № %(num)s"
+msgstr "Счет-фактура № %(num)s"
+
+msgid "Hisob-faktura № %(number)s"
+msgstr "Счет-фактура № %(number)s"
+
+msgid "Hisob-fakturalar"
+msgstr "Счета-фактуры"
+
+msgid "Hisobotlar"
+msgstr "Отчеты"
+
+msgid "Holat"
+msgstr "Состояние"
+
+msgid "Holat o'zgardi"
+msgstr "Состояние изменилось"
+
+msgid "Holat turi"
+msgstr "Тип состояния"
+
+msgid "Holat yangilandi: %(status)s"
+msgstr "Состояние обновлено: %(status)s"
+
+msgid "Holati"
+msgstr "Состояние"
+
+msgid "Holati o'zgardi"
+msgstr "Состояние изменилось"
+
+msgid "Hozir chaqirilmoqda"
+msgstr "Сейчас вызывается"
+
+msgid "Hozircha ko'rik yozuvlari yo'q"
+msgstr "Записей осмотра пока нет"
+
+msgid "Hozircha tayinlangan muolajalar yo'q"
+msgstr "Назначенных процедур пока нет"
+
+msgid "Hozircha tayinlangan tahlillar yo'q"
+msgstr "Назначенных анализов пока нет"
+
+msgid "Hozircha tayinlangan tekshiruvlar yo'q"
+msgstr "Назначенных обследований пока нет"
+
+msgid "Hozirgi holat"
+msgstr "Текущее состояние"
+
+msgid "Hozirgi holat (Status praesens)"
+msgstr "Текущее состояние (Status praesens)"
+
+msgid "Hozirgi navbat"
+msgstr "Текущая очередь"
+
+msgid "Hozirgi shifokor"
+msgstr "Текущий врач"
+
+msgid "Hozirgi:"
+msgstr "Текущий:"
+
+msgid "Hushdan ketish"
+msgstr "Потеря сознания"
+
+msgid "I (0)"
+msgstr "I (0)"
+
+msgid "II (A)"
+msgstr "II (A)"
+
+msgid "III (B)"
+msgstr "III (B)"
+
+msgid "IJROCHI"
+msgstr "ИСПОЛНИТЕЛЬ"
+
+msgid "IV (AB)"
+msgstr "IV (AB)"
+
+msgid "Ifloslangan namuna"
+msgstr "Загрязненный образец"
+
+msgid ""
+"Ijrochiga xizmatlarning to'liq narxini ushbu Shartnomaning 2.2. bandlarida "
+"nazarda tutilgan shartlarda o'z vaqtida to'lash."
+msgstr ""
+"Своевременно оплачивать Исполнителю полную стоимость услуг на условиях, "
+"предусмотренных пунктом 2.2 настоящего Договора."
+
+msgid ""
+"Ijrochining ichki tartib-qoidalariga, tibbiy xodimlarining davolash rejimiga"
+" va tayinlashlariga rioya qilish."
+msgstr ""
+"Соблюдать внутренние правила распорядка Исполнителя, лечебный режим и "
+"назначения медицинского персонала."
+
+msgid "Ijtimoiy holat:"
+msgstr "Социальное положение:"
+
+msgid "Ijtimoiy holati"
+msgstr "Социальное положение"
+
+msgid "Ikkalasi"
+msgstr "Оба"
+
+msgid "Ikona (emoji)"
+msgstr "Иконка (эмодзи)"
+
+msgid "Immunologiya"
+msgstr "Иммунология"
+
+msgid "Imzo: _______________________"
+msgstr "Подпись: _______________________"
+
+msgid "Ish joyi"
+msgstr "Место работы"
+
+msgid "Ish joyi (ro'yxatdan)"
+msgstr "Место работы (из регистрации)"
+
+msgid "Ish joyi / O'quv joyi"
+msgstr "Место работы / учебы"
+
+msgid "Ishga tushirish uchun ekranga bosing"
+msgstr "Нажмите на экран для запуска"
+
+msgid ""
+"Ishlash masalasiga kelsak — oyoq tirab turib olmayman. Agar men qo'ygan "
+"shartlar ostida bo'lsa, nega yo'q? <span class=\"accent\">Ishlashing "
+"mumkin.</span>"
+msgstr ""
+"Что касается работы — упираться не буду. Если на условиях, которые я "
+"предложил, то почему бы и нет? <span class=\"accent\">Можете "
+"работать.</span>"
+
+msgid "Ishlaydi"
+msgstr "Работает"
+
+msgid "Ism"
+msgstr "Имя"
+
+msgid "Ism, bayonnoma №, kasallik varaqasi №, passport yoki JSHSHIR..."
+msgstr "Имя, № протокола, № истории болезни, паспорт или ПИНФЛ..."
+
+msgid "Ism-familiya"
+msgstr "Фамилия и имя"
+
+msgid "Ism-familiya:"
+msgstr "Фамилия и имя:"
+
+msgid "Ivigan namuna"
+msgstr "Свернувшийся образец"
+
+msgid "Ixtiyoriy..."
+msgstr "Необязательно..."
+
+msgid "Iyul"
+msgstr "Июль"
+
+msgid "Iyun"
+msgstr "Июнь"
+
+msgid "Izoh"
+msgstr "Примечание"
+
+msgid "Izoh (ixtiyoriy)"
+msgstr "Примечание (необязательно)"
+
+msgid "Izoh..."
+msgstr "Примечание..."
+
+msgid "JAMI:"
+msgstr "ИТОГО:"
+
+msgid "JSHSHIR"
+msgstr "ПИНФЛ"
+
+msgid "JSHSHIR:"
+msgstr "ПИНФЛ:"
+
+msgid "JSON xato"
+msgstr "Ошибка JSON"
+
+msgid "JSON xatosi"
+msgstr "Ошибка JSON"
+
+msgid "Jami"
+msgstr "Всего"
+
+msgid "Jami (so'm)"
+msgstr "Всего (сум)"
+
+msgid "Jami bajarilgan"
+msgstr "Всего выполнено"
+
+msgid "Jami bemorlar"
+msgstr "Всего пациентов"
+
+msgid "Jami bemorlarning %(pct)s%"
+msgstr "%(pct)s%% от общего числа пациентов"
+
+msgid "Jami miqdor"
+msgstr "Общее количество"
+
+msgid "Jami operatsiyalar"
+msgstr "Всего операций"
+
+msgid "Jami summa"
+msgstr "Общая сумма"
+
+msgid "Jami summa (so'm)"
+msgstr "Общая сумма (сум)"
+
+msgid "Jami summa:"
+msgstr "Общая сумма:"
+
+msgid "Jami xizmatlar"
+msgstr "Всего услуг"
+
+msgid "Jami yozuvlar"
+msgstr "Всего записей"
+
+msgid "Jami:"
+msgstr "Всего:"
+
+msgid "Jarayonda"
+msgstr "В процессе"
+
+msgid "Jarrohlik"
+msgstr "Хирургия"
+
+msgid "Jarrohlik amaliyoti"
+msgstr "Хирургическая операция"
+
+msgid "Jarrohlik amaliyotlari"
+msgstr "Хирургические операции"
+
+msgid "Jarrohlik formasi xatolari:"
+msgstr "Ошибки формы операции:"
+
+msgid "Javob bergan mutaxassis"
+msgstr "Ответивший специалист"
+
+msgid "Javob berilgan"
+msgstr "Ответ дан"
+
+msgid "Javob vaqti"
+msgstr "Время ответа"
+
+msgid "Javob yuborish"
+msgstr "Отправить ответ"
+
+msgid "Javoblar"
+msgstr "Ответы"
+
+msgid "Jins"
+msgstr "Пол"
+
+msgid "Jins bo'yicha"
+msgstr "По полу"
+
+msgid "Jinsi"
+msgstr "Пол"
+
+msgid "Jinsi:"
+msgstr "Пол:"
+
+msgid ""
+"Joriy shartnoma narxi pullik tibbiy diagnostic xizmatlarni ko'rsatish iborat"
+msgstr ""
+"Стоимость текущего договора заключается в оказании платных медицинских "
+"диагностических услуг"
+
+msgid "Juda shoshilinch"
+msgstr "Очень срочно"
+
+msgid "KT"
+msgstr "КТ"
+
+msgid "Kamida bitta mutaxassisni tanlang."
+msgstr "Выберите хотя бы одного специалиста."
+
+msgid "Kamida bitta xizmat tanlang"
+msgstr "Выберите хотя бы одну услугу"
+
+msgid "Kapsula"
+msgstr "Капсула"
+
+msgid "Kardiologiya"
+msgstr "Кардиология"
+
+msgid "Karta &numero;:"
+msgstr "Карта &numero;:"
+
+msgid "Karta №"
+msgstr "Карта №"
+
+msgid "Karta №:"
+msgstr "Карта №:"
+
+msgid "Kasallanish yakuni"
+msgstr "Исход заболевания"
+
+msgid "Kasallanishdan keyin:"
+msgstr "После заболевания:"
+
+msgid "Kasallik tarixi"
+msgstr "История болезни"
+
+msgid "Kasallik tarixi (Anamnesis morbi)"
+msgstr "История болезни (Anamnesis morbi)"
+
+msgid "Kasallik tarixidan (Anamnesis morbi)"
+msgstr "Из истории болезни (Anamnesis morbi)"
+
+msgid "Kasallik varaqasi tartib raqami"
+msgstr "Порядковый номер истории болезни"
+
+msgid "Kasallik varaqasi №:"
+msgstr "История болезни №:"
+
+msgid "Kasallikning kechishi"
+msgstr "Течение заболевания"
+
+msgid "Kasalxona:"
+msgstr "Больница:"
+
+msgid "Kassir"
+msgstr "Кассир"
+
+msgid "Kategoriya"
+msgstr "Категория"
+
+msgid "Kategoriya bo'yicha"
+msgstr "По категории"
+
+msgid "Kategoriyalar"
+msgstr "Категории"
+
+msgid "Katta hamshira"
+msgstr "Старшая медсестра"
+
+msgid "Katta hamshira kabineti"
+msgstr "Кабинет старшей медсестры"
+
+msgid "Kechikish sababi"
+msgstr "Причина задержки"
+
+msgid "Kechikkan vaqt"
+msgstr "Время задержки"
+
+msgid "Kechiktirildi"
+msgstr "Отложено"
+
+msgid "Kechishi"
+msgstr "Течение"
+
+msgid "Kelgan sana va soat"
+msgstr "Дата и время прибытия"
+
+msgid "Keyingini chaqirish"
+msgstr "Вызвать следующего"
+
+msgid "Kim bajardi"
+msgstr "Кто выполнил"
+
+msgid "Kim ko'chirdi"
+msgstr "Кто перенес"
+
+msgid "Kim ko'chirdi:"
+msgstr "Кто перенес:"
+
+msgid "Kim ko'chirgan"
+msgstr "Кто перевёл"
+
+msgid "Kim o'zgartirdi"
+msgstr "Кто изменил"
+
+msgid "Kim olib kelgan:"
+msgstr "Кто доставил:"
+
+msgid "Kim qaytardi"
+msgstr "Кто вернул"
+
+msgid "Kim qo'shdi"
+msgstr "Кто добавил"
+
+msgid "Kirish"
+msgstr "Вход"
+
+msgid "Kirish taqiqlangan"
+msgstr "Доступ запрещён"
+
+msgid "Kiritilmoqda"
+msgstr "Вводится"
+
+msgid "Klinik"
+msgstr "Клинический"
+
+msgid "Klinik ko'rsatma / izoh"
+msgstr "Клинические показания / комментарий"
+
+msgid "Klinik matn"
+msgstr "Клинический текст"
+
+msgid "Klinik matn (ixtiyoriy)"
+msgstr "Клинический текст (необязательно)"
+
+msgid "Klinik tashxis (ixtiyoriy)"
+msgstr "Клинический диагноз (необязательно)"
+
+msgid "Klinik tashxis matni"
+msgstr "Текст клинического диагноза"
+
+msgid "Klinik tashxis matni..."
+msgstr "Текст клинического диагноза..."
+
+msgid "Klinik tashxisning asoslanishi"
+msgstr "Обоснование клинического диагноза"
+
+msgid "Klinik yo'ldosh kasalliklar"
+msgstr "Клинические сопутствующие заболевания"
+
+msgid "Klinika omboridan"
+msgstr "Со склада клиники"
+
+msgid "Ko'cha nomi va uy raqami"
+msgstr "Название улицы и номер дома"
+
+msgid "Ko'chirish"
+msgstr "Перевод"
+
+msgid "Ko'chirish sababi..."
+msgstr "Причина перевода..."
+
+msgid "Ko'chirish sanasi"
+msgstr "Дата перевода"
+
+msgid "Ko'chirish tarixi"
+msgstr "История переводов"
+
+msgid "Ko'chirish:"
+msgstr "Перевод:"
+
+msgid "Ko'rib chiqilmoqda"
+msgstr "На рассмотрении"
+
+msgid "Ko'rik"
+msgstr "Осмотр"
+
+msgid "Ko'rik jarayonidagi shikoyatlar"
+msgstr "Жалобы в процессе осмотра"
+
+msgid "Ko'rik qo'shish"
+msgstr "Добавить осмотр"
+
+msgid "Ko'rik turi"
+msgstr "Тип осмотра"
+
+msgid "Ko'rik turi tanlanmagan yoki noto'g'ri."
+msgstr "Тип осмотра не выбран или указан неверно."
+
+msgid "Ko'rik turini tanlang"
+msgstr "Выберите тип осмотра"
+
+msgid "Ko'rik turini tanlang."
+msgstr "Выберите тип осмотра."
+
+msgid "Ko'rik vaqti"
+msgstr "Время осмотра"
+
+msgid "Ko'rikdan o'tkazilgan vaqti"
+msgstr "Время проведения осмотра"
+
+msgid "Ko'riklar hali qo'shilmagan"
+msgstr "Осмотры пока не добавлены"
+
+msgid "Ko'riklar tarixi"
+msgstr "История осмотров"
+
+msgid "Ko'rikni saqlash"
+msgstr "Сохранить осмотр"
+
+msgid "Ko'rish"
+msgstr "Просмотр"
+
+msgid "Ko'rish / tahrirlash"
+msgstr "Просмотр / редактирование"
+
+msgid "Ko'rsatish"
+msgstr "Показать"
+
+msgid "Ko'zingga qarab aytolmadim…"
+msgstr "Не смог сказать, глядя тебе в глаза…"
+
+msgid "Koagulyatsiya"
+msgstr "Коагуляция"
+
+msgid "Kod"
+msgstr "Код"
+
+msgid "Kod yoki kasallik nomi..."
+msgstr "Код или название заболевания..."
+
+msgid "Kod yoki nom kiriting..."
+msgstr "Введите код или название..."
+
+msgid "Kod yoki nom..."
+msgstr "Код или название..."
+
+msgid "Kodi"
+msgstr "Код"
+
+msgid "Konsilium"
+msgstr "Консилиум"
+
+msgid "Konsultatsiya"
+msgstr "Консультация"
+
+msgid "Konsultatsiya javobi"
+msgstr "Ответ консультации"
+
+msgid "Konsultatsiya javoblari"
+msgstr "Ответы консультаций"
+
+msgid "Konsultatsiya so'rash"
+msgstr "Запросить консультацию"
+
+msgid "Konsultatsiya so'rovi"
+msgstr "Запрос на консультацию"
+
+msgid "Konsultatsiya so'rovlari"
+msgstr "Запросы на консультацию"
+
+msgid "Konsultatsiya turini qidirish..."
+msgstr "Поиск типа консультации..."
+
+msgid "Konsultatsiya xizmati"
+msgstr "Услуга консультации"
+
+msgid "Konsultatsiya xizmati (katalogdan)"
+msgstr "Услуга консультации (из каталога)"
+
+msgid "Konsultatsiya xizmatini tanlang."
+msgstr "Выберите услугу консультации."
+
+msgid "Konsultatsiyalar"
+msgstr "Консультации"
+
+msgid "Korxona INN"
+msgstr "ИНН организации"
+
+msgid "Korxona kodi"
+msgstr "Код организации"
+
+msgid "Korxona kodi, INN yoki nomi..."
+msgstr "Код организации, ИНН или название..."
+
+msgid "Korxona nomi"
+msgstr "Название организации"
+
+msgid "Krem"
+msgstr "Крем"
+
+msgid "Kritik"
+msgstr "Критический"
+
+msgid "Kritik max"
+msgstr "Критический максимум"
+
+msgid "Kritik min"
+msgstr "Критический минимум"
+
+msgid "Kukun"
+msgstr "Порошок"
+
+msgid "Kun"
+msgstr "День"
+
+msgid "Kuniga necha marta"
+msgstr "Сколько раз в день"
+
+msgid "Kunlik"
+msgstr "Ежедневно"
+
+msgid "Kunlik tashrif"
+msgstr "Ежедневное посещение"
+
+msgid "Kutilmoqda"
+msgstr "Ожидается"
+
+msgid "Kutmoqda"
+msgstr "Ожидает"
+
+msgid "LABORATORIYA TAHLILI NATIJASI"
+msgstr "РЕЗУЛЬТАТ ЛАБОРАТОРНОГО АНАЛИЗА"
+
+msgid "Lab buyurtma"
+msgstr "Лабораторный заказ"
+
+msgid "Lab buyurtmalar"
+msgstr "Лабораторные заказы"
+
+msgid "Lab buyurtmalari"
+msgstr "Лабораторные заказы"
+
+msgid "Lab buyurtmalari yo'q"
+msgstr "Лабораторных заказов нет"
+
+msgid "Lab natijalari"
+msgstr "Результаты анализов"
+
+msgid "Lab natijalari yo'q"
+msgstr "Результатов анализов нет"
+
+msgid "Lab natijasi"
+msgstr "Результат анализа"
+
+msgid "Lab natijasi &numero; %(pk)s &mdash; %(name)s"
+msgstr "Результат анализа &numero; %(pk)s &mdash; %(name)s"
+
+msgid "Lab parametri"
+msgstr "Лабораторный параметр"
+
+msgid "Lab parametrlari"
+msgstr "Лабораторные параметры"
+
+msgid "Lab shabloni"
+msgstr "Лабораторный шаблон"
+
+msgid "Lab shablonlar"
+msgstr "Лабораторные шаблоны"
+
+msgid "Lab shablonlari"
+msgstr "Лабораторные шаблоны"
+
+msgid "Lab tekshiruvlari"
+msgstr "Лабораторные исследования"
+
+msgid "Laborant"
+msgstr "Лаборант"
+
+msgid "Laboratoriya"
+msgstr "Лаборатория"
+
+msgid "Laboratoriya anjomi"
+msgstr "Лабораторное оборудование"
+
+msgid "Laboratoriya tahlili"
+msgstr "Лабораторный анализ"
+
+msgid "Laboratoriya tahlillari"
+msgstr "Лабораторные анализы"
+
+msgid "Laboratoriya tekshiruvi"
+msgstr "Лабораторное исследование"
+
+msgid "Laboratoriya tekshiruvlari"
+msgstr "Лабораторные исследования"
+
+msgid "Laboratoriya va instrumental tadqiqotlar va maslahatlar"
+msgstr "Лабораторные и инструментальные исследования и консультации"
+
+msgid "Laboratoriya xizmatlari"
+msgstr "Лабораторные услуги"
+
+msgid "Laboratoriya — %(d)s"
+msgstr "Лаборатория — %(d)s"
+
+msgid "Laboratoriya — %(name)s"
+msgstr "Лаборатория — %(name)s"
+
+msgid "Lavozimi"
+msgstr "Должность"
+
+msgid ""
+"Lekin iltimos — <span class=\"accent\">shirin ovqat qilishni o'rgan.</span> "
+"Mahrga kutubxona so'rasang, romanga arzigulik hayotni ham qo'shib beraman "
+"senga."
+msgstr ""
+"Но прошу — <span class=\"accent\">научись готовить сладкое.</span> Если "
+"попросишь в качестве махра библиотеку, я добавлю тебе ещё и жизнь, достойную"
+" романа."
+
+msgid "Liniya"
+msgstr "Линия"
+
+msgid "Login"
+msgstr "Логин"
+
+msgid "Login yoki parol noto'g'ri."
+msgstr "Логин или пароль неверны."
+
+msgid "Loglar"
+msgstr "Журналы"
+
+msgid "Loyiha"
+msgstr "Проект"
+
+msgid "MFO 00450. STIR 203855194"
+msgstr "МФО 00450. СТИР 203855194"
+
+msgid "MKB-10 Tashxis qo'shish"
+msgstr "Добавить диагноз МКБ-10"
+
+msgid "MKB-10 kodi"
+msgstr "Код МКБ-10"
+
+msgid "MKB-10 kodlari"
+msgstr "Коды МКБ-10"
+
+msgid "MKK filiali, Toshkent"
+msgstr "Филиал МКК, Ташкент"
+
+msgid "MRT"
+msgstr "МРТ"
+
+msgid "MRT Navbat Boshqaruvi"
+msgstr "Управление очередью МРТ"
+
+msgid "MRT Navbat Ekrani"
+msgstr "Экран очереди МРТ"
+
+msgid "MRT Navbat Yaratildi"
+msgstr "Очередь МРТ создана"
+
+msgid "MRT bo'limi"
+msgstr "Отделение МРТ"
+
+msgid "MRT bo'limi — Elektron navbat tizimi"
+msgstr "Отделение МРТ — Система электронной очереди"
+
+msgid "MRT xonasi"
+msgstr "Кабинет МРТ"
+
+msgid "Ma'lumot topilmadi"
+msgstr "Информация не найдена"
+
+msgid "Ma'lumot topilmadi."
+msgstr "Информация не найдена."
+
+msgid "Ma'lumot yo'q"
+msgstr "Нет данных"
+
+msgid "Ma'lumot yo'q."
+msgstr "Нет данных."
+
+msgid "Ma'lumotlar yangilandi!"
+msgstr "Данные обновлены!"
+
+msgid "Mahalliy"
+msgstr "Местный"
+
+msgid "Mahalliy holat"
+msgstr "Локальный статус"
+
+msgid "Mahalliy holat (Status localis)"
+msgstr "Локальный статус (Status localis)"
+
+msgid "Mahalliy narkoz"
+msgstr "Местная анестезия"
+
+msgid "Majburiy"
+msgstr "Обязательно"
+
+msgid "Maksimal sutkalik doza"
+msgstr "Максимальная суточная доза"
+
+msgid "Malham"
+msgstr "Мазь"
+
+msgid "Manba"
+msgstr "Источник"
+
+msgid "Manzil"
+msgstr "Адрес"
+
+msgid "Manzil:"
+msgstr "Адрес:"
+
+msgid "Manzilni tekshiring yoki bosh sahifaga qayting."
+msgstr "Проверьте адрес или вернитесь на главную страницу."
+
+msgid "Markaziy klinik"
+msgstr "Центральная клиническая"
+
+msgid "Markaziy klinik kasalxona"
+msgstr "Центральная клиническая больница"
+
+msgid "Markaziy klinik kasalxona MRT bo'limi — Xizmat soatlari: 08:00 — 18:00"
+msgstr ""
+"Отделение МРТ Центральной клинической больницы — Часы работы: 08:00 — 18:00"
+
+msgid "Markaziy klinik kasalxona filiali"
+msgstr "Филиал Центральной клинической больницы"
+
+msgid "Markaziy klinik kasalxonasi filiali"
+msgstr "Филиал Центральной клинической больницы"
+
+msgid "Mart"
+msgstr "Март"
+
+msgid "Mas'ul bo'lim"
+msgstr "Ответственное отделение"
+
+msgid "Mas'ul laborant"
+msgstr "Ответственный лаборант"
+
+msgid "Mas'ul shifokorlar"
+msgstr "Ответственные врачи"
+
+msgid "Masalan: Gemoglobin"
+msgstr "Например: Гемоглобин"
+
+msgid "Material"
+msgstr "Материал"
+
+msgid "Material qo'shildi"
+msgstr "Материал добавлен"
+
+msgid "Material qo'shish"
+msgstr "Добавить материал"
+
+msgid "Material qo'shishda xato yuz berdi"
+msgstr "Произошла ошибка при добавлении материала"
+
+msgid "Material topilmadi"
+msgstr "Материал не найден"
+
+msgid "Materiallar"
+msgstr "Материалы"
+
+msgid "Materiallar bo'yicha jami"
+msgstr "Итого по материалам"
+
+msgid "Materiallar jami"
+msgstr "Всего материалов"
+
+msgid "Materiallar qo'shilmagan"
+msgstr "Материалы не добавлены"
+
+msgid "Matnli"
+msgstr "Текстовый"
+
+msgid "Maxsus ko'rsatmalar"
+msgstr "Особые указания"
+
+msgid "Maxsus mutaxassis tekshirishi"
+msgstr "Осмотр узкого специалиста"
+
+msgid "May"
+msgstr "Май"
+
+msgid "Maydon"
+msgstr "Поле"
+
+msgid "Maz"
+msgstr "Маз"
+
+msgid "Me&lsquo;yor"
+msgstr "Норма"
+
+msgid "Me'yor"
+msgstr "Норма"
+
+msgid "Me'yor (E/A)"
+msgstr "Норма (М/Ж)"
+
+msgid "Me'yor (umumiy)"
+msgstr "Норма (общая)"
+
+msgid "Me'yor max"
+msgstr "Норма макс."
+
+msgid "Me'yor max (ayol)"
+msgstr "Норма макс. (женщины)"
+
+msgid "Me'yor max (erkak)"
+msgstr "Норма макс. (мужчины)"
+
+msgid "Me'yor max (umumiy)"
+msgstr "Норма макс. (общая)"
+
+msgid "Me'yor min"
+msgstr "Норма мин."
+
+msgid "Me'yor min (ayol)"
+msgstr "Норма мин. (женщины)"
+
+msgid "Me'yor min (erkak)"
+msgstr "Норма мин. (мужчины)"
+
+msgid "Me'yor min (umumiy)"
+msgstr "Норма мин. (общая)"
+
+msgid "Me'yor oralig'i"
+msgstr "Диапазон нормы"
+
+msgid ""
+"Men faqat senga <span class=\"accent\">uyimni tozalab, qornimni "
+"to'ydiradigan xizmatchi, ehtiyojlarimni qondiradigan vosita</span> kerakligi"
+" uchun uylanmoqchi emasman."
+msgstr ""
+"Я не хочу жениться на тебе лишь потому, что тебе нужна <span "
+"class=\"accent\">прислуга, которая будет убирать дом, готовить еду и "
+"удовлетворять мои потребности</span>."
+
+msgid "Menga yuborilgan konsultatsiya so'rovlari"
+msgstr "Запросы на консультацию, отправленные мне"
+
+msgid "Mening bemorlarim"
+msgstr "Мои пациенты"
+
+msgid "Mening paketim"
+msgstr "Мой пакет"
+
+msgid "Mikrobiologiya"
+msgstr "Микробиология"
+
+msgid "Miqdor"
+msgstr "Количество"
+
+msgid "Miqdori"
+msgstr "Количество"
+
+msgid "Miqdori noto'g'ri yoki juda katta"
+msgstr "Количество указано неверно или слишком велико"
+
+msgid "Mirobod tumani filiali"
+msgstr "Филиал Миробадского района"
+
+msgid "Moliyaviy hisobot — hisob-faktura"
+msgstr "Финансовый отчёт — счёт-фактура"
+
+msgid "Muammo bildirish"
+msgstr "Сообщить о проблеме"
+
+msgid "Muassasa"
+msgstr "Учреждение"
+
+msgid "Muassasalar"
+msgstr "Учреждения"
+
+msgid "Muddati o'tgan muolaja yo'q"
+msgstr "Просроченных процедур нет"
+
+msgid "Muddati o'tgan muolajalar"
+msgstr "Просроченные процедуры"
+
+msgid "Mudiri:"
+msgstr "Заведующий:"
+
+msgid "Muolaja"
+msgstr "Процедура"
+
+msgid "Muolaja bajarilish logi"
+msgstr "Журнал выполнения процедуры"
+
+msgid "Muolaja bajarilish loglari"
+msgstr "Журналы выполнения процедур"
+
+msgid "Muolaja soni"
+msgstr "Количество процедур"
+
+msgid "Musiqa"
+msgstr "Музыка"
+
+msgid "Mutaxassis maslahatlari va konsiliumlar"
+msgstr "Консультации специалистов и консилиумы"
+
+msgid "Mutaxassis va xulosa..."
+msgstr "Специалист и заключение..."
+
+msgid "Mutaxassislar"
+msgstr "Специалисты"
+
+msgid "Nafas yetishmovchiligi"
+msgstr "Дыхательная недостаточность"
+
+msgid "Namuna"
+msgstr "Образец"
+
+msgid "Namuna muammosi"
+msgstr "Проблема с образцом"
+
+msgid "Namuna olindi"
+msgstr "Образец взят"
+
+msgid "Namuna olingan"
+msgstr "Образец взят"
+
+msgid "Namuna olingan vaqt"
+msgstr "Время взятия образца"
+
+msgid "Namuna yetarli emas"
+msgstr "Образец недостаточен"
+
+msgid "Naqd"
+msgstr "Наличные"
+
+msgid "Narkoz"
+msgstr "Наркоз"
+
+msgid "Narkoz bilan"
+msgstr "С наркозом"
+
+msgid "Narkoz turi"
+msgstr "Вид наркоза"
+
+msgid "Narkozsiz"
+msgstr "Без наркоза"
+
+msgid "Narx"
+msgstr "Цена"
+
+msgid "Narx noto'g'ri yoki juda katta (maksimal 9999999999.99 so'm)"
+msgstr "Цена указана неверно или слишком велика (максимум 9999999999.99 сум)"
+
+msgid "Narxi"
+msgstr "Цена"
+
+msgid "Narxi (so'm)"
+msgstr "Цена (сум)"
+
+msgid "Natija"
+msgstr "Результат"
+
+msgid "Natija / Xulosa"
+msgstr "Результат / Заключение"
+
+msgid "Natija / xulosa"
+msgstr "Результат / заключение"
+
+msgid "Natija kiritish — %(name)s"
+msgstr "Ввод результата — %(name)s"
+
+msgid "Natija kiritishni boshlash"
+msgstr "Начать ввод результата"
+
+msgid "Natija loglari"
+msgstr "Журналы результатов"
+
+msgid "Natija matni"
+msgstr "Текст результата"
+
+msgid "Natija qiymati"
+msgstr "Значение результата"
+
+msgid "Natija qiymatlari"
+msgstr "Значения результатов"
+
+msgid "Natija №%(pk)s"
+msgstr "Результат №%(pk)s"
+
+msgid "Natija:"
+msgstr "Результат:"
+
+msgid "Navbat bo'sh"
+msgstr "Очередь пуста"
+
+msgid "Navbat chipta"
+msgstr "Талон очереди"
+
+msgid "Navbat chipta #%(num)s"
+msgstr "Талон очереди #%(num)s"
+
+msgid "Navbat chiptalar"
+msgstr "Талоны очереди"
+
+msgid "Navbat kelguncha kuting."
+msgstr "Дождитесь своей очереди."
+
+msgid "Navbat kutmoqda"
+msgstr "Ожидает в очереди"
+
+msgid "Navbat raqami"
+msgstr "Номер очереди"
+
+msgid "Navbat ro'yxati"
+msgstr "Список очереди"
+
+msgid "Navbat sozlamalari"
+msgstr "Настройки очереди"
+
+msgid "Navbat tizimi"
+msgstr "Система очереди"
+
+msgid "Navbatda hech kim yo'q"
+msgstr "В очереди никого нет"
+
+msgid "Navbatingizni kuting, ism-familiyangiz e'lon qilinadi"
+msgstr "Дождитесь своей очереди, ваши имя и фамилия будут объявлены"
+
+msgid "Nevrologik holat"
+msgstr "Неврологический статус"
+
+msgid "Nevrologiya"
+msgstr "Неврология"
+
+msgid ""
+"Nizomi asosida ish yurituvchi direktor I.K.Yangiboyev vakili sifatida bir "
+"tomondan, keyingi o`rinlarda"
+msgstr ""
+"действующий на основании устава директор И.К.Янгибоев, выступающий в "
+"качестве представителя, с одной стороны, далее именуемый"
+
+msgid "Nofaol"
+msgstr "Неактивен"
+
+msgid "Nom bo'sh"
+msgstr "Название пустое"
+
+msgid "Nom kiritilmagan"
+msgstr "Название не введено"
+
+msgid "Nomi"
+msgstr "Название"
+
+msgid "Nomi (ru)"
+msgstr "Название (рус.)"
+
+msgid "Nomi (ruscha)"
+msgstr "Название (на русском)"
+
+msgid "Nomi (uz)"
+msgstr "Название (узб.)"
+
+msgid "Nomi kiritilishi shart"
+msgstr "Название обязательно для заполнения"
+
+msgid "Nomi kiritilishi shart!"
+msgstr "Название обязательно для заполнения!"
+
+msgid "Nores."
+msgstr "Нерез."
+
+msgid "Norezident"
+msgstr "Нерезидент"
+
+msgid "Norezident daromadi"
+msgstr "Доход нерезидента"
+
+msgid "Norezident narxi (+25%)"
+msgstr "Цена для нерезидента (+25%)"
+
+msgid "Norezident — manzil ko'rsatilmagan"
+msgstr "Нерезидент — адрес не указан"
+
+msgid "Norma"
+msgstr "Норма"
+
+msgid "Noto'g'ri action"
+msgstr "Неверное действие"
+
+msgid "Noto'g'ri quvurcha"
+msgstr "Неверная пробирка"
+
+msgid "Noto'g'ri so'rov"
+msgstr "Неверный запрос"
+
+msgid "Noyabr"
+msgstr "Ноябрь"
+
+msgid "O'chir"
+msgstr "Удалить"
+
+msgid "O'chirildi"
+msgstr "Удалено"
+
+msgid "O'chirish"
+msgstr "Удаление"
+
+msgid "O'lchov birligi"
+msgstr "Единица измерения"
+
+msgid "O'lim sababi"
+msgstr "Причина смерти"
+
+msgid "O'lim sabablari"
+msgstr "Причины смерти"
+
+msgid "O'qilgan"
+msgstr "Прочитано"
+
+msgid "O'quvchi"
+msgstr "Учащийся"
+
+msgid "O'rtacha kun"
+msgstr "Среднее количество дней"
+
+msgid "O'tkazib yuborildi"
+msgstr "Пропущено"
+
+msgid "O'tkazib yuborish"
+msgstr "Пропустить"
+
+msgid "O'tkazildi"
+msgstr "Проведено"
+
+msgid "O'tkir"
+msgstr "Острый"
+
+msgid "O'tkir osti"
+msgstr "Подострый"
+
+msgid "O'z transporti"
+msgstr "Личный транспорт"
+
+msgid "O'zbekiston Respublikasi Milliy banki"
+msgstr "Национальный банк Республики Узбекистан"
+
+msgid "O'zbekiston Respublikasi, 100047,"
+msgstr "Республика Узбекистан, 100047,"
+
+msgid "O'zgartirilgan vaqt"
+msgstr "Время изменения"
+
+msgid "O'zi kelgan"
+msgstr "Самостоятельно обратился"
+
+msgid "OITS natijasi"
+msgstr "Результат на ВИЧ"
+
+msgid "OITS natijasi:"
+msgstr "Результат на ВИЧ:"
+
+msgid "OITS tekshiruvi sanasi"
+msgstr "Дата обследования на ВИЧ"
+
+msgid "OITS tekshiruvi sanasi:"
+msgstr "Дата обследования на ВИЧ:"
+
+msgid "Ob'ektiv holat (Status praesens)"
+msgstr "Объективный статус (Status praesens)"
+
+msgid "Ochiq"
+msgstr "Открыто"
+
+msgid "Ochish"
+msgstr "Открыть"
+
+msgid "Oddiy"
+msgstr "Обычный"
+
+msgid "Oddiy narx (so'm)"
+msgstr "Обычная цена (сум)"
+
+msgid "Off"
+msgstr "Выкл."
+
+msgid "Oktabr"
+msgstr "Октябрь"
+
+msgid "Op. xizmatlari"
+msgstr "Операционные услуги"
+
+msgid "Operatsiya"
+msgstr "Операция"
+
+msgid "Operatsiya nomi"
+msgstr "Название операции"
+
+msgid "Operatsiya turi"
+msgstr "Вид операции"
+
+msgid "Operatsiya turlari"
+msgstr "Виды операций"
+
+msgid "Operatsiya turlari bo'yicha"
+msgstr "По видам операций"
+
+msgid "Operatsiya xizmatlari statistikasi"
+msgstr "Статистика операционных услуг"
+
+msgid "Operatsiyalar"
+msgstr "Операции"
+
+msgid "Operatsiyalar statistikasi"
+msgstr "Статистика операций"
+
+msgid "Operatsiyami?"
+msgstr "Это операция?"
+
+msgid "Orqaga"
+msgstr "Назад"
+
+msgid "Ota-ona / Vasiy ismi"
+msgstr "Имя родителя / опекуна"
+
+msgid "Ota-ona / Vasiy ma'lumotlari"
+msgstr "Данные родителя / опекуна"
+
+msgid "Ota-ona JSHSHIR"
+msgstr "ПИНФЛ родителя"
+
+msgid "Ota-ona ish joyi"
+msgstr "Место работы родителя"
+
+msgid "Ota-ona qaramog'ida"
+msgstr "На иждивении родителей"
+
+msgid "Ota-onasining ish joyi"
+msgstr "Место работы родителей"
+
+msgid ""
+"Otangnikida bo'lganing kabi menikida ham <span class=\"accent\">o'zingni "
+"xavfsiz his qilishing</span> uchun maksimal darajada harakat qilaman. "
+"Bizning munosabatlarimiz <span class=\"accent\">hurmat ustiga quriladi, "
+"qo'rquv emas.</span>"
+msgstr ""
+"Я сделаю всё возможное, чтобы рядом со мной ты <span "
+"class=\"accent\">чувствовала себя так же защищённо</span>, как и в доме "
+"отца. Наши отношения будут <span class=\"accent\">строиться на уважении, а "
+"не на страхе.</span>"
+
+msgid "Ovozli"
+msgstr "Голосовой"
+
+msgid "Ovozli ekran"
+msgstr "Голосовой экран"
+
+msgid "Ovqat bilan bog'liqligi"
+msgstr "Связь с приёмом пищи"
+
+msgid "Ovqat paytida"
+msgstr "Во время еды"
+
+msgid "Ovqatdan keyin"
+msgstr "После еды"
+
+msgid "Ovqatdan oldin"
+msgstr "До еды"
+
+msgid "Oy"
+msgstr "Месяц"
+
+msgid "Oylik"
+msgstr "Ежемесячно"
+
+msgid "Oylik dinamika"
+msgstr "Месячная динамика"
+
+msgid "Oylik rasmiy hisobot"
+msgstr "Ежемесячный официальный отчёт"
+
+msgid "PDF fayl"
+msgstr "PDF файл"
+
+msgid "PDF ko'rish"
+msgstr "Просмотр PDF"
+
+msgid "PDF yuklab olish"
+msgstr "Скачать PDF"
+
+msgid "POST required"
+msgstr "Требуется POST-запрос"
+
+msgid "Paket nomi"
+msgstr "Название пакета"
+
+msgid "Parametr"
+msgstr "Параметр"
+
+msgid "Parametr guruhi"
+msgstr "Группа параметров"
+
+msgid "Parametr guruhlari"
+msgstr "Группы параметров"
+
+msgid "Parametr nomi"
+msgstr "Название параметра"
+
+msgid "Parametr qo'shish"
+msgstr "Добавить параметр"
+
+msgid "Parametr turi"
+msgstr "Тип параметра"
+
+msgid "Parametrlar"
+msgstr "Параметры"
+
+msgid "Parametrlar soni"
+msgstr "Количество параметров"
+
+msgid "Parol"
+msgstr "Пароль"
+
+msgid "Parolni tasdiqlang"
+msgstr "Подтвердите пароль"
+
+msgid "Pasport"
+msgstr "Паспорт"
+
+msgid "Pasport/ID:"
+msgstr "Паспорт/ID:"
+
+msgid "Passport:"
+msgstr "Паспорт:"
+
+msgid "Past"
+msgstr "Низкий"
+
+msgid "Patch (yopishtirgich)"
+msgstr "Патч (наклейка)"
+
+msgid "Patologoanatomik"
+msgstr "Патологоанатомический"
+
+msgid "Patologoanatomik tashxis"
+msgstr "Патологоанатомический диагноз"
+
+msgid "Patologoanatomik tashxis matni"
+msgstr "Текст патологоанатомического диагноза"
+
+msgid "Patologoanatomik yo'ldosh kasalliklar"
+msgstr "Патологоанатомические сопутствующие заболевания"
+
+msgid "Pensioner"
+msgstr "Пенсионер"
+
+msgid "Pensioner?"
+msgstr "Пенсионер?"
+
+msgid "Plastik karta"
+msgstr "Пластиковая карта"
+
+msgid "Politsiya"
+msgstr "Полиция"
+
+msgid "Pullik"
+msgstr "Платно"
+
+msgid "Pullik narxi"
+msgstr "Платная цена"
+
+msgid "Pullik tibbiy yordam ko'rsatish bo'yicha"
+msgstr "По оказанию платной медицинской помощи"
+
+msgid "Pullik:"
+msgstr "Платно:"
+
+msgid "QQS bilan"
+msgstr "С НДС"
+
+msgid "QR kod"
+msgstr "QR-код"
+
+msgid "Qabul bo'limi tashxisi:"
+msgstr "Диагноз приёмного отделения:"
+
+msgid "Qabul ma'lumotlari"
+msgstr "Данные приёма"
+
+msgid "Qabul qilindi"
+msgstr "Принято"
+
+msgid "Qabul qilish vaqtlari"
+msgstr "Часы приёма"
+
+msgid "Qabul qiluvchi"
+msgstr "Принимающий"
+
+msgid "Qabul sanasi"
+msgstr "Дата приёма"
+
+msgid "Qabul sanasi va vaqti"
+msgstr "Дата и время приёма"
+
+msgid "Qabul turi"
+msgstr "Тип приёма"
+
+msgid "Qabulga yozuvni bekor qilish"
+msgstr "Отменить запись на приём"
+
+msgid "Qabulxona"
+msgstr "Приёмное отделение"
+
+msgid "Qayd etish"
+msgstr "Зафиксировать"
+
+msgid "Qayerdan"
+msgstr "Откуда"
+
+msgid "Qayerga"
+msgstr "Куда"
+
+msgid "Qayta"
+msgstr "Повторно"
+
+msgid "Qayta biriktirish"
+msgstr "Повторно прикрепить"
+
+msgid "Qayta hisoblandi"
+msgstr "Пересчитано"
+
+msgid "Qayta hisoblash"
+msgstr "Пересчитать"
+
+msgid "Qayta namuna"
+msgstr "Повторный образец"
+
+msgid "Qayta namuna kerak"
+msgstr "Требуется повторный образец"
+
+msgid "Qaytarilgan summa (so'm)"
+msgstr "Возвращённая сумма (сум)"
+
+msgid "Qaytarish (Refund)"
+msgstr "Возврат (Refund)"
+
+msgid "Qaytarish (refund)"
+msgstr "Возврат (refund)"
+
+msgid "Qaytarish qo'shildi"
+msgstr "Возврат добавлен"
+
+msgid "Qaytarishlar (Refundlar)"
+msgstr "Возвраты (Refund)"
+
+msgid "Qaytarishni saqlashda xato yuz berdi"
+msgstr "Ошибка при сохранении возврата"
+
+msgid "Qidirish"
+msgstr "Поиск"
+
+msgid "Qidirish..."
+msgstr "Поиск..."
+
+msgid "Qidiruv (F.I.Sh., bayonnoma yoki kasallik varaqasi raqami)"
+msgstr "Поиск (Ф.И.О., номер протокола или истории болезни)"
+
+msgid "Qidiruv (bemor F.I.Sh. yoki dori nomi)"
+msgstr "Поиск (Ф.И.О. пациента или название препарата)"
+
+msgid "Qidiruv (bemor F.I.Sh. yoki tahlil nomi)"
+msgstr "Поиск (Ф.И.О. пациента или название анализа)"
+
+msgid "Qidiruv (bemor F.I.Sh. yoki tekshiruv turi)"
+msgstr "Поиск (Ф.И.О. пациента или вид исследования)"
+
+msgid "Qishloq"
+msgstr "Село"
+
+msgid "Qishloqlar"
+msgstr "Сёла"
+
+msgid "Qisman bajarildi"
+msgstr "Частично выполнено"
+
+msgid "Qisman to'langan"
+msgstr "Частично оплачено"
+
+msgid "Qiymat"
+msgstr "Значение"
+
+msgid "Qiymat holati"
+msgstr "Статус значения"
+
+msgid "Qo'shgan foydalanuvchi"
+msgstr "Добавивший пользователь"
+
+msgid "Qo'shilgan tashxislar:"
+msgstr "Добавленные диагнозы:"
+
+msgid "Qo'shimcha izoh / tavsiyalar"
+msgstr "Дополнительное примечание / рекомендации"
+
+msgid "Qo'shimcha izoh..."
+msgstr "Дополнительное примечание..."
+
+msgid "Qo'shimcha klinik ma'lumot..."
+msgstr "Дополнительная клиническая информация..."
+
+msgid "Qo'shimcha ma'lumot uchun qabulxonaga murojaat qiling"
+msgstr "За дополнительной информацией обратитесь в приёмное отделение"
+
+msgid "Qo'shish"
+msgstr "Добавить"
+
+msgid "Qolgan qarz"
+msgstr "Остаток долга"
+
+msgid "Qon bosimi keskin o'zgardi"
+msgstr "Резко изменилось артериальное давление"
+
+msgid "Qon guruhi"
+msgstr "Группа крови"
+
+msgid "Qoralama"
+msgstr "Черновик"
+
+msgid "Qurilma nosoz"
+msgstr "Устройство неисправно"
+
+msgid "Rad"
+msgstr "Отказ"
+
+msgid "Rad etildi"
+msgstr "Отклонено"
+
+msgid "Rad etish"
+msgstr "Отклонить"
+
+msgid "Rad izohi"
+msgstr "Примечание об отказе"
+
+msgid "Rad sababi"
+msgstr "Причина отказа"
+
+msgid "Raqam"
+msgstr "Номер"
+
+msgid "Raqamli"
+msgstr "Цифровой"
+
+msgid "Raqobatdosh"
+msgstr "Конкурент"
+
+msgid "Reg"
+msgstr "Рег."
+
+msgid "Registratsiya"
+msgstr "Регистрация"
+
+msgid "Registratsiya qilgan"
+msgstr "Зарегистрировал"
+
+msgid "Registratsiya qilingan"
+msgstr "Зарегистрировано"
+
+msgid "Rentgen"
+msgstr "Рентген"
+
+msgid "Rentgen/UZI/MRT"
+msgstr "Рентген/УЗИ/МРТ"
+
+msgid "Retsept yozish"
+msgstr "Выписать рецепт"
+
+msgid "Rezident"
+msgstr "Резидент"
+
+msgid "Rezidentlik"
+msgstr "Резидентство"
+
+msgid "Rezidentlik holati"
+msgstr "Статус резидентства"
+
+msgid "Rezus-faktor"
+msgstr "Резус-фактор"
+
+msgid "Rh+ (musbat)"
+msgstr "Rh+ (положительный)"
+
+msgid "Rh− (manfiy)"
+msgstr "Rh− (отрицательный)"
+
+msgid "Ro'yxatga"
+msgstr "В список"
+
+msgid "Ro'yxatga qaytish"
+msgstr "Вернуться к списку"
+
+msgid "Rol"
+msgstr "Роль"
+
+msgid "Roli"
+msgstr "Роль"
+
+msgid "Rostdan ham o'chirishni xohlaysizmi?"
+msgstr "Вы действительно хотите удалить?"
+
+msgid "Ruxsat yo'q"
+msgstr "Нет доступа"
+
+msgid "SIZI CHAQIRISHYAPTI!"
+msgstr "ВАС ВЫЗЫВАЮТ!"
+
+msgid "Sabab"
+msgstr "Причина"
+
+msgid "Sabab / izoh"
+msgstr "Причина / примечание"
+
+msgid "Sababi"
+msgstr "Причина"
+
+msgid "Sahifa avtomatik yangilanadi"
+msgstr "Страница обновляется автоматически"
+
+msgid "Sahifa topilmadi"
+msgstr "Страница не найдена"
+
+msgid "Sahifadagi son"
+msgstr "Количество на странице"
+
+msgid "Sahifani yangilab qayta urinib ko'ring."
+msgstr "Обновите страницу и попробуйте снова."
+
+msgid "Sana"
+msgstr "Дата"
+
+msgid "Sana (eski birinchi)"
+msgstr "Дата (сначала старые)"
+
+msgid "Sana (yangi birinchi)"
+msgstr "Дата (сначала новые)"
+
+msgid "Sana formati: YYYY-MM-DD"
+msgstr "Формат даты: ГГГГ-ММ-ДД"
+
+msgid "Sana: %(d)s"
+msgstr "Дата: %(d)s"
+
+msgid "Saqlandi"
+msgstr "Сохранено"
+
+msgid "Saqlash"
+msgstr "Сохранить"
+
+msgid "Saqlash (qoralama)"
+msgstr "Сохранить (черновик)"
+
+msgid "Saralash"
+msgstr "Сортировка"
+
+msgid "Sarflanadigan material"
+msgstr "Расходный материал"
+
+msgid "Sarflanadigan material qo'shish"
+msgstr "Добавить расходный материал"
+
+msgid "Sarflanadigan materiallar"
+msgstr "Расходные материалы"
+
+msgid "Sarlavha"
+msgstr "Заголовок"
+
+msgid "Savat"
+msgstr "Корзина"
+
+msgid "Savdo nomi"
+msgstr "Торговое название"
+
+msgid ""
+"Senga 100% ishonaman, ammo <span class=\"accent\">qizg'anishimni normal "
+"qabul qilishingni</span> istardim — chunki ikkimizga ham bog'liq bo'lmagan "
+"asoslar bor bunda."
+msgstr ""
+"Я доверяю тебе на 100%, но хотел(а) бы, чтобы ты <span "
+"class=\"accent\">нормально воспринимал(а) мою ревность</span> — потому что "
+"на это есть причины, не зависящие от нас обоих."
+
+msgid ""
+"Senga <span class=\"accent\">har kun gullar berishga tayyorman</span> va "
+"albatta sayohatlarga chiqamiz — buni majburiy deb bil."
+msgstr ""
+"Я <span class=\"accent\">готов(а) дарить тебе цветы каждый день</span>, и мы"
+" обязательно будем путешествовать — считай это обязательным."
+
+msgid ""
+"Senga qulog'inga faqat yaxshi kunlar vadasi bilan lagmon osmayman — <span "
+"class=\"accent\">yozilgani bo'ladi.</span> Lekin bu harakat qilmayman degani"
+" emas."
+msgstr ""
+"Я не буду кормить тебя пустыми обещаниями только хороших дней — <span "
+"class=\"accent\">что написано, то и будет.</span> Но это не значит, что я не"
+" буду стараться."
+
+msgid "Senga — Yurakdan"
+msgstr "Тебе — от всего сердца"
+
+msgid "Seni hurmat bilan, samimiy yurakdan."
+msgstr "С уважением к тебе, от чистого сердца."
+
+msgid "Sentabr"
+msgstr "Сентябрь"
+
+msgid "Serologiya"
+msgstr "Серология"
+
+msgid "Server xatosi"
+msgstr "Ошибка сервера"
+
+msgid "Shablon"
+msgstr "Шаблон"
+
+msgid "Shablon nomi"
+msgstr "Название шаблона"
+
+msgid "Shablon nomini qidiring..."
+msgstr "Поиск по названию шаблона..."
+
+msgid "Shablon tanlash"
+msgstr "Выбор шаблона"
+
+msgid "Shablon-Xizmat bog'lanishi"
+msgstr "Связь шаблона с услугой"
+
+msgid "Shablon-Xizmat bog'lanishlari"
+msgstr "Связи шаблон-услуга"
+
+msgid "Shablondan qo'shish"
+msgstr "Добавить из шаблона"
+
+msgid "Shablonlar"
+msgstr "Шаблоны"
+
+msgid "Shablonlar hali qo'shilmagan"
+msgstr "Шаблоны еще не добавлены"
+
+msgid "Shahar"
+msgstr "Город"
+
+msgid "Shahar/Qishloq"
+msgstr "Город/Село"
+
+msgid "Shaharlar"
+msgstr "Города"
+
+msgid "Sham (suppozitoriy)"
+msgstr "Свеча (суппозиторий)"
+
+msgid "Shartnoma"
+msgstr "Договор"
+
+msgid "Shartnoma haqiqiy"
+msgstr "Договор действителен"
+
+msgid ""
+"Shartnoma imzolangandan so'ng favqulotda vaziyat yuz berganida: tabiy "
+"ofatlar, harbiy harakatlar, terroristik aktlar, ommaviy tartibsizliklar va "
+"shu kabi favqulotda holatlarning oqibatida tomonlar shartnoma bo'yicha "
+"majburiyatlarini bajara olmagan taqdirda, ular javobgarlikdan ozod etiladi."
+msgstr ""
+"Если после подписания договора в результате чрезвычайных обстоятельств: "
+"стихийных бедствий, военных действий, террористических актов, массовых "
+"беспорядков и иных подобных чрезвычайных ситуаций стороны не могут выполнить"
+" свои обязательства по договору, они освобождаются от ответственности."
+
+msgid "Shartnoma raqami"
+msgstr "Номер договора"
+
+msgid "Shartnoma sanasi"
+msgstr "Дата договора"
+
+msgid "Shartnoma sanasi:"
+msgstr "Дата договора:"
+
+msgid "Shartnoma tekshiruvi — %(num)s"
+msgstr "Проверка договора — %(num)s"
+
+msgid "Shartnoma turi:"
+msgstr "Тип договора:"
+
+msgid ""
+"Shartnoma tuzilgan kundan qat'iy nazar, bo'sh joylar mavjud bo'lgan taqdirda"
+" va tibbiy amaliyotning yuqori saviyada, O'zbekiston Respublikasida amaldagi"
+" normativ hujjatlar talablariga muvofiq amalga oshirilishini ta'minlash."
+msgstr ""
+"Независимо от дня заключения договора, при наличии свободных мест обеспечить"
+" оказание медицинской помощи на высоком профессиональном уровне в "
+"соответствии с требованиями нормативных документов, действующих в Республике"
+" Узбекистан."
+
+msgid "Shartnoma № %(number)s | Sana: %(date)s"
+msgstr "Договор № %(number)s | Дата: %(date)s"
+
+msgid "Shartnomalar"
+msgstr "Договоры"
+
+msgid "Shartnomani onlayn ko'rish yoki yuklab olish:"
+msgstr "Просмотреть онлайн или скачать договор:"
+
+msgid "Shartnomani yuklab olish (PDF)"
+msgstr "Скачать договор (PDF)"
+
+msgid "Shaxsiy"
+msgstr "Личный"
+
+msgid "Shifokor"
+msgstr "Врач"
+
+msgid "Shifokor bildirishnomalari"
+msgstr "Уведомления врача"
+
+msgid "Shifokor bildirishnomasi"
+msgstr "Уведомление врача"
+
+msgid "Shifokor imzosi"
+msgstr "Подпись врача"
+
+msgid "Shifokor izohi"
+msgstr "Комментарий врача"
+
+msgid "Shifokor kabineti"
+msgstr "Кабинет врача"
+
+msgid "Shifokor ko'rigi"
+msgstr "Осмотр врача"
+
+msgid "Shifokor profili topilmadi"
+msgstr "Профиль врача не найден"
+
+msgid "Shifokor:"
+msgstr "Врач:"
+
+msgid "Shifokorlar"
+msgstr "Врачи"
+
+msgid "Shifokorlar bo'yicha (Top 10)"
+msgstr "По врачам (Топ 10)"
+
+msgid "Shifokorlar tayinlagan tahlillar"
+msgstr "Анализы, назначенные врачами"
+
+msgid "Shifoxona Statistikasi"
+msgstr "Статистика больницы"
+
+msgid "Shifoxona turi"
+msgstr "Тип больницы"
+
+msgid "Shifoxona turlari"
+msgstr "Типы больниц"
+
+msgid "Shikoyatlar"
+msgstr "Жалобы"
+
+msgid "Shikoyatlar: %(text)s"
+msgstr "Жалобы: %(text)s"
+
+msgid "Shoshilinch"
+msgstr "Экстренно"
+
+msgid "Shoshilinch olib kelinganmi?"
+msgstr "Доставлен в экстренном порядке?"
+
+msgid "Shoshilinch:"
+msgstr "Экстренность:"
+
+msgid "Shu konsultatsiyani ko'radigan shifokor(lar)ni tanlang"
+msgstr "Выберите врача(ей), который(е) проведет(ут) эту консультацию"
+
+msgid "Shuning uchun yozib qoldim."
+msgstr "Поэтому я это записал."
+
+msgid "Signal"
+msgstr "Сигнал"
+
+msgid "Sirop"
+msgstr "Сироп"
+
+msgid "Sistema"
+msgstr "Система"
+
+msgid "Siydik tahlili"
+msgstr "Анализ мочи"
+
+msgid "Siz bu bemorni ko'rishga ruxsatingiz yo'q."
+msgstr "У вас нет прав на просмотр этого пациента."
+
+msgid "Siz bu bemorni tahrirlay olmaysiz."
+msgstr "Вы не можете редактировать этого пациента."
+
+msgid "Siz keyingisiz!"
+msgstr "Вы следующий!"
+
+msgid ""
+"Siz natijalarni ko'rish va chop etish huquqiga egasiz. Tahrirlash uchun "
+"laborantga murojaat qiling."
+msgstr ""
+"У вас есть право просматривать и печатать результаты. Для редактирования "
+"обратитесь к лаборанту."
+
+msgid "Sizda bemorni chiqarish huquqi yo'q."
+msgstr "У вас нет права на выписку пациента."
+
+msgid "Sizda bu sahifani ko'rish yoki amalni bajarish uchun ruxsat yo'q."
+msgstr ""
+"У вас нет прав на просмотр этой страницы или выполнение этого действия."
+
+msgid "Sizdan oldin: %(ahead)s kishi"
+msgstr "Перед вами: %(ahead)s человек"
+
+msgid "Sizga yuborilgan konsultatsiya so'rovlari yo'q"
+msgstr "У вас нет отправленных запросов на консультацию"
+
+msgid "Sizning navbat raqamingiz"
+msgstr "Ваш номер очереди"
+
+msgid ""
+"Sizning shifokor profilingiz hali shakllantirilmagan. Administrator bilan "
+"bog'laning."
+msgstr "Ваш профиль врача еще не сформирован. Обратитесь к администратору."
+
+msgid "Sizning shifokor profilingiz hali yaratilmagan."
+msgstr "Ваш профиль врача еще не создан."
+
+msgid ""
+"Sizning shifokor profilingiz hali yaratilmagan. Administratorga murojaat "
+"qiling."
+msgstr "Ваш профиль врача еще не создан. Обратитесь к администратору."
+
+msgid "So'nggi 7 kunlik bemorlar oqimi"
+msgstr "Поток пациентов за последние 7 дней"
+
+msgid "So'nggi bemorlar"
+msgstr "Последние пациенты"
+
+msgid "So'nggi bildirishnomalar"
+msgstr "Последние уведомления"
+
+msgid "So'nggi biriktirishlar tarixi"
+msgstr "История последних назначений"
+
+msgid "So'ragan shifokor"
+msgstr "Запросивший врач"
+
+msgid "So'ralgan sahifa mavjud emas yoki ko'chirilgan."
+msgstr "Запрошенная страница не существует или была перемещена."
+
+msgid "So'rov"
+msgstr "Запрос"
+
+msgid "So'rov rejasi"
+msgstr "План запроса"
+
+msgid "So'rov sababi"
+msgstr "Причина запроса"
+
+msgid "So'rov sababi / klinik savol"
+msgstr "Причина запроса / клинический вопрос"
+
+msgid "So'rov yuborgan shifokor"
+msgstr "Врач, отправивший запрос"
+
+msgid "So'rov yuborish"
+msgstr "Отправить запрос"
+
+msgid "Son"
+msgstr "Число"
+
+msgid "Soni"
+msgstr "Количество"
+
+msgid "Stat"
+msgstr "Стат."
+
+msgid "Statistik"
+msgstr "Статистический"
+
+msgid "Statistika"
+msgstr "Статистика"
+
+msgid "Statistika paneli"
+msgstr "Панель статистики"
+
+msgid "Statsionar"
+msgstr "Стационар"
+
+msgid "Statsionar (yotqizilgan)"
+msgstr "Стационар (госпитализирован)"
+
+msgid "Statsionar bemorlarni shifokorlarga biriktirish"
+msgstr "Прикрепление стационарных пациентов к врачам"
+
+msgid "Statsionar qabul"
+msgstr "Стационарный прием"
+
+msgid "Statsionar sharoitidagi Konsilium"
+msgstr "Консилиум в стационарных условиях"
+
+msgid "Status"
+msgstr "Статус"
+
+msgid "Status log"
+msgstr "Лог статуса"
+
+msgid "Status loglar"
+msgstr "Логи статусов"
+
+msgid "Student"
+msgstr "Студент"
+
+msgid "Sug'urta"
+msgstr "Страховка"
+
+msgid "Sug'urta qoplamasi"
+msgstr "Страховое покрытие"
+
+msgid "Summa"
+msgstr "Сумма"
+
+msgid "Summa (so'm)"
+msgstr "Сумма (сум)"
+
+msgid "Summani to'g'ri kiriting"
+msgstr "Введите сумму правильно"
+
+msgid "SurgicalOperation stat."
+msgstr "Статистика SurgicalOperation"
+
+msgid "Surunkali"
+msgstr "Хронический"
+
+msgid "Suspenziya"
+msgstr "Суспензия"
+
+msgid "TY"
+msgstr "ЮЛ"
+
+msgid "TY tashkiloti"
+msgstr "Организация ЮЛ"
+
+msgid "Tabletka"
+msgstr "Таблетка"
+
+msgid "Tahlil"
+msgstr "Анализ"
+
+msgid "Tahlil natijalari loglari"
+msgstr "Логи результатов анализов"
+
+msgid "Tahlil natijasi logi"
+msgstr "Лог результата анализа"
+
+msgid "Tahlil nomi"
+msgstr "Название анализа"
+
+msgid "Tahlil nomini kiriting."
+msgstr "Введите название анализа."
+
+msgid "Tahlil turi:"
+msgstr "Тип анализа:"
+
+msgid "Tahlil/tekshiruv nomi"
+msgstr "Название анализа/обследования"
+
+msgid "Tahrir"
+msgstr "Редактирование"
+
+msgid "Tahrirlash"
+msgstr "Редактировать"
+
+msgid "Taklif qilingan mutaxassislar"
+msgstr "Предложенные специалисты"
+
+msgid "Tanlandi:"
+msgstr "Выбрано:"
+
+msgid "Tanlang"
+msgstr "Выберите"
+
+msgid "Tanlangan shifokor"
+msgstr "Выбранный врач"
+
+msgid "Tanlangan xizmatni qo'shish"
+msgstr "Добавить выбранную услугу"
+
+msgid "Tanlov"
+msgstr "Выбор"
+
+msgid "Tanlov variantlari"
+msgstr "Варианты выбора"
+
+msgid "Taraqqiyot 2 tor, 12A uy."
+msgstr "ул. Тараккиёт 2-тор, дом 12А"
+
+msgid "Tarix bo'sh"
+msgstr "История пуста"
+
+msgid "Tarmoq xatosi:"
+msgstr "Ошибка сети:"
+
+msgid "Tartib"
+msgstr "Порядок"
+
+msgid "Tartib raqami"
+msgstr "Порядковый номер"
+
+msgid "Tasdiq"
+msgstr "Подтверждение"
+
+msgid "Tasdiqlagan"
+msgstr "Подтвердил"
+
+msgid "Tasdiqlandi"
+msgstr "Подтверждено"
+
+msgid ""
+"Tasdiqlangan preyskurantga muvofiq pullik tibbiy-diagnostika xizmatlarini "
+"ko'rsatish."
+msgstr ""
+"Оказание платных медико-диагностических услуг в соответствии с утвержденным "
+"прейскурантом."
+
+msgid "Tasdiqlash"
+msgstr "Подтвердить"
+
+msgid "Tashkilot"
+msgstr "Организация"
+
+msgid "Tashkilot bo'yicha statistika"
+msgstr "Статистика по организации"
+
+msgid "Tashkilotlar bo'yicha bemorlar soni"
+msgstr "Количество пациентов по организациям"
+
+msgid "Tashrif ma'lumotlari"
+msgstr "Данные о визите"
+
+msgid "Tashrif sanasi"
+msgstr "Дата визита"
+
+msgid "Tashrif turi"
+msgstr "Тип визита"
+
+msgid "Tashxis"
+msgstr "Диагноз"
+
+msgid "Tashxis qo'shish"
+msgstr "Добавить диагноз"
+
+msgid "Tashxis roli"
+msgstr "Роль диагноза"
+
+msgid "Tashxis turi"
+msgstr "Тип диагноза"
+
+msgid "Tashxis yozuvlari yo'q"
+msgstr "Записей диагнозов нет"
+
+msgid "Tashxislar"
+msgstr "Диагнозы"
+
+msgid "Tashxislar qo'shilmagan"
+msgstr "Диагнозы не добавлены"
+
+msgid "Tashxisni qo'shish"
+msgstr "Добавить диагноз"
+
+msgid "Tashxisni tanlang"
+msgstr "Выберите диагноз"
+
+msgid "Tasvir"
+msgstr "Изображение"
+
+msgid "Tavsif"
+msgstr "Описание"
+
+msgid "Tavsifi"
+msgstr "Описание"
+
+msgid "Tavsiyalar"
+msgstr "Рекомендации"
+
+msgid "Tayinlagan"
+msgstr "Назначил"
+
+msgid "Tayinlagan shifokor"
+msgstr "Назначивший врач"
+
+msgid "Tayinlangan"
+msgstr "Назначено"
+
+msgid "Tayinlangan diagnostika tekshiruvlari"
+msgstr "Назначенные диагностические обследования"
+
+msgid "Tayinlangan muolajalar"
+msgstr "Назначенные процедуры"
+
+msgid "Tayinlangan sana"
+msgstr "Дата назначения"
+
+msgid "Tayinlangan tahlillar"
+msgstr "Назначенные анализы"
+
+msgid "Tayyor"
+msgstr "Готово"
+
+msgid "Tekshirilmoqda"
+msgstr "На рассмотрении"
+
+msgid "Tekshirish kundaligi"
+msgstr "Журнал обследований"
+
+msgid "Tekshirishni qo'shish"
+msgstr "Добавить обследование"
+
+msgid "Tekshiruv"
+msgstr "Обследование"
+
+msgid "Tekshiruv turi"
+msgstr "Вид обследования"
+
+msgid "Tekshiruv turini tanlang."
+msgstr "Выберите вид обследования."
+
+msgid "Tekshiruvlar"
+msgstr "Обследования"
+
+msgid "Tel. (+99871) 299-63-02, 299-62-07"
+msgstr "Тел. (+99871) 299-63-02, 299-62-07"
+
+msgid "Tel:"
+msgstr "Тел.:"
+
+msgid "Tel: (99871) 299-62-90"
+msgstr "Тел.: (99871) 299-62-90"
+
+msgid "Telefon"
+msgstr "Телефон"
+
+msgid "Telefon raqami"
+msgstr "Номер телефона"
+
+msgid "Temir yo'l kasalxonasi"
+msgstr "Железнодорожная больница"
+
+msgid "Temir yo'lchi"
+msgstr "Железнодорожник"
+
+msgid "Temir yo'lchi daromadi"
+msgstr "Доход от железнодорожников"
+
+msgid "Temir yo'lchi narxi"
+msgstr "Цена для железнодорожников"
+
+msgid "Temir yo'lchi narxi (so'm)"
+msgstr "Цена для железнодорожников (сум)"
+
+msgid "Terapiya"
+msgstr "Терапия"
+
+msgid "Texnik nosozlik yuz berdi."
+msgstr "Произошла техническая неисправность."
+
+msgid "Tez tibbiy yordam"
+msgstr "Скорая медицинская помощь"
+
+msgid "Tez yordam"
+msgstr "Скорая помощь"
+
+msgid "Tibbiy ko'rik"
+msgstr "Медицинский осмотр"
+
+msgid "Tibbiy ko'riklar"
+msgstr "Медицинские осмотры"
+
+msgid "Tibbiy ma'lumotlar"
+msgstr "Медицинские данные"
+
+msgid "Tibbiy muolaja"
+msgstr "Медицинская процедура"
+
+msgid "Tibbiy muolajalar"
+msgstr "Медицинские процедуры"
+
+msgid ""
+"Tibbiy yordam ko'rsatish bo'yicha tasdiqlangan tartib-qoidalar, diagnostika "
+"va davolash standartlari hamda tariflar bilan tanishish."
+msgstr ""
+"Ознакомление с утверждёнными правилами оказания медицинской помощи, "
+"стандартами диагностики и лечения, а также тарифами."
+
+msgid "Tizim foydalanuvchisi"
+msgstr "Пользователь системы"
+
+msgid "To'langan"
+msgstr "Оплачено"
+
+msgid "To'langan (so'm)"
+msgstr "Оплачено (сум)"
+
+msgid "To'lanmagan"
+msgstr "Не оплачено"
+
+msgid "To'liq hisobot (8 sheet)"
+msgstr "Полный отчёт (8 листов)"
+
+msgid "To'liq ism-familiya"
+msgstr "Полное имя и фамилия"
+
+msgid "To'liq ism-familiya sharif"
+msgstr "Полное имя, фамилия и отчество"
+
+msgid "To'liq karta (tizim ko'rinishi)"
+msgstr "Полная карта (вид системы)"
+
+msgid "To'liq to'langan"
+msgstr "Полностью оплачено"
+
+msgid "To'liqlik"
+msgstr "Полнота"
+
+msgid "To'lov"
+msgstr "Оплата"
+
+msgid ""
+"To'lov &quot;Bemor&quot; tomonidan shartnoma narxining 100% miqdorida "
+"oldindan to'lov yo'li bilan 3 bank kuni ichida amalga oshiriladi."
+msgstr ""
+"Оплата производится &quot;Пациентом&quot; в размере 100% стоимости договора "
+"в порядке предоплаты в течение 3 банковских дней."
+
+msgid "To'lov qo'shildi"
+msgstr "Оплата добавлена"
+
+msgid "To'lov usuli"
+msgstr "Способ оплаты"
+
+msgid "To'lov xulosasi"
+msgstr "Итог по оплате"
+
+msgid "To'lovlar"
+msgstr "Платежи"
+
+msgid "To'lovlar qayd etilmagan"
+msgstr "Платежи не зафиксированы"
+
+msgid "To'lovlar tarixi"
+msgstr "История платежей"
+
+msgid "To'lovni qayd etish"
+msgstr "Зафиксировать оплату"
+
+msgid "To'lovni saqlashda xato yuz berdi"
+msgstr "Ошибка при сохранении оплаты"
+
+msgid "Token: %(token)s"
+msgstr "Токен: %(token)s"
+
+msgid "Tomchi"
+msgstr "Капельница"
+
+msgid "Top 10 xizmatlar"
+msgstr "Топ 10 услуг"
+
+msgid "Top 15 dori"
+msgstr "Топ 15 препаратов"
+
+msgid "Top 15 xizmat"
+msgstr "Топ 15 услуг"
+
+msgid "Toshkent sh."
+msgstr "г. Ташкент"
+
+msgid "Toshkent shahar, Yashnobod tumani,"
+msgstr "город Ташкент, Яшнабадский район,"
+
+msgid "Tozalash"
+msgstr "Очистить"
+
+msgid "Transport turi"
+msgstr "Вид транспорта"
+
+msgid "Tug'ilgan"
+msgstr "Дата рождения"
+
+msgid "Tug'ilgan sana"
+msgstr "Дата рождения"
+
+msgid "Tug'ilgan sana:"
+msgstr "Дата рождения:"
+
+msgid "Tugash"
+msgstr "Завершение"
+
+msgid "Tugash sanasi"
+msgstr "Дата завершения"
+
+msgid "Tuman"
+msgstr "Район"
+
+msgid "Tumanlar"
+msgstr "Районы"
+
+msgid "Tur"
+msgstr "Тип"
+
+msgid "Turdosh mutaxassislar maslahatlari"
+msgstr "Консультации смежных специалистов"
+
+msgid "Turi"
+msgstr "Тип"
+
+msgid "Turini tanlang"
+msgstr "Выберите тип"
+
+msgid "Tushunarli"
+msgstr "Понятно"
+
+msgid "UMUMIY DAROMAD:"
+msgstr "ОБЩИЙ ДОХОД:"
+
+msgid "UMUMIY JAMI"
+msgstr "ОБЩИЙ ИТОГ"
+
+msgid "UZI"
+msgstr "УЗИ"
+
+msgid "Ukol"
+msgstr "Укол"
+
+msgid "Ukol qilish"
+msgstr "Сделать укол"
+
+msgid "Ularga yetkazilgan zararlarni to'liq qoplash."
+msgstr "Полностью возместить причинённый им ущерб."
+
+msgid "Ulushi"
+msgstr "Доля"
+
+msgid "Umumiy daromad"
+msgstr "Общий доход"
+
+msgid "Umumiy daromad (so'm)"
+msgstr "Общий доход (сум)"
+
+msgid "Umumiy jami"
+msgstr "Общий итог"
+
+msgid "Umumiy jami:"
+msgstr "Общий итог:"
+
+msgid "Umumiy qon tahlili"
+msgstr "Общий анализ крови"
+
+msgid "Umumiy summa (so'm)"
+msgstr "Общая сумма (сум)"
+
+msgid "Umumiy xulosa yozing..."
+msgstr "Введите общее заключение..."
+
+msgid "Urush qatnashchisi:"
+msgstr "Участник войны:"
+
+msgid "Urush qatnashchisi?"
+msgstr "Участник войны?"
+
+msgid ""
+"Ushbu shartnomani bajarishda yuzaga kelishi mumkin bo'lgan nizo va "
+"kelishmovchiliklar, iloji bo'lsa, tomonlar o'rtasidagi muzokaralar orqali "
+"hal qilinadi."
+msgstr ""
+"Споры и разногласия, которые могут возникнуть при исполнении настоящего "
+"договора, по возможности решаются путём переговоров между сторонами."
+
+msgid "Ushbu shartnomani bir tomonlama bekor qilish."
+msgstr "Односторонний отказ от настоящего договора."
+
+msgid "Ustuvorlik"
+msgstr "Приоритет"
+
+msgid "Usul"
+msgstr "Метод"
+
+msgid "Vafot etdi"
+msgstr "Скончался(-лась)"
+
+msgid "Vaqt"
+msgstr "Время"
+
+msgid "Vaqti"
+msgstr "Время"
+
+msgid "Vaqtincha ishsiz"
+msgstr "Временно безработный"
+
+msgid "Vazifa"
+msgstr "Задача"
+
+msgid "Vazifa bajarilish logi"
+msgstr "Журнал выполнения задачи"
+
+msgid "Vazifa bajarilish loglari"
+msgstr "Журналы выполнения задач"
+
+msgid "Vazifa kechikdi"
+msgstr "Задача просрочена"
+
+msgid "Vazifa o'tkazib yuborildi"
+msgstr "Задача пропущена"
+
+msgid "Vazifa turi"
+msgstr "Тип задачи"
+
+msgid "Vazifa vaqti yetdi"
+msgstr "Истёк срок выполнения задачи"
+
+msgid "Vazni (kg)"
+msgstr "Вес (кг)"
+
+msgid "Viloyat"
+msgstr "Область"
+
+msgid "Viloyatlar"
+msgstr "Области"
+
+msgid "WP natijasi"
+msgstr "Результат WP"
+
+msgid "WP natijasi:"
+msgstr "Результат WP:"
+
+msgid "WP tekshiruvi sanasi"
+msgstr "Дата обследования WP"
+
+msgid "WP tekshiruvi sanasi:"
+msgstr "Дата обследования WP:"
+
+msgid "X/R. 2020 8000 9041 5940 6010"
+msgstr "Р/с 2020 8000 9041 5940 6010"
+
+msgid "Xabar"
+msgstr "Сообщение"
+
+msgid "Xabar bergan hamshira"
+msgstr "Медсестра, сообщившая информацию"
+
+msgid "Xabar berilgan bo'lim mudiri"
+msgstr "Заведующий отделением, получивший уведомление"
+
+msgid "Xabar berilgan shifokorlar"
+msgstr "Уведомлённые врачи"
+
+msgid "Xato yuz berdi"
+msgstr "Произошла ошибка"
+
+msgid "Xato: %(error)s"
+msgstr "Ошибка: %(error)s"
+
+msgid "Xatoliklar bor:"
+msgstr "Имеются ошибки:"
+
+msgid "Xatoliklar:"
+msgstr "Ошибки:"
+
+msgid "Xavfsizlik tekshiruvi muvaffaqiyatsiz tugadi."
+msgstr "Проверка безопасности завершилась неудачно."
+
+msgid "Xizmat"
+msgstr "Услуга"
+
+msgid "Xizmat (katalogdan)"
+msgstr "Услуга (из каталога)"
+
+msgid "Xizmat kategoriyalari"
+msgstr "Категории услуг"
+
+msgid "Xizmat kategoriyasi"
+msgstr "Категория услуги"
+
+msgid "Xizmat ko'rilmoqda"
+msgstr "Услуга оказывается"
+
+msgid "Xizmat nomi"
+msgstr "Название услуги"
+
+msgid "Xizmat nomi yoki kodi bo'yicha qidirish..."
+msgstr "Поиск по названию или коду услуги..."
+
+msgid "Xizmat nomi yoki kodi..."
+msgstr "Название или код услуги..."
+
+msgid "Xizmat paketi"
+msgstr "Пакет услуг"
+
+msgid "Xizmat paketlari"
+msgstr "Пакеты услуг"
+
+msgid "Xizmat qo'shish"
+msgstr "Добавить услугу"
+
+msgid "Xizmat qo'shishda xato yuz berdi"
+msgstr "Ошибка при добавлении услуги"
+
+msgid "Xizmat tafsiloti"
+msgstr "Детали услуги"
+
+msgid "Xizmat tanlash"
+msgstr "Выбор услуги"
+
+msgid "Xizmat topilmadi"
+msgstr "Услуга не найдена"
+
+msgid "Xizmat turi"
+msgstr "Вид услуги"
+
+msgid "Xizmat uchun rahmat!"
+msgstr "Спасибо за услугу!"
+
+msgid "Xizmatlar"
+msgstr "Услуги"
+
+msgid "Xizmatlar jami"
+msgstr "Итого по услугам"
+
+msgid "Xizmatlar qo'shilmagan."
+msgstr "Услуги не добавлены."
+
+msgid "Xizmatlar qo'shish"
+msgstr "Добавить услуги"
+
+msgid "Xizmatlar statistikasi"
+msgstr "Статистика услуг"
+
+msgid "Xizmatlar summasi"
+msgstr "Сумма услуг"
+
+msgid "Xizmatlar va holati"
+msgstr "Услуги и их статус"
+
+msgid "Xizmatlar yo'q"
+msgstr "Услуг нет"
+
+msgid ""
+"Xizmatlarni yetkazib berishni qabul qilish to`g'risidagi dalolatnomani o'z "
+"vaqtida tuzish va imzolash."
+msgstr "Своевременно составлять и подписывать акт приёма оказанных услуг."
+
+msgid "Xizmatni yangilashda xato yuz berdi"
+msgstr "Ошибка при обновлении услуги"
+
+msgid "Xona"
+msgstr "Палата"
+
+msgid "Xona raqami"
+msgstr "Номер палаты"
+
+msgid "Xulosa"
+msgstr "Заключение"
+
+msgid "Xulosa / Tavsiya"
+msgstr "Заключение / Рекомендация"
+
+msgid "Xulosa / tavsiya"
+msgstr "Заключение / рекомендация"
+
+msgid "Xulosa / tavsiyangiz"
+msgstr "Ваше заключение / рекомендация"
+
+msgid "Xulosa loglari"
+msgstr "Журналы заключений"
+
+msgid "Xulosa matnini kiriting."
+msgstr "Введите текст заключения."
+
+msgid "Xulosa nomi..."
+msgstr "Название заключения..."
+
+msgid "Xulosa:"
+msgstr "Заключение:"
+
+msgid "Xush kelibsiz, %(name)s!"
+msgstr "Добро пожаловать, %(name)s!"
+
+msgid "Yak"
+msgstr "Вс"
+
+msgid "Yakun"
+msgstr "Итог"
+
+msgid "Yakun:"
+msgstr "Итог:"
+
+msgid "Yakuniy"
+msgstr "Итоговый"
+
+msgid "Yakuniy tashxis"
+msgstr "Заключительный диагноз"
+
+msgid "Yakuniy tashxis..."
+msgstr "Заключительный диагноз..."
+
+msgid "Yakunlandi"
+msgstr "Завершено"
+
+msgid "Yakunlangan"
+msgstr "Завершённый"
+
+msgid "Yakunlash"
+msgstr "Завершить"
+
+msgid "Yangi bo'lim"
+msgstr "Новое отделение"
+
+msgid "Yangi bo'lim mudiri"
+msgstr "Новый заведующий отделением"
+
+msgid "Yangi bo'lim tanlang."
+msgstr "Выберите новое отделение."
+
+msgid "Yangi foydalanuvchi"
+msgstr "Новый пользователь"
+
+msgid "Yangi holat"
+msgstr "Новый статус"
+
+msgid "Yangi ko'rik qo'shish"
+msgstr "Добавить новый осмотр"
+
+msgid "Yangi parametr"
+msgstr "Новый параметр"
+
+msgid "Yangi qiymat"
+msgstr "Новое значение"
+
+msgid "Yangi shablon"
+msgstr "Новый шаблон"
+
+msgid "Yangi shablon yaratish"
+msgstr "Создать новый шаблон"
+
+msgid "Yangi shifokor"
+msgstr "Новый врач"
+
+msgid "Yangi shifokor:"
+msgstr "Новый врач:"
+
+msgid "Yangi xulosa qo'shish"
+msgstr "Добавить новое заключение"
+
+msgid "Yangilandi"
+msgstr "Обновлено"
+
+msgid "Yangilangan:"
+msgstr "Обновлено:"
+
+msgid "Yangilash"
+msgstr "Обновить"
+
+msgid "Yanvar"
+msgstr "Январь"
+
+msgid "Yaratgan"
+msgstr "Создал"
+
+msgid "Yaratgan foydalanuvchi"
+msgstr "Пользователь, создавший запись"
+
+msgid "Yaratildi"
+msgstr "Создано"
+
+msgid "Yaratilgan vaqt"
+msgstr "Время создания"
+
+msgid "Yaratilgan:"
+msgstr "Создано:"
+
+msgid "Yashash manzili"
+msgstr "Адрес проживания"
+
+msgid "Yashnobod t-n., Pahlavon Mahmud ko'ch. 36B"
+msgstr "Яшнабадский р-н, ул. Пахлавон Махмуда, 36Б"
+
+msgid "Yil"
+msgstr "Год"
+
+msgid "Yillik"
+msgstr "Годовой"
+
+msgid "Yo'ldosh kasalliklar"
+msgstr "Сопутствующие заболевания"
+
+msgid "Yo'llagan muassasa tashxisi:"
+msgstr "Диагноз направившего учреждения:"
+
+msgid "Yo'llagan muassasa:"
+msgstr "Направившее учреждение:"
+
+msgid "Yo'llanma"
+msgstr "Направление"
+
+msgid "Yo'llanma bergan shifokor"
+msgstr "Врач, выдавший направление"
+
+msgid "Yo'llanma orqali"
+msgstr "По направлению"
+
+msgid "Yo'llanmalar"
+msgstr "Направления"
+
+msgid "Yo'nalish"
+msgstr "Направление"
+
+msgid "Yo'naltirilgan tashxis"
+msgstr "Направительный диагноз"
+
+msgid "Yo'q"
+msgstr "Нет"
+
+msgid "Yoki bitta xizmat:"
+msgstr "Или одна услуга:"
+
+msgid "Yopish"
+msgstr "Закрыть"
+
+msgid "Yosh guruhi"
+msgstr "Возрастная группа"
+
+msgid "Yosh:"
+msgstr "Возраст:"
+
+msgid "Yoshi:"
+msgstr "Возраст:"
+
+msgid "Yotgan kunlar soni"
+msgstr "Количество койко-дней"
+
+msgid "Yotgan kunlar:"
+msgstr "Койко-дни:"
+
+msgid "Yotish ma'lumotlari"
+msgstr "Данные о госпитализации"
+
+msgid "Yotq"
+msgstr "Госпитализирован"
+
+msgid "Yotqizilgan"
+msgstr "Госпитализирован"
+
+msgid "Yotqizilgan sana"
+msgstr "Дата госпитализации"
+
+msgid "Yotqizilgan sana:"
+msgstr "Дата госпитализации:"
+
+msgid "Yotqizilgan — Chiqarilgan"
+msgstr "Госпитализирован — Выписан"
+
+msgid "Yotqizilish:"
+msgstr "Госпитализация:"
+
+msgid "Yozing..."
+msgstr "Введите текст..."
+
+msgid "Yozuv qo'shish"
+msgstr "Добавить запись"
+
+msgid "Yozuvlar"
+msgstr "Записи"
+
+msgid "Yozuvlar yo'q"
+msgstr "Нет записей"
+
+msgid "Yuborildi"
+msgstr "Отправлено"
+
+msgid "Yuborilgan"
+msgstr "Отправлено"
+
+msgid "Yuborilgan konsultatsiya so'rovlari"
+msgstr "Отправленные запросы на консультацию"
+
+msgid "Yuborilgan sana"
+msgstr "Дата отправки"
+
+msgid "Yuklanmoqda..."
+msgstr "Загрузка..."
+
+msgid "Yuqori"
+msgstr "Высокий"
+
+msgid "Yura oladi"
+msgstr "Может ходить"
+
+msgid "Yurakdan — faqat senga"
+msgstr "От всего сердца — только для тебя"
+
+msgid "Yuz bergan vaqt"
+msgstr "Время происшествия"
+
+msgid "Zambilda"
+msgstr "На носилках"
+
+msgid "a) O'limga olib kelgan bevosita sabab:"
+msgstr "а) Непосредственная причина, приведшая к смерти:"
+
+msgid "ampula"
+msgstr "ампула"
+
+msgid "b) O'lim sababini bevosita chaqiruvchi kasallik:"
+msgstr "б) Заболевание, непосредственно вызвавшее причину смерти:"
+
+msgid "bilan"
+msgstr "с"
+
+msgid "bloklandi"
+msgstr "заблокировано"
+
+msgid "bosing"
+msgstr "нажмите"
+
+msgid "deb ataladi,"
+msgstr "называется,"
+
+msgid "deb ataladi, va"
+msgstr "называется, и"
+
+msgid "dona"
+msgstr "шт."
+
+msgid "faollashtirildi"
+msgstr "активировано"
+
+msgid "g"
+msgstr "г"
+
+msgid "holatni o'zgartirish"
+msgstr "изменить статус"
+
+msgid "ikkinchi tomondan, keyingi o`rinlarda"
+msgstr "с другой стороны, далее по тексту"
+
+msgid "ixtiyoriy"
+msgstr "произвольный"
+
+msgid "kapsula"
+msgstr "капсула"
+
+msgid "kasalxonasi filiali"
+msgstr "филиал больницы"
+
+msgid "kishi"
+msgstr "чел."
+
+msgid "kuni"
+msgstr "день"
+
+msgid "l"
+msgstr "л"
+
+msgid "laboratoriya buyurtmasi yo'q."
+msgstr "лабораторных заявок нет."
+
+msgid "logo"
+msgstr "логотип"
+
+msgid "manzilida yashovchi, pasport/ID:"
+msgstr "проживающий(ая) по адресу, паспорт/ID:"
+
+msgid "mas'ul: %(doc)s"
+msgstr "ответственный: %(doc)s"
+
+msgid "mas'ul: %(doctor)s"
+msgstr "ответственный: %(doctor)s"
+
+msgid "mazkur shartnomani quyidagilar to'g'risida tuzdilar:"
+msgstr "заключили настоящий договор о нижеследующем:"
+
+msgid "mg"
+msgstr "мг"
+
+msgid "ml"
+msgstr "мл"
+
+msgid "narkoz"
+msgstr "наркоз"
+
+msgid "paket"
+msgstr "пакет"
+
+msgid "rasmiy elektron tekshiruv sahifasi hisoblanadi."
+msgstr "является официальной страницей электронной проверки."
+
+msgid "service_id yo'q"
+msgstr "service_id отсутствует"
+
+msgid "shisha"
+msgstr "флакон"
+
+msgid "sizga biriktirilgan bemorlar bo'yicha statistikalar"
+msgstr "статистика по прикреплённым к вам пациентам"
+
+msgid "soni"
+msgstr "количество"
+
+msgid "statistikalar butun bo'lim bo'yicha ko'rsatilmoqda"
+msgstr "статистика отображается по всему отделению"
+
+msgid "summa"
+msgstr "сумма"
+
+msgid "ta"
+msgstr "шт."
+
+msgid "ta xizmat"
+msgstr "услуг(и)"
+
+msgid "ta xizmat belgilandi"
+msgstr "услуг(и) назначено"
+
+msgid "tabletka"
+msgstr "таблетка"
+
+msgid "tanlangan holatda"
+msgstr "в выбранном статусе"
+
+msgid "tayinlagan"
+msgstr "назначил"
+
+msgid "tuba"
+msgstr "туба"
+
+msgid "v) Asosiy kasallik kodi:"
+msgstr "в) Код основного заболевания:"
+
+msgid "© %(current_year)s Shifoxona Statistikasi tizimi"
+msgstr "© %(current_year)s Система статистики больницы"
+
+msgid "МНН (xalqaro nomi)"
+msgstr "МНН (международное непатентованное наименование)"
+
+msgid "Рецепт"
+msgstr "Рецепт"
+
+msgid "— Avvalgisi qolsin —"
+msgstr "— Оставить прежнее —"
+
+msgid "— Shifokor tanlang —"
+msgstr "— Выберите врача —"
+
+msgid "— Tanlang —"
+msgstr "— Выберите —"
+
+msgid "— biriktirilmagan —"
+msgstr "— не прикреплён —"
+
+msgid "— holat —"
+msgstr "— статус —"
+
+msgid "— so'm"
+msgstr "— сум"
+
+msgid ""
+"⚠️ Bu bemor 2 daqiqa ichida allaqachon qabul qilingan: %(name)s "
+"(#%(record_number)s)"
+msgstr ""
+"⚠️ Этот пациент уже был принят за последние 2 минуты: %(name)s "
+"(#%(record_number)s)"
+
+msgid ""
+"⚠️ Bu bemor 2 daqiqa ichida allaqachon ro'yxatga olingan: %(name)s "
+"(#%(record_number)s)"
+msgstr ""
+"⚠️ Этот пациент уже был зарегистрирован за последние 2 минуты: %(name)s "
+"(#%(record_number)s)"
+
+msgid "✅ %(count)s ta xizmat operatsiya deb belgilandi."
+msgstr "✅ %(count)s услуг(и) отмечено как операция."
+
+msgid "✅ %(patient)s — %(target_doctor)s ga biriktirildi."
+msgstr "✅ %(patient)s — прикреплён(а) к %(target_doctor)s."
+
+msgid "✅ Bajarilish qayd etildi."
+msgstr "✅ Выполнение зафиксировано."
+
+msgid "✅ Bemor %(dept)s bo'limiga ko'chirildi."
+msgstr "✅ Пациент переведён в отделение %(dept)s."
+
+msgid "✅ Bemor chiqarildi: %(name)s"
+msgstr "✅ Пациент выписан: %(name)s"
+
+msgid "✅ Bemor qabul qilindi! Bayonnoma: %(record_number)s"
+msgstr "✅ Пациент принят! Протокол: %(record_number)s"
+
+msgid "✅ Diagnostika tayinlandi: %(name)s"
+msgstr "✅ Назначена диагностика: %(name)s"
+
+msgid "✅ Javob yuborildi."
+msgstr "✅ Ответ отправлен."
+
+msgid "✅ Ko'rik saqlandi."
+msgstr "✅ Осмотр сохранён."
+
+msgid "✅ Konsultatsiya so'rovi yuborildi: %(label)s"
+msgstr "✅ Запрос на консультацию отправлен: %(label)s"
+
+msgid "✅ Muolaja tayinlandi: %(name)s"
+msgstr "✅ Назначена процедура: %(name)s"
+
+msgid "✅ Natija qayd etildi."
+msgstr "✅ Результат зафиксирован."
+
+msgid "✅ Shartnoma PDF qayta yaratildi."
+msgstr "✅ PDF договора перегенерирован."
+
+msgid "✅ Tahlil tayinlandi: %(name)s"
+msgstr "✅ Назначен анализ: %(name)s"
+
+msgid "✅ Xulosa qayd etildi."
+msgstr "✅ Заключение зафиксировано."
+
+msgid "❌ %(count)s ta xizmatdan operatsiya belgisi olib tashlandi."
+msgstr "❌ С %(count)s услуг(и) снята отметка операции."
+
+msgid ""
+"🔄 %(patient)s — %(prev_doctor)s dan %(target_doctor)s ga qayta biriktirildi."
+msgstr ""
+"🔄 %(patient)s — переприкреплён(а) от %(prev_doctor)s к %(target_doctor)s."
+
+msgid "🔇 Ovozsiz"
+msgstr "🔇 Без звука"
+
+msgid "🔊 Ovozli chaqiruv"
+msgstr "🔊 Звуковой вызов"
+
+msgid "🔍 Korxona kodi, INN, nomi yoki filial bo'yicha qidiring..."
+msgstr "🔍 Поиск по коду предприятия, ИНН, названию или филиалу..."
+
+msgid "🔍 Muassasa nomi, kodi yoki INN..."
+msgstr "🔍 Название учреждения, код или ИНН..."
+
+msgid "🔔 Signal (ding)"
+msgstr "🔔 Сигнал (дзинь)"
+
+msgid "🔔🔊 Ikkalasi"
+msgstr "🔔🔊 Оба"

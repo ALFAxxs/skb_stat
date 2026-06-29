@@ -13,6 +13,7 @@ urlpatterns = [
 
     # AJAX
     path('search/', views.service_search, name='service_search'),
+    path('<int:pk>/doctors/', views.service_doctors, name='service_doctors'),
 
     # Statistika
     path('statistics/', views.statistics_combined, name='service_statistics'),

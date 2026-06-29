@@ -1,65 +1,66 @@
 <!-- templates/users/login.html -->
+{% load i18n %}
 <!DOCTYPE html>
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <title>Kirish | Shifoxona Statistikasi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% trans "Kirish" %} | {% trans "Shifoxona Statistikasi" %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/design_system.css' %}">
     <style>
-        body { background: #f0f4f8; }
-        .login-card {
-            max-width: 420px;
-            margin: 80px auto;
-            border-radius: 12px;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.12);
-        }
-        .login-header {
-            background: linear-gradient(135deg, #1F4E79, #0d6efd);
-            color: white;
-            border-radius: 12px 12px 0 0;
-            padding: 28px;
-            text-align: center;
-        }
+        body{min-height:100vh; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at 20% 20%, #EFF4FF 0%, #F4F6FB 45%, #F4F6FB 100%); padding:20px;}
+        .login-card{width:100%; max-width:400px; background:var(--card); border:1px solid var(--border); border-radius:18px; box-shadow:0 8px 30px rgba(15,23,42,.08); padding:38px 34px;}
+        .login-logo{width:56px; height:56px; border-radius:16px; background:linear-gradient(135deg,var(--primary),var(--primary-dark)); display:flex; align-items:center; justify-content:center; color:#fff; font-size:26px; margin:0 auto 18px;}
+        .login-input-wrap{position:relative; margin-bottom:14px;}
+        .login-input-wrap i{position:absolute; left:13px; top:50%; transform:translateY(-50%); color:var(--ink-faint); font-size:15px; z-index:2;}
+        .login-input-wrap .form-control{padding-left:38px;}
     </style>
 </head>
 <body>
-    <div class="login-card card border-0">
-        <div class="login-header">
-            <h2>🏥 Shifoxona</h2>
-            <p class="mb-0 opacity-75">Statistika tizimi</p>
-        </div>
-        <div class="card-body p-4">
+    <div class="login-card">
+        <div class="login-logo"><i class="bi bi-hospital"></i></div>
+        <h2 class="text-center mb-1" style="font-size:20px;">{% trans "Shifoxona Statistikasi" %}</h2>
+        <p class="text-center mb-4" style="color:var(--ink-faint); font-size:13px;">{% trans "Boshqaruv tizimiga kirish" %}</p>
 
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-            {% endfor %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
 
-            <form method="post">
-                {% csrf_token %}
+        <form method="post">
+            {% csrf_token %}
 
-                <div class="mb-3">
-                    <label class="form-label">Login</label>
-                    {{ form.username }}
-                    {% if form.username.errors %}
-                        <div class="text-danger small">{{ form.username.errors }}</div>
-                    {% endif %}
-                </div>
+            <label class="form-label">{% trans "Login" %}</label>
+            <div class="login-input-wrap">
+                <i class="bi bi-person"></i>
+                {{ form.username }}
+            </div>
+            {% if form.username.errors %}
+                <div class="text-danger small mb-2">{{ form.username.errors }}</div>
+            {% endif %}
 
-                <div class="mb-4">
-                    <label class="form-label">Parol</label>
-                    {{ form.password }}
-                    {% if form.password.errors %}
-                        <div class="text-danger small">{{ form.password.errors }}</div>
-                    {% endif %}
-                </div>
+            <label class="form-label">{% trans "Parol" %}</label>
+            <div class="login-input-wrap">
+                <i class="bi bi-lock"></i>
+                {{ form.password }}
+            </div>
+            {% if form.password.errors %}
+                <div class="text-danger small mb-2">{{ form.password.errors }}</div>
+            {% endif %}
 
-                {% if form.non_field_errors %}
-                    <div class="alert alert-danger">Login yoki parol noto'g'ri.</div>
-                {% endif %}
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">{% trans "Login yoki parol noto'g'ri." %}</div>
+            {% endif %}
 
-                <button type="submit" class="btn btn-primary w-100 btn-lg">Kirish</button>
-            </form>
+            <button type="submit" class="btn btn-primary w-100 mt-2"><i class="bi bi-box-arrow-in-right"></i> {% trans "Kirish" %}</button>
+        </form>
 
+        <div class="text-center mt-4" style="font-size:12px; color:var(--ink-faint);">
+            {% now "Y" as current_year %}
+            {% blocktrans %}© {{ current_year }} Shifoxona Statistikasi tizimi{% endblocktrans %}
         </div>
     </div>
 </body>

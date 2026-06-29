@@ -1,0 +1,157 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% blocktrans with name=patient.full_name %}Retsept — {{ name }}{% endblocktrans %}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 1cm;
+    }
+    @media print {
+      body { margin: 0; padding: 0; }
+      .no-print { display: none !important; }
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 10pt;
+      color: #000;
+      background: #fff;
+      padding: 10px;
+      max-width: 21cm;
+      margin: 0 auto;
+    }
+    .hospital-header { margin-bottom: 10px; }
+    .hospital-header img { width: 100%; max-width: 100%; height: auto; display: block; }
+    .result-title {
+      text-align: center;
+      margin: 10px 0;
+    }
+    .result-title h2 {
+      font-size: 13pt;
+      font-weight: bold;
+      margin: 0;
+    }
+    .result-title .date {
+      font-size: 9pt;
+      color: #333;
+      margin-top: 4px;
+    }
+    table.info-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 14px;
+      font-size: 9.5pt;
+    }
+    table.info-table td {
+      padding: 3px 6px;
+      border: 1px solid #aaa;
+    }
+    table.info-table td:first-child {
+      font-weight: bold;
+      background: #f5f5f5;
+      width: 30%;
+    }
+    table.rx-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 14px;
+      font-size: 9.5pt;
+    }
+    table.rx-table th, table.rx-table td {
+      padding: 5px 8px;
+      border: 1px solid #aaa;
+      text-align: left;
+    }
+    table.rx-table th {
+      background: #f5f5f5;
+      font-weight: bold;
+      width: 38%;
+    }
+    .field-line {
+      margin-bottom: 8px;
+      font-size: 9.5pt;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+    .footer-line {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      font-size: 9.5pt;
+      border-top: 1px solid #aaa;
+      padding-top: 8px;
+    }
+    .footer-sign {
+      display: inline-block;
+      min-width: 180px;
+      border-bottom: 1px solid #000;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Shifoxona shapkasi -->
+  <div class="hospital-header">
+    {% if header_b64 %}<img src="data:image/png;base64,{{ header_b64 }}" alt="header">{% endif %}
+  </div>
+
+  <!-- Sarlavha -->
+  <div class="result-title">
+    <h2>{% trans "RETSEPT" %}</h2>
+    <div class="date">{{ p.created_at|date:"d.m.Y H:i" }}</div>
+  </div>
+
+  <!-- Bemor ma'lumotlari -->
+  <table class="info-table">
+    <tr>
+      <td>{% trans "F.I.O.:" %}</td>
+      <td><strong>{{ patient.full_name }}</strong></td>
+    </tr>
+    <tr>
+      <td>{% trans "Tug'ilgan sana:" %}</td>
+      <td>{{ patient.birth_date|date:"d.m.Y" }}</td>
+    </tr>
+    <tr>
+      <td>{% trans "Karta №:" %}</td>
+      <td>{{ patient.medical_record_number }}</td>
+    </tr>
+    <tr>
+      <td>{% trans "Yozgan shifokor:" %}</td>
+      <td>{{ p.doctor.full_name|default:'—' }}</td>
+    </tr>
+  </table>
+
+  <!-- Retsept tafsiloti -->
+  <table class="rx-table">
+    <tr><th>{% trans "Dori nomi" %}</th><td>{{ p.drug_name }}</td></tr>
+    <tr><th>Форма выпуска</th><td>{{ p.dosage_form|default:'—' }}</td></tr>
+    <tr><th>Доза</th><td>{{ p.dose|default:'—' }}</td></tr>
+    <tr><th>Частота приёма</th><td>{% if p.frequency_num %}{{ p.frequency_num }} ({{ p.get_frequency_unit_display }}){% else %}—{% endif %}</td></tr>
+    <tr><th>Разовая доза</th><td>{{ p.single_dose|default:'—' }}</td></tr>
+    <tr><th>Способ применения</th><td>{{ p.method|default:'—' }}</td></tr>
+    <tr><th>Продолжительность приёма</th><td>{% if p.duration_days %}{{ p.duration_days }} kun{% else %}—{% endif %}</td></tr>
+    <tr><th>Время приёма</th><td>{{ p.intake_time|default:'—' }}</td></tr>
+    <tr><th>Период приёма</th><td>{% if p.date_start %}{{ p.date_start|date:"d.m.Y" }} — {{ p.date_end|date:"d.m.Y" }}{% else %}—{% endif %}</td></tr>
+    <tr><th>Кол-во препарата</th><td>{{ p.total_quantity|default:'—' }}</td></tr>
+  </table>
+
+  {% if p.note %}
+  <div class="field-line"><strong>Примечание:</strong> {{ p.note }}</div>
+  {% endif %}
+
+  <div class="footer-line">
+    <div>{% blocktrans with d=print_date|date:"d.m.Y" %}Sana: {{ d }}{% endblocktrans %}</div>
+    <div>{% trans "Shifokor imzosi:" %} <span class="footer-sign">&nbsp;</span></div>
+  </div>
+
+  <script>
+    window.onload = function() {
+      window.print();
+    };
+  </script>
+</body>
+</html>

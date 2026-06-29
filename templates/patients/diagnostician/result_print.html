@@ -1,0 +1,141 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% blocktrans with t=assignment.get_diagnostic_type_display name=patient.full_name %}{{ t }} — {{ name }}{% endblocktrans %}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 1cm;
+    }
+    @media print {
+      body { margin: 0; padding: 0; }
+      .no-print { display: none !important; }
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 10pt;
+      color: #000;
+      background: #fff;
+      padding: 10px;
+      max-width: 21cm;
+      margin: 0 auto;
+    }
+    .hospital-header { margin-bottom: 10px; }
+    .hospital-header img { width: 100%; max-width: 100%; height: auto; display: block; }
+    .result-title {
+      text-align: center;
+      margin: 10px 0;
+    }
+    .result-title h2 {
+      font-size: 12pt;
+      font-weight: bold;
+      margin: 0;
+    }
+    .result-title .date {
+      font-size: 9pt;
+      color: #333;
+      margin-top: 4px;
+    }
+    table.info-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+      font-size: 9.5pt;
+    }
+    table.info-table td {
+      padding: 3px 6px;
+      border: 1px solid #aaa;
+    }
+    table.info-table td:first-child {
+      font-weight: bold;
+      background: #f5f5f5;
+      width: 30%;
+    }
+    .field-line {
+      margin-bottom: 8px;
+      font-size: 9.5pt;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+    .field-line .field-label {
+      font-weight: bold;
+    }
+    .footer-line {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      font-size: 9.5pt;
+      border-top: 1px solid #aaa;
+      padding-top: 8px;
+    }
+    .footer-sign {
+      display: inline-block;
+      min-width: 180px;
+      border-bottom: 1px solid #000;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Shifoxona shapkasi -->
+  <div class="hospital-header">
+    {% if header_b64 %}<img src="data:image/png;base64,{{ header_b64 }}" alt="header">{% endif %}
+  </div>
+
+  <!-- Sarlavha -->
+  <div class="result-title">
+    <h2>{{ assignment.get_diagnostic_type_display }}</h2>
+    <div class="date">
+      {{ patient.medical_record_number }}
+      &nbsp;&nbsp;&mdash;&nbsp;&nbsp;
+      {{ assignment.created_at|date:"d.m.Y H:i" }}
+    </div>
+  </div>
+
+  <!-- Bemor ma'lumotlari -->
+  <table class="info-table">
+    <tr>
+      <td>{% trans "F.I.O.:" %}</td>
+      <td><strong>{{ patient.full_name }}</strong></td>
+    </tr>
+    <tr>
+      <td>{% trans "Tug'ilgan sana:" %}</td>
+      <td>{{ patient.birth_date|date:"d.m.Y" }}</td>
+    </tr>
+    <tr>
+      <td>{% trans "Jinsi:" %}</td>
+      <td>{{ patient.get_gender_display }}</td>
+    </tr>
+    <tr>
+      <td>{% trans "Karta №:" %}</td>
+      <td>{{ patient.medical_record_number }}</td>
+    </tr>
+    <tr>
+      <td>{% trans "Tayinlagan shifokor:" %}</td>
+      <td>{{ assignment.assigned_by.full_name|default:'—' }}</td>
+    </tr>
+  </table>
+
+  <!-- Natija -->
+  <div class="field-line"><span class="field-label">{% trans "Xulosa:" %}</span> {{ result_log.conclusion|default:'—' }}</div>
+  <div class="field-line"><span class="field-label">{% trans "Tavsiya:" %}</span> {{ result_log.recommendation|default:'—' }}</div>
+  {% if result_log.comment %}
+  <div class="field-line"><span class="field-label">{% trans "Izoh:" %}</span> {{ result_log.comment }}</div>
+  {% endif %}
+
+  <div class="footer-line">
+    <div>{% blocktrans with d=print_date|date:"d.m.Y" %}Sana: {{ d }}{% endblocktrans %}</div>
+    <div>{% trans "Bajaruvchi imzosi:" %} <span class="footer-sign">&nbsp;</span></div>
+  </div>
+
+  <script>
+    window.onload = function() {
+      window.print();
+    };
+  </script>
+</body>
+</html>

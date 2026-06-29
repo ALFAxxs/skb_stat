@@ -1,0 +1,7 @@
+{% load i18n %}
+<form action="{% url 'set_language' %}" method="post" class="d-flex align-items-center gap-1 lang-switch-form m-0">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <button type="submit" name="language" value="uz" class="btn btn-sm {% if LANGUAGE_CODE == 'uz' %}btn-primary{% else %}btn-outline-secondary{% endif %}">UZ</button>
+    <button type="submit" name="language" value="ru" class="btn btn-sm {% if LANGUAGE_CODE == 'ru' %}btn-primary{% else %}btn-outline-secondary{% endif %}">RU</button>
+</form>

@@ -1,0 +1,98 @@
+[
+  {
+    "id": 1,
+    "name": "Laboratoriya"
+  },
+  {
+    "id": 2,
+    "name": "Rentgen"
+  },
+  {
+    "id": 3,
+    "name": "UZI/Ultratovush"
+  },
+  {
+    "id": 4,
+    "name": "Kardiologiya tekshiruvlari"
+  },
+  {
+    "id": 5,
+    "name": "Fizioterapiya"
+  },
+  {
+    "id": 6,
+    "name": "Konsultatsiya"
+  },
+  {
+    "id": 7,
+    "name": "Muolajalar"
+  },
+  {
+    "id": 8,
+    "name": "Qon guruhi"
+  },
+  {
+    "id": 9,
+    "name": "LOR muolajalar"
+  },
+  {
+    "id": 10,
+    "name": "LOR jarrohlik"
+  },
+  {
+    "id": 11,
+    "name": "Ko'z tekshiruvlari"
+  },
+  {
+    "id": 12,
+    "name": "Ko'z jarrohlik"
+  },
+  {
+    "id": 13,
+    "name": "Ginekologiya jarrohlik"
+  },
+  {
+    "id": 14,
+    "name": "Ginekologiya muolajalar"
+  },
+  {
+    "id": 15,
+    "name": "Umumiy jarrohlik"
+  },
+  {
+    "id": 16,
+    "name": "Travmatologiya"
+  },
+  {
+    "id": 17,
+    "name": "Gips va blokadalar"
+  },
+  {
+    "id": 18,
+    "name": "Kosmetologiya"
+  },
+  {
+    "id": 19,
+    "name": "Plazmaferez"
+  },
+  {
+    "id": 20,
+    "name": "Inyeksiyalar"
+  },
+  {
+    "id": 21,
+    "name": "Uyga chaqiruv"
+  },
+  {
+    "id": 22,
+    "name": "Sterilizatsiya"
+  },
+  {
+    "id": 23,
+    "name": "MRT"
+  },
+  {
+    "id": 24,
+    "name": "Yotoq-joy"
+  }
+]

@@ -2,40 +2,48 @@
 
 from django.db import models
 from django.db.models import Sum
+from django.utils import translation
+from django.utils.translation import gettext_lazy as _
 from apps.patients.models import PatientCard, Department, Doctor
 
 
 class ServiceCategory(models.Model):
     """Xizmat kategoriyalari"""
     CATEGORY_TYPE_CHOICES = [
-        ('lab', 'Laboratoriya'),
-        ('radiology', 'Rentgen/UZI/MRT'),
-        ('surgery', 'Jarrohlik'),
-        ('physio', 'Fizioterapiya'),
-        ('consultation', 'Konsultatsiya'),
-        ('other', 'Boshqa'),
+        ('lab', _('Laboratoriya')),
+        ('radiology', _('Rentgen/UZI/MRT')),
+        ('surgery', _('Jarrohlik')),
+        ('physio', _('Fizioterapiya')),
+        ('consultation', _('Konsultatsiya')),
+        ('other', _('Boshqa')),
     ]
-    name    = models.CharField(max_length=100, verbose_name="Nomi")
-    name_ru = models.CharField(max_length=100, blank=True, verbose_name="Nomi (ruscha)")
-    code    = models.CharField(max_length=20, blank=True, verbose_name="Kodi")
+    name    = models.CharField(max_length=100, verbose_name=_("Nomi"))
+    name_ru = models.CharField(max_length=100, blank=True, verbose_name=_("Nomi (ruscha)"))
+    code    = models.CharField(max_length=20, blank=True, verbose_name=_("Kodi"))
     category_type = models.CharField(
         max_length=20,
         choices=CATEGORY_TYPE_CHOICES,
         default='other',
-        verbose_name="Turi"
+        verbose_name=_("Turi")
     )
     icon = models.CharField(
         max_length=10, blank=True, default='🏥',
-        verbose_name="Ikona (emoji)"
+        verbose_name=_("Ikona (emoji)")
     )
     is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
 
+    @property
+    def display_name(self):
+        if translation.get_language() == 'ru' and self.name_ru:
+            return self.name_ru
+        return self.name
+
     class Meta:
-        verbose_name = "Xizmat kategoriyasi"
-        verbose_name_plural = "Xizmat kategoriyalari"
+        verbose_name = _("Xizmat kategoriyasi")
+        verbose_name_plural = _("Xizmat kategoriyalari")
         ordering = ['category_type', 'name']
 
 
@@ -45,21 +53,21 @@ class Service(models.Model):
         ServiceCategory,
         on_delete=models.CASCADE,
         related_name='services',
-        verbose_name="Kategoriya"
+        verbose_name=_("Kategoriya")
     )
-    name    = models.CharField(max_length=255, verbose_name="Xizmat nomi")
-    name_ru = models.CharField(max_length=255, blank=True, verbose_name="Nomi (ruscha)")
-    code    = models.CharField(max_length=20, blank=True, verbose_name="Kodi")
-    description = models.TextField(blank=True, verbose_name="Tavsifi")
+    name    = models.CharField(max_length=255, verbose_name=_("Xizmat nomi"))
+    name_ru = models.CharField(max_length=255, blank=True, verbose_name=_("Nomi (ruscha)"))
+    code    = models.CharField(max_length=20, blank=True, verbose_name=_("Kodi"))
+    description = models.TextField(blank=True, verbose_name=_("Tavsifi"))
 
     # 3 xil narx
     price_normal = models.DecimalField(
         max_digits=12, decimal_places=2, default=0,
-        verbose_name="Oddiy narx (so'm)"
+        verbose_name=_("Oddiy narx (so'm)")
     )
     price_railway = models.DecimalField(
         max_digits=12, decimal_places=2, default=0,
-        verbose_name="Temir yo'lchi narxi (so'm)"
+        verbose_name=_("Temir yo'lchi narxi (so'm)")
     )
     # Norezident narxi = oddiy narx * 1.25 (avtomatik hisoblanadi)
 
@@ -67,17 +75,23 @@ class Service(models.Model):
         Department,
         on_delete=models.SET_NULL,
         null=True, blank=True,
-        verbose_name="Mas'ul bo'lim"
+        verbose_name=_("Mas'ul bo'lim")
     )
     lab_template = models.ForeignKey(
         'laboratory.LabTemplate',
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='linked_services',
-        verbose_name="Lab shabloni"
+        verbose_name=_("Lab shabloni")
     )
     is_active    = models.BooleanField(default=True)
-    is_operation = models.BooleanField(default=False, verbose_name="Operatsiyami?")
+    is_operation = models.BooleanField(default=False, verbose_name=_("Operatsiyami?"))
+
+    # Konsultatsiya turidagi xizmatlar uchun — ushbu xizmatni qaysi shifokor(lar) ko'ra oladi
+    assigned_doctors = models.ManyToManyField(
+        Doctor, blank=True, related_name='assignable_services',
+        verbose_name=_("Biriktirilgan shifokorlar")
+    )
 
     def price_for_patient(self, patient_category):
         """Bemor kategoriyasiga qarab narx hisoblash"""
@@ -94,36 +108,42 @@ class Service(models.Model):
     def __str__(self):
         return f"{self.code} — {self.name}" if self.code else self.name
 
+    @property
+    def display_name(self):
+        if translation.get_language() == 'ru' and self.name_ru:
+            return self.name_ru
+        return self.name
+
     class Meta:
-        verbose_name = "Xizmat"
-        verbose_name_plural = "Xizmatlar"
+        verbose_name = _("Xizmat")
+        verbose_name_plural = _("Xizmatlar")
         ordering = ['category', 'name']
 
 
 class PatientService(models.Model):
     """Bemorga biriktirilgan xizmat"""
     STATUS_CHOICES = [
-        ('ordered',     'Buyurtma berildi'),
-        ('in_progress', 'Bajarilmoqda'),
-        ('completed',   'Bajarildi'),
-        ('cancelled',   'Bekor qilindi'),
+        ('ordered',     _('Buyurtma berildi')),
+        ('in_progress', _('Bajarilmoqda')),
+        ('completed',   _('Bajarildi')),
+        ('cancelled',   _('Bekor qilindi')),
     ]
 
     patient_card = models.ForeignKey(
         PatientCard,
         on_delete=models.CASCADE,
         related_name='patient_services',
-        verbose_name="Bemor kartasi"
+        verbose_name=_("Bemor kartasi")
     )
     service = models.ForeignKey(
         Service,
         on_delete=models.PROTECT,
-        verbose_name="Xizmat"
+        verbose_name=_("Xizmat")
     )
-    quantity = models.PositiveIntegerField(default=1, verbose_name="Miqdori")
+    quantity = models.PositiveIntegerField(default=1, verbose_name=_("Miqdori"))
     status   = models.CharField(
         max_length=15, choices=STATUS_CHOICES,
-        default='ordered', verbose_name="Holati"
+        default='ordered', verbose_name=_("Holati")
     )
 
     # Buyurtma beruvchi
@@ -132,9 +152,9 @@ class PatientService(models.Model):
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='ordered_services',
-        verbose_name="Buyurtma bergan shifokor"
+        verbose_name=_("Buyurtma bergan shifokor")
     )
-    ordered_at = models.DateTimeField(auto_now_add=True, verbose_name="Buyurtma sanasi")
+    ordered_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Buyurtma sanasi"))
 
     # Bajargchi
     performed_by = models.ForeignKey(
@@ -142,25 +162,25 @@ class PatientService(models.Model):
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='performed_services',
-        verbose_name="Bajargan shifokor"
+        verbose_name=_("Bajargan shifokor")
     )
-    performed_at = models.DateTimeField(null=True, blank=True, verbose_name="Bajarilgan sana")
+    performed_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Bajarilgan sana"))
 
     # Natija
-    result = models.TextField(blank=True, verbose_name="Natija / Xulosa")
+    result = models.TextField(blank=True, verbose_name=_("Natija / Xulosa"))
 
     # Narx
     price = models.DecimalField(
         max_digits=12, decimal_places=2,
-        default=0, verbose_name="Birlik narxi (so'm)"
+        default=0, verbose_name=_("Birlik narxi (so'm)")
     )
     patient_category_at_order = models.CharField(
         max_length=15, blank=True,
-        verbose_name="Buyurtma paytidagi bemor kategoriyasi"
+        verbose_name=_("Buyurtma paytidagi bemor kategoriyasi")
     )
 
-    is_paid = models.BooleanField(default=False, verbose_name="To'langan")
-    notes   = models.TextField(blank=True, verbose_name="Izoh")
+    is_paid = models.BooleanField(default=False, verbose_name=_("To'langan"))
+    notes   = models.TextField(blank=True, verbose_name=_("Izoh"))
 
     @property
     def total_price(self):
@@ -177,8 +197,8 @@ class PatientService(models.Model):
         return f"{self.patient_card} — {self.service.name}"
 
     class Meta:
-        verbose_name = "Bemor xizmati"
-        verbose_name_plural = "Bemor xizmatlari"
+        verbose_name = _("Bemor xizmati")
+        verbose_name_plural = _("Bemor xizmatlari")
         ordering = ['-ordered_at']
 
 
@@ -187,76 +207,115 @@ class PatientService(models.Model):
 class Medicine(models.Model):
     """Dori-darmon katalogi"""
     UNIT_CHOICES = [
-        ('dona',     'dona'),
-        ('ml',       'ml'),
-        ('mg',       'mg'),
-        ('g',        'g'),
-        ('l',        'l'),
-        ('ampula',   'ampula'),
-        ('kapsula',  'kapsula'),
-        ('tabletka', 'tabletka'),
-        ('paket',    'paket'),
-        ('shisha',   'shisha'),
-        ('tuba',     'tuba'),
+        ('dona',     _('dona')),
+        ('ml',       _('ml')),
+        ('mg',       _('mg')),
+        ('g',        _('g')),
+        ('l',        _('l')),
+        ('ampula',   _('ampula')),
+        ('kapsula',  _('kapsula')),
+        ('tabletka', _('tabletka')),
+        ('paket',    _('paket')),
+        ('shisha',   _('shisha')),
+        ('tuba',     _('tuba')),
     ]
-    name      = models.CharField(max_length=255, verbose_name="Nomi")
-    unit      = models.CharField(
-        max_length=20, choices=UNIT_CHOICES,
-        default='dona', verbose_name="Birlik"
-    )
-    is_active = models.BooleanField(default=True)
+    DOSAGE_FORM_CHOICES = [
+        ('tabletka',    _('Tabletka')),
+        ('kapsula',     _('Kapsula')),
+        ('eritma',      _('Eritma (inyeksiya uchun)')),
+        ('sirop',       _('Sirop')),
+        ('tomchi',      _('Tomchi')),
+        ('malham',      _('Malham')),
+        ('krem',        _('Krem')),
+        ('kukun',       _('Kukun')),
+        ('suspenziya',  _('Suspenziya')),
+        ('aerozol',     _('Aerozol')),
+        ('gel',         _('Gel')),
+        ('sham',        _('Sham (suppozitoriy)')),
+        ('patch',       _('Patch (yopishtirgich)')),
+        ('other',       _('Boshqa')),
+    ]
+    CATEGORY_CHOICES = [
+        ('drug',  _('Dori')),
+        ('lab',   _('Laboratoriya anjomi')),
+        ('other', _('Boshqa')),
+    ]
+
+    name         = models.CharField(max_length=255, verbose_name=_("Savdo nomi"))
+    mnn          = models.CharField(max_length=255, blank=True, verbose_name=_("МНН (xalqaro nomi)"), db_index=True)
+    dosage_form  = models.CharField(max_length=20, choices=DOSAGE_FORM_CHOICES, blank=True, verbose_name=_("Chiqarish shakli"))
+    strength     = models.CharField(max_length=100, blank=True, verbose_name=_("Doza / konsentratsiya"))
+    unit         = models.CharField(max_length=20, choices=UNIT_CHOICES, default='dona', verbose_name=_("Birlik"))
+    category     = models.CharField(max_length=10, choices=CATEGORY_CHOICES, default='drug', verbose_name=_("Kategoriya"))
+    is_active    = models.BooleanField(default=True)
 
     def __str__(self):
-        return f"{self.name} ({self.unit})"
+        parts = [self.name]
+        if self.strength:
+            parts.append(self.strength)
+        if self.dosage_form:
+            parts.append(self.get_dosage_form_display())
+        return ' — '.join(parts)
 
     class Meta:
-        verbose_name = "Dori-darmon"
-        verbose_name_plural = "Dori-darmonlar"
+        verbose_name = _("Dori-darmon")
+        verbose_name_plural = _("Dori-darmonlar")
         ordering = ['name']
 
 
 class PatientMedicine(models.Model):
     """Bemorga biriktirilgan dori"""
+    SOURCE_CHOICES = [
+        ('hospital', _("Bo'lim dorixonasi")),
+        ('patient',  _("Bemor o'zi olib keldi")),
+    ]
+
     patient_card = models.ForeignKey(
         PatientCard,
         on_delete=models.CASCADE,
         related_name='patient_medicines',
-        verbose_name="Bemor kartasi"
+        verbose_name=_("Bemor kartasi")
     )
     medicine = models.ForeignKey(
         Medicine,
         on_delete=models.PROTECT,
-        verbose_name="Dori"
+        verbose_name=_("Dori")
     )
     quantity = models.DecimalField(
         max_digits=10, decimal_places=2,
-        default=1, verbose_name="Miqdori"
+        default=1, verbose_name=_("Miqdori")
     )
     price = models.DecimalField(
         max_digits=12, decimal_places=2,
-        default=0, verbose_name="Narxi (so'm)"
+        default=0, verbose_name=_("Narxi (so'm)")
     )
     ordered_by = models.ForeignKey(
         Doctor,
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='ordered_medicines',
-        verbose_name="Buyurtma bergan shifokor"
+        verbose_name=_("Buyurtma bergan shifokor")
     )
     ordered_at = models.DateTimeField(auto_now_add=True)
-    notes      = models.TextField(blank=True, verbose_name="Izoh")
+    notes      = models.TextField(blank=True, verbose_name=_("Izoh"))
+    source     = models.CharField(
+        max_length=10, choices=SOURCE_CHOICES,
+        default='hospital', verbose_name=_("Manba")
+    )
 
     @property
     def total_price(self):
         from decimal import Decimal
+        if self.source == 'patient':
+            return Decimal('0')
         return self.price * Decimal(str(self.quantity))
 
     def __str__(self):
         return f"{self.patient_card} — {self.medicine.name}"
 
     class Meta:
-        verbose_name = "Bemor dorisi"
-        verbose_name_plural = "Bemor dorilari"
+        verbose_name = _("Bemor dorisi")
+        verbose_name_plural = _("Bemor dorilari")
         ordering = ['-ordered_at']
 
 
@@ -264,22 +323,22 @@ class PatientMedicine(models.Model):
 
 class ServicePackage(models.Model):
     """Shifokor xizmat paketi"""
-    name        = models.CharField(max_length=200, verbose_name="Paket nomi")
+    name        = models.CharField(max_length=200, verbose_name=_("Paket nomi"))
     owner       = models.ForeignKey(
         'users.CustomUser', on_delete=models.CASCADE,
-        related_name='service_packages', verbose_name="Shifokor"
+        related_name='service_packages', verbose_name=_("Shifokor")
     )
     services    = models.ManyToManyField(
         'Service', through='ServicePackageItem',
-        related_name='packages', verbose_name="Xizmatlar"
+        related_name='packages', verbose_name=_("Xizmatlar")
     )
     is_active   = models.BooleanField(default=True)
     created_at  = models.DateTimeField(auto_now_add=True)
     updated_at  = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name        = "Xizmat paketi"
-        verbose_name_plural = "Xizmat paketlari"
+        verbose_name        = _("Xizmat paketi")
+        verbose_name_plural = _("Xizmat paketlari")
         ordering            = ['name']
 
     def __str__(self):

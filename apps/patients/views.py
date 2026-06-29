@@ -2,25 +2,74 @@ from django.views.decorators.http import require_POST
 # apps/patients/views.py
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _l
 from apps.users.decorators import role_required, department_filter
 import json
 import uuid
 
 from django.utils import timezone
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from .forms import PatientCardForm, DeathCauseForm, SurgicalOperationFormSet, ReceptionForm
 from .models import (
     PatientCard, ICD10Code, DischargeConclusion,
     Region, District, City, Village, Country, OperationType,
-    Department, Doctor
+    Department, Doctor, InitialExamination, EpisodeDiagnosis,
+    MedicalExamination, DoctorNotification,
+    TreatmentProcedure, ProcedureExecutionLog,
+    LabTestAssignment, LabTestResultLog,
+    DiagnosticAssignment, DiagnosticResultLog,
+    ConsultationRequest, ConsultationResponse,
+    AmbulatoryConsultation, DoctorTextTemplate,
+    ServiceSchedule, Prescription,
 )
+from apps.users.models import CustomUser
+
+
+def _notify_doctor(doctor, patient, message):
+    """Doctor obyektiga bog'langan foydalanuvchiga bildirishnoma yuboradi."""
+    if not doctor or not doctor.user_id:
+        return
+    DoctorNotification.objects.create(
+        recipient=doctor.user,
+        patient_card=patient,
+        message=message,
+    )
+
+
+def _notify_user(user, patient, message):
+    """Istalgan tizim foydalanuvchisiga (masalan hamshiraga) bildirishnoma yuboradi."""
+    if not user:
+        return
+    DoctorNotification.objects.create(recipient=user, patient_card=patient, message=message)
+
+
+def _notify_new_admission(patient):
+    """Yangi statsionar bemor qabul qilinganda — davolovchi shifokor va bo'lim mudiriga xabar."""
+    if patient.visit_type != 'inpatient':
+        return
+    if patient.attending_doctor_id:
+        _notify_doctor(
+            patient.attending_doctor, patient,
+            f"Sizga yangi bemor biriktirildi: {patient.full_name} ({patient.medical_record_number})"
+        )
+    head = patient.department_head or (
+        Doctor.objects.filter(department=patient.department, is_head=True, is_active=True).first()
+        if patient.department_id else None
+    )
+    if head and (not patient.attending_doctor_id or head.pk != patient.attending_doctor_id):
+        _notify_doctor(
+            head, patient,
+            f"Bo'limingizga yangi bemor yotqizildi: {patient.full_name} ({patient.medical_record_number})"
+        )
 
 
 def _find_recent_duplicate(full_name, birth_date, seconds=120):
@@ -44,7 +93,7 @@ def add_conclusion(request):
             data = json.loads(request.body)
             name = data.get('name', '').strip()
             if not name:
-                return JsonResponse({'success': False, 'error': "Nom bo'sh"})
+                return JsonResponse({'success': False, 'error': _("Nom bo'sh")})
             obj, created = DischargeConclusion.objects.get_or_create(name=name)
             return JsonResponse({
                 'success': True,
@@ -54,7 +103,7 @@ def add_conclusion(request):
             })
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
-    return JsonResponse({'success': False, 'error': 'Faqat POST'})
+    return JsonResponse({'success': False, 'error': _('Faqat POST')})
 
 
 def get_regions(request):
@@ -86,10 +135,333 @@ def icd10_search(request):
     if len(q) < 2:
         return JsonResponse([], safe=False)
     results = ICD10Code.objects.filter(
-        Q(code__icontains=q) | Q(title_uz__icontains=q)
-    )[:15]
-    data = [{'code': r.code, 'title': r.title_uz} for r in results]
+        Q(code__icontains=q) | Q(title_uz__icontains=q) | Q(title_ru__icontains=q)
+    )[:20]
+    data = [{'code': r.code, 'title_uz': r.title_uz, 'title_ru': r.title_ru} for r in results]
     return JsonResponse(data, safe=False)
+
+
+@login_required
+def episode_diagnoses(request, patient_id):
+    patient = get_object_or_404(PatientCard, pk=patient_id)
+
+    if request.method == 'GET':
+        diags = patient.episode_diagnoses.select_related('icd10_code').all()
+        data = [{
+            'id':             d.id,
+            'icd10_code':     d.icd10_code.code if d.icd10_code else '',
+            'icd10_title':    d.icd10_code.title_uz if d.icd10_code else '',
+            'diagnosis_type': d.diagnosis_type,
+            'diagnosis_type_display': d.get_diagnosis_type_display(),
+            'diagnosis_role': d.diagnosis_role,
+            'diagnosis_role_display': d.get_diagnosis_role_display(),
+            'clinical_text':  d.clinical_text,
+            'sort_order':     d.sort_order,
+        } for d in diags]
+        return JsonResponse({'diagnoses': data})
+
+    if request.method == 'POST':
+        try:
+            body = json.loads(request.body)
+            icd10_id   = body.get('icd10_code')
+            diag_type  = body.get('diagnosis_type', 'preliminary')
+            diag_role  = body.get('diagnosis_role', 'main')
+            clin_text  = body.get('clinical_text', '')
+            sort_order = int(body.get('sort_order', 0))
+
+            icd = ICD10Code.objects.filter(code=icd10_id).first() if icd10_id else None
+            d = EpisodeDiagnosis.objects.create(
+                patient_card=patient,
+                icd10_code=icd,
+                diagnosis_type=diag_type,
+                diagnosis_role=diag_role,
+                disease_course=body.get('disease_course', ''),
+                clinical_text=clin_text,
+                sort_order=sort_order,
+            )
+            return JsonResponse({'success': True, 'id': d.id,
+                                 'icd10_code': d.icd10_code.code if d.icd10_code else '',
+                                 'icd10_title': d.icd10_code.title_uz if d.icd10_code else '',
+                                 'diagnosis_type_display': d.get_diagnosis_type_display(),
+                                 'diagnosis_role_display': d.get_diagnosis_role_display(),
+                                 'clinical_text': d.clinical_text})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+    return JsonResponse({'error': _('Faqat GET/POST')}, status=405)
+
+
+@login_required
+@require_POST
+def episode_diagnosis_delete(request, pk):
+    d = get_object_or_404(EpisodeDiagnosis, pk=pk)
+    d.delete()
+    return JsonResponse({'success': True})
+
+
+@login_required
+def initial_examination(request, patient_id):
+    patient = get_object_or_404(PatientCard, pk=patient_id)
+    exam, _ = InitialExamination.objects.get_or_create(patient_card=patient)
+
+    if request.method == 'GET':
+        return JsonResponse({
+            'complaints':                exam.complaints,
+            'anamnesis_morbi':           exam.anamnesis_morbi,
+            'anamnesis_vitae':           exam.anamnesis_vitae,
+            'status_localis':            exam.status_localis,
+            'epidemiological_anamnesis': exam.epidemiological_anamnesis,
+            'status_praesens':           exam.status_praesens,
+            'allergy_anamnesis':         exam.allergy_anamnesis,
+            'neurological_status':       exam.neurological_status,
+            'lab_investigations':        exam.lab_investigations,
+        })
+
+    if request.method == 'POST':
+        try:
+            body = json.loads(request.body)
+            fields = [
+                'complaints', 'anamnesis_morbi', 'anamnesis_vitae',
+                'status_localis', 'epidemiological_anamnesis', 'status_praesens',
+                'allergy_anamnesis', 'neurological_status', 'lab_investigations',
+            ]
+            for f in fields:
+                if f in body:
+                    setattr(exam, f, body[f])
+            exam.save()
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+    return JsonResponse({'error': 'Faqat GET/POST'}, status=405)
+
+
+# ==================== TIBBIY KO'RIK VIEWLARI ====================
+
+EXAM_FIELDS = [
+    ('complaints',               _l("Ko'rik jarayonidagi shikoyatlar")),
+    ('anamnesis_morbi',          _l('Kasallik tarixidan (Anamnesis morbi)')),
+    ('epidemiological_anamnesis',_l('Epidemiologik anamnez')),
+    ('anamnesis_vitae',          _l('Hayot anamnezi (Anamnesis vitae)')),
+    ('status_praesens',          _l("Ob'ektiv holat (Status praesens)")),
+    ('neurological_status',      _l('Nevrologik holat')),
+    ('status_localis',           _l('Mahalliy holat (Status localis)')),
+    ('lab_investigations',       _l('Laboratoriya va instrumental tadqiqotlar va maslahatlar')),
+    ('specialist_consultations', _l('Turdosh mutaxassislar maslahatlari')),
+    ('allergy_anamnesis',        _l('Allergoanamnesis')),
+    ('conclusion',               _l('Tavsiyalar')),
+    ('drug_justification',       _l('Dori vositalari uchun asoslar')),
+]
+
+# Epikriz turlarida yo'q bo'lgan maydonlar
+EPICRISIS_HIDDEN = {
+    'stage_epicrisis': {'epidemiological_anamnesis', 'anamnesis_vitae', 'neurological_status'},
+    'discharge':       {'epidemiological_anamnesis', 'anamnesis_vitae', 'neurological_status'},
+    'clinical_basis':  set(),
+}
+# Ko'rik turlari uchun drug_justification ko'rinmaydi
+CHECKUP_TYPES = {'initial', 'ward', 'daily', 'specialist', 'consilium', 'anesthesia'}
+
+
+def _safe_next_url(request, fallback_url):
+    from django.utils.http import url_has_allowed_host_and_scheme
+    next_url = request.POST.get('next') or request.GET.get('next')
+    if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+        return next_url
+    return fallback_url
+
+
+@login_required
+def medical_examination_page(request, patient_id, exam_pk=None):
+    """To'liq sahifa — ko'rik yozish/tahrirlash."""
+    patient = get_object_or_404(PatientCard, pk=patient_id)
+    exam    = get_object_or_404(MedicalExamination, pk=exam_pk, patient_card=patient) if exam_pk else None
+    valid_exam_types = dict(MedicalExamination.EXAM_TYPE_CHOICES)
+    fallback_url = reverse('patient_detail', args=[patient_id])
+    next_url = _safe_next_url(request, fallback_url)
+
+    if request.method == 'POST':
+        exam_type = request.POST.get('examination_type') or (exam.examination_type if exam else None)
+        if exam_type not in valid_exam_types:
+            messages.error(request, _("Ko'rik turi tanlanmagan yoki noto'g'ri."))
+            return redirect(next_url)
+        exam_dt   = request.POST.get('examination_datetime') or None
+
+        if not exam:
+            exam = MedicalExamination(patient_card=patient, examination_type=exam_type)
+
+        from django.utils.dateparse import parse_datetime
+        exam.examination_datetime  = parse_datetime(exam_dt) if exam_dt else None
+        exam.created_by            = request.user
+        exam.department_head_name  = request.POST.get('department_head_name', '')
+        for fname, _label in EXAM_FIELDS:
+            if fname == 'lab_investigations':
+                continue
+            setattr(exam, fname, request.POST.get(fname, ''))
+
+        # Laboratoriya/diagnostika natijalarini checkbox orqali tanlash
+        selected_lab_ids  = request.POST.getlist('selected_lab_ids')
+        selected_diag_ids = request.POST.getlist('selected_diag_ids')
+        lab_qs = LabTestAssignment.objects.filter(
+            patient_card=patient, status='done', pk__in=selected_lab_ids
+        ).prefetch_related('result_logs')
+        diag_qs = DiagnosticAssignment.objects.filter(
+            patient_card=patient, status='done', pk__in=selected_diag_ids
+        ).prefetch_related('result_logs')
+
+        parts = []
+        for lab in lab_qs:
+            log = lab.result_logs.first()
+            text = f"🧪 {lab.test_name}"
+            if log and log.result_text:
+                text += f": {log.result_text}"
+            if log and log.recommendation:
+                text += f"\n{_('Tavsiya')}: {log.recommendation}"
+            parts.append(text)
+        for diag in diag_qs:
+            log = diag.result_logs.first()
+            text = f"🔬 {diag.get_diagnostic_type_display()}"
+            if log and log.conclusion:
+                text += f": {log.conclusion}"
+            if log and log.recommendation:
+                text += f"\n{_('Tavsiya')}: {log.recommendation}"
+            parts.append(text)
+        exam.lab_investigations = '\n\n'.join(parts)
+
+        exam.save()
+        exam.selected_lab_tests.set(lab_qs)
+        exam.selected_diagnostics.set(diag_qs)
+        messages.success(request, _("✅ Ko'rik saqlandi."))
+        return redirect(next_url)
+
+    exam_type_val = exam.examination_type if exam else request.GET.get('type', '')
+    if not exam and exam_type_val not in valid_exam_types:
+        messages.error(request, _("Ko'rik turini tanlang."))
+        return redirect(next_url)
+    exam_type_display = valid_exam_types.get(exam_type_val, '')
+    is_epicrisis  = exam_type_val in EPICRISIS_HIDDEN
+    hidden        = EPICRISIS_HIDDEN.get(exam_type_val, set())
+    show_drug     = exam_type_val not in CHECKUP_TYPES
+
+    # Bemorning bo'lim mudiri — tahrirlashda saqlanganini, yangi ko'rikda avtomatik topamiz
+    if exam and exam.department_head_name:
+        dept_head_default = exam.department_head_name
+    else:
+        dept_head_obj = Doctor.objects.filter(
+            department=patient.department,
+            is_head=True,
+            is_active=True
+        ).first()
+        dept_head_default = dept_head_obj.full_name if dept_head_obj else ''
+
+    # Template uchun faqat ko'rinadigan maydonlarni yuboramiz
+    visible_fields = [
+        (fname, label) for fname, label in EXAM_FIELDS
+        if fname not in hidden and (fname != 'drug_justification' or show_drug)
+    ]
+
+    doctor = _get_doctor_profile(request.user)
+    visible_fields_with_templates = []
+    for fname, label in visible_fields:
+        tmpls = list(
+            DoctorTextTemplate.objects.filter(doctor=doctor, kind=fname).order_by('title')
+        ) if doctor else []
+        visible_fields_with_templates.append((fname, label, tmpls))
+
+    available_lab_results = patient.lab_test_assignments.filter(status='done').prefetch_related('result_logs')
+    available_diag_results = patient.diagnostic_assignments.filter(status='done').prefetch_related('result_logs')
+    selected_lab_ids  = set(exam.selected_lab_tests.values_list('pk', flat=True)) if exam else set()
+    selected_diag_ids = set(exam.selected_diagnostics.values_list('pk', flat=True)) if exam else set()
+
+    return render(request, 'patients/examination_form.html', {
+        'visible_fields_with_templates': visible_fields_with_templates,
+        'patient':              patient,
+        'exam':                 exam,
+        'exam_type':            exam_type_val,
+        'exam_type_display':    exam_type_display,
+        'next_url':             next_url,
+        'visible_fields':       visible_fields,
+        'is_epicrisis':         is_epicrisis,
+        'dept_head_default':    dept_head_default,
+        'dept_heads':           Doctor.objects.filter(is_head=True, is_active=True)
+                                              .select_related('department')
+                                              .order_by('department__name', 'full_name'),
+        'now':                  timezone.localtime(),
+        'diag_type_choices':    EpisodeDiagnosis.DIAGNOSIS_TYPE_CHOICES,
+        'diag_role_choices':    EpisodeDiagnosis.DIAGNOSIS_ROLE_CHOICES,
+        'disease_course_choices': EpisodeDiagnosis.DISEASE_COURSE_CHOICES,
+        'existing_diagnoses':   patient.episode_diagnoses.select_related('icd10_code').all(),
+        'available_lab_results':  available_lab_results,
+        'available_diag_results': available_diag_results,
+        'selected_lab_ids':  selected_lab_ids,
+        'selected_diag_ids': selected_diag_ids,
+    })
+
+
+@login_required
+def medical_examination_print(request, patient_id, exam_pk):
+    """Ko'rikni chop etish uchun toza (shapkali) ko'rinish."""
+    patient = get_object_or_404(PatientCard, pk=patient_id)
+    exam = get_object_or_404(MedicalExamination, pk=exam_pk, patient_card=patient)
+
+    valid_exam_types = dict(MedicalExamination.EXAM_TYPE_CHOICES)
+    hidden = EPICRISIS_HIDDEN.get(exam.examination_type, set())
+    show_drug = exam.examination_type not in CHECKUP_TYPES
+
+    fields = [
+        (label, getattr(exam, fname))
+        for fname, label in EXAM_FIELDS
+        if fname not in hidden and (fname != 'drug_justification' or show_drug)
+    ]
+
+    import base64
+    from django.conf import settings as dj_settings
+    import os as _os
+
+    header_b64 = ''
+    for header_path in [
+        _os.path.join(dj_settings.STATIC_ROOT, 'img', 'hospital_header.png'),
+        _os.path.join(dj_settings.BASE_DIR, 'static', 'img', 'hospital_header.png'),
+    ]:
+        if _os.path.exists(header_path):
+            with open(header_path, 'rb') as f:
+                header_b64 = base64.b64encode(f.read()).decode()
+            break
+
+    return render(request, 'patients/examination_print.html', {
+        'patient':           patient,
+        'exam':              exam,
+        'exam_type_display': valid_exam_types.get(exam.examination_type, ''),
+        'fields':            fields,
+        'diagnoses':         patient.episode_diagnoses.select_related('icd10_code').all(),
+        'header_b64':        header_b64,
+        'print_date':        timezone.now(),
+    })
+
+
+@login_required
+def medical_examinations_list(request, patient_id):
+    """AJAX — ko'riklar ro'yxati JSON."""
+    patient = get_object_or_404(PatientCard, pk=patient_id)
+    exams   = patient.medical_examinations.select_related('doctor').all()
+    data    = [{
+        'id':           e.id,
+        'type':         e.examination_type,
+        'type_display': e.get_examination_type_display(),
+        'datetime':     e.examination_datetime.strftime('%d.%m.%Y %H:%M') if e.examination_datetime else '',
+        'doctor':       str(e.doctor) if e.doctor else '',
+        'created_at':   e.created_at.strftime('%d.%m.%Y %H:%M'),
+    } for e in exams]
+    return JsonResponse({'exams': data})
+
+
+@login_required
+@require_POST
+def medical_examination_delete(request, pk):
+    exam = get_object_or_404(MedicalExamination, pk=pk)
+    patient_id = exam.patient_card_id
+    exam.delete()
+    return JsonResponse({'success': True, 'patient_id': patient_id})
 
 
 def operation_type_search(request):
@@ -115,8 +487,21 @@ def patient_list(request):
         'department', 'attending_doctor', 'registered_by'
     ).order_by('-admission_date')
 
-    # Bo'lim filteri
-    qs = department_filter(qs, request.user)
+    # Oddiy shifokor (bo'lim mudiri emas) — faqat o'ziga biriktirilgan bemorlarni ko'radi
+    # (bo'lim filteridan ko'ra aniqroq — o'tkazilgan bemorlarni ham qamrab oladi)
+    doctor_profile = None
+    if request.user.role == 'doctor' and not request.user.is_superuser:
+        doctor_profile = getattr(request.user, 'doctor_profile', None)
+
+    if doctor_profile and doctor_profile.is_general_practitioner:
+        pass  # Terapevt — barcha ro'yxatga olingan bemorlarni (bo'limidan qat'iy nazar) ko'radi
+    elif doctor_profile and not doctor_profile.is_head:
+        qs = qs.filter(attending_doctor=doctor_profile)
+    elif request.user.role == 'doctor' and not request.user.is_superuser and not doctor_profile:
+        qs = qs.none()
+    else:
+        # Bo'lim filteri — boshqa rollar va bo'lim mudirlari uchun
+        qs = department_filter(qs, request.user)
 
     # Qabulxona barcha bemorlarni ko'radi (filtrsiz)
 
@@ -126,6 +511,7 @@ def patient_list(request):
         qs = qs.filter(
             Q(full_name__icontains=query) |
             Q(medical_record_number__icontains=query) |
+            Q(case_sheet_number__icontains=query) |
             Q(passport_serial__icontains=query)
         )
 
@@ -234,12 +620,12 @@ def patient_detail(request, pk):
     if not request.user.is_superuser and request.user.role != 'admin':
         if request.user.role == 'reception':
             if patient.registered_by != request.user:
-                messages.error(request, "Siz bu bemorni ko'rishga ruxsatingiz yo'q.")
+                messages.error(request, _("Siz bu bemorni ko'rishga ruxsatingiz yo'q."))
                 return redirect('patient_list')
         else:
             dept_ids = request.user.get_all_department_ids()
             if dept_ids and patient.department_id not in dept_ids:
-                messages.error(request, "Siz bu bemorni ko'rishga ruxsatingiz yo'q.")
+                messages.error(request, _("Siz bu bemorni ko'rishga ruxsatingiz yo'q."))
                 return redirect('patient_list')
 
     death_cause = getattr(patient, 'death_cause', None)
@@ -346,11 +732,13 @@ def patient_detail(request, pk):
         'doctors':     Doctor.objects.filter(is_active=True).select_related('department').order_by('department__name', 'full_name'),
         'dept_heads':  Doctor.objects.filter(is_active=True, is_head=True).order_by('full_name'),
         'today':       timezone.localdate(),
+        'now':         timezone.localtime(),
         'transfers':   transfers,
         'transfer_periods': transfer_periods,
         'discharge_conclusions': DischargeConclusion.objects.filter(is_active=True).order_by('name'),
-        'outcome_choices':  PatientCard.OUTCOME_CHOICES,
-        'status_choices':   PatientCard.STATUS_CHOICES,
+        'outcome_choices':    PatientCard.OUTCOME_CHOICES,
+        'status_choices':     PatientCard.STATUS_CHOICES,
+        'exam_type_choices':  MedicalExamination.EXAM_TYPE_CHOICES,
     })
 
 
@@ -387,7 +775,7 @@ def patient_card_create(request):
                 form.cleaned_data.get('birth_date'),
             )
             if dup:
-                messages.warning(request, f"⚠️ Bu bemor 2 daqiqa ichida allaqachon ro'yxatga olingan: {dup.full_name} (#{dup.medical_record_number})")
+                messages.warning(request, _("⚠️ Bu bemor 2 daqiqa ichida allaqachon ro'yxatga olingan: %(name)s (#%(record_number)s)") % {'name': dup.full_name, 'record_number': dup.medical_record_number})
                 return redirect('patient_detail', pk=dup.pk)
 
             patient = form.save(commit=False)
@@ -411,10 +799,10 @@ def patient_card_create(request):
                 death.patient_card = patient
                 death.save()
 
-            messages.success(request, "Bemor kartasi saqlandi!")
+            messages.success(request, _("Bemor kartasi saqlandi!"))
             return redirect('patient_list')
         else:
-            messages.error(request, "Formada xatoliklar bor. Tekshiring.")
+            messages.error(request, _("Formada xatoliklar bor. Tekshiring."))
     else:
         form = PatientCardForm()
         if not request.user.is_superuser and request.user.role != 'admin':
@@ -442,7 +830,7 @@ def patient_card_edit(request, pk):
     # Ruxsat tekshiruvi — shifokor faqat o'z bo'limini tahrirlaydi
     if not request.user.is_superuser and request.user.role not in ('admin', 'reception'):
         if request.user.department and patient.department != request.user.department:
-            messages.error(request, "Siz bu bemorni tahrirlay olmaysiz.")
+            messages.error(request, _("Siz bu bemorni tahrirlay olmaysiz."))
             return redirect('patient_detail', pk=pk)
 
     is_ambulatory = patient.visit_type == 'ambulatory'
@@ -462,12 +850,13 @@ def patient_card_edit(request, pk):
     if request.method == 'POST':
         # Chiqarish modal dan kelgan so'rov — faqat admin/doctor/statistician, faqat statsionar
         if request.POST.get('_discharge'):
+            next_url = _safe_next_url(request, reverse('patient_detail', args=[pk]))
             if patient.visit_type == 'ambulatory':
-                messages.error(request, "Ambulator bemor chiqarilmaydi.")
-                return redirect('patient_detail', pk=pk)
+                messages.error(request, _("Ambulator bemor chiqarilmaydi."))
+                return redirect(next_url)
             if request.user.role == 'reception' and not request.user.is_superuser:
-                messages.error(request, "Sizda bemorni chiqarish huquqi yo'q.")
-                return redirect('patient_detail', pk=pk)
+                messages.error(request, _("Sizda bemorni chiqarish huquqi yo'q."))
+                return redirect(next_url)
 
         if request.POST.get('_discharge'):
             from apps.patients.models import Doctor as PatientDoctor
@@ -498,8 +887,8 @@ def patient_card_edit(request, pk):
             if conclusion_id:
                 patient.discharge_conclusion = DischargeConclusion.objects.filter(pk=conclusion_id).first()
             patient.save()
-            messages.success(request, f"✅ Bemor chiqarildi: {patient.full_name}")
-            return redirect('patient_detail', pk=pk)
+            messages.success(request, _("✅ Bemor chiqarildi: %(name)s") % {'name': patient.full_name})
+            return redirect(next_url)
 
         form = FormClass(request.POST, instance=patient)
 
@@ -509,7 +898,7 @@ def patient_card_edit(request, pk):
                 # visit_type o'zgarmasin
                 obj.visit_type = patient.visit_type or ('ambulatory' if is_ambulatory else 'inpatient')
                 obj.save()
-                messages.success(request, "Ma'lumotlar yangilandi!")
+                messages.success(request, _("Ma'lumotlar yangilandi!"))
                 return redirect('patient_detail', pk=pk)
             else:
                 # Ambulator uchun required bo'lmagan xatolarni o'chirish
@@ -523,9 +912,9 @@ def patient_card_edit(request, pk):
                         obj = form.save(commit=False)
                         obj.visit_type = 'ambulatory'
                         obj.save()
-                        messages.success(request, "Ma'lumotlar yangilandi!")
+                        messages.success(request, _("Ma'lumotlar yangilandi!"))
                         return redirect('patient_detail', pk=pk)
-                messages.error(request, "Formada xatoliklar bor.")
+                messages.error(request, _("Formada xatoliklar bor."))
         else:
             death_form = DeathCauseForm(request.POST, instance=death_instance)
             surgery_formset = SurgicalOperationFormSet(request.POST, instance=patient)
@@ -556,10 +945,10 @@ def patient_card_edit(request, pk):
                 elif death_instance:
                     death_instance.delete()
 
-                messages.success(request, "Bemor kartasi yangilandi!")
+                messages.success(request, _("Bemor kartasi yangilandi!"))
                 return redirect('patient_detail', pk=pk)
             else:
-                messages.error(request, "Formada xatoliklar bor.")
+                messages.error(request, _("Formada xatoliklar bor."))
     else:
         form = FormClass(instance=patient)
         if not is_reception:
@@ -598,7 +987,7 @@ def patient_delete(request, pk):
     patient = get_object_or_404(PatientCard, pk=pk)
     if request.method == 'POST':
         patient.delete()
-        messages.success(request, "Bemor kartasi o'chirildi.")
+        messages.success(request, _("Bemor kartasi o'chirildi."))
         return redirect('patient_list')
     return render(request, 'patients/patient_confirm_delete.html', {'patient': patient})
 
@@ -615,7 +1004,7 @@ def reception_create(request):
                 form.cleaned_data.get('birth_date'),
             )
             if dup:
-                messages.warning(request, f"⚠️ Bu bemor 2 daqiqa ichida allaqachon qabul qilingan: {dup.full_name} (#{dup.medical_record_number})")
+                messages.warning(request, _("⚠️ Bu bemor 2 daqiqa ichida allaqachon qabul qilingan: %(name)s (#%(record_number)s)") % {'name': dup.full_name, 'record_number': dup.medical_record_number})
                 return redirect('patient_detail', pk=dup.pk)
 
             patient = form.save(commit=False)
@@ -645,14 +1034,16 @@ def reception_create(request):
             if manual_contract_number:
                 patient._manual_contract_number = manual_contract_number
             patient.save()
+            InitialExamination.objects.get_or_create(patient_card=patient)
+            _notify_new_admission(patient)
 
             messages.success(
                 request,
-                f"✅ Bemor qabul qilindi! Bayonnoma: {patient.medical_record_number}"
+                _("✅ Bemor qabul qilindi! Bayonnoma: %(record_number)s") % {'record_number': patient.medical_record_number}
             )
             return redirect('patient_detail', pk=patient.pk)
         else:
-            messages.error(request, "Formada xatoliklar bor.")
+            messages.error(request, _("Formada xatoliklar bor."))
     else:
         form = ReceptionForm()
         primary = request.user.department or request.user.departments.first()
@@ -1080,99 +1471,8 @@ def check_existing_patient(request):
 
 @login_required
 def patient_invoice(request, pk):
-    """Bemor uchun hisob-faktura"""
-    patient = get_object_or_404(PatientCard, pk=pk)
-
-    from apps.services.models import PatientService, PatientMedicine
-    from django.db.models import Sum, Count
-    from decimal import Decimal
-
-    services = PatientService.objects.filter(
-        patient_card=patient
-    ).select_related('service__category').order_by('service__category__name', 'service__name')
-
-    # Kategoriya bo'yicha to'g'ri hisoblash (price * quantity)
-    from collections import defaultdict
-    cat_map = defaultdict(lambda: {'icon': '', 'count': 0, 'total': 0})
-    for s in services:
-        key = s.service.category.name
-        cat_map[key]['icon']  = s.service.category.icon or '🏥'
-        cat_map[key]['count'] += 1
-        cat_map[key]['total'] += float(s.price * s.quantity)
-
-    cat_stats = [
-        {
-            'service__category__name': name,
-            'service__category__icon': v['icon'],
-            'count': v['count'],
-            'total': v['total'],
-        }
-        for name, v in sorted(cat_map.items())
-    ]
-
-    services_total = sum(s.price * s.quantity for s in services) or 0
-
-    # Dorilar
-    medicines = PatientMedicine.objects.filter(
-        patient_card=patient
-    ).select_related('medicine', 'ordered_by').order_by('medicine__name')
-
-    medicines_total = sum(m.total_price for m in medicines) or 0
-    grand_total = float(services_total) + float(medicines_total)
-
-    # Ko'chirish tarixi va xizmatlarni davrlarga bo'lib guruhlash
-    from apps.patients.models import PatientTransfer
-    transfers = list(
-        PatientTransfer.objects.filter(patient_card=patient).select_related(
-            'from_department', 'from_doctor',
-            'to_department', 'to_doctor', 'to_dept_head', 'transferred_by'
-        ).order_by('transferred_at')
-    )
-
-    all_svc_asc = list(PatientService.objects.filter(
-        patient_card=patient
-    ).select_related('service__category').order_by('ordered_at'))
-
-    transfer_periods = []
-    if transfers:
-        boundaries = [None] + [t.transferred_at for t in transfers]
-        for i, t in enumerate(transfers):
-            t_start = boundaries[i]
-            t_end   = t.transferred_at
-            if t_start is None:
-                period_svcs = [s for s in all_svc_asc if s.ordered_at < t_end]
-            else:
-                period_svcs = [s for s in all_svc_asc if t_start <= s.ordered_at < t_end]
-            transfer_periods.append({
-                'period_num':     i + 1,
-                'dept':           t.from_department,
-                'doctor':         t.from_doctor,
-                'transfer':       t,
-                'services':       period_svcs,
-                'services_total': sum(s.price * s.quantity for s in period_svcs),
-            })
-        last_t = transfers[-1]
-        last_svcs = [s for s in all_svc_asc if s.ordered_at >= last_t.transferred_at]
-        transfer_periods.append({
-            'period_num':     len(transfers) + 1,
-            'dept':           last_t.to_department,
-            'doctor':         last_t.to_doctor,
-            'transfer':       None,
-            'services':       last_svcs,
-            'services_total': sum(s.price * s.quantity for s in last_svcs),
-        })
-
-    return render(request, 'patients/invoice.html', {
-        'patient': patient,
-        'services': services,
-        'cat_stats': cat_stats,
-        'services_total': services_total,
-        'medicines': medicines,
-        'medicines_total': medicines_total,
-        'grand_total': grand_total,
-        'transfers': transfers,
-        'transfer_periods': transfer_periods,
-    })
+    """Eski hisob-faktura sahifasi — yangi billing moduliga yo'naltiriladi"""
+    return redirect('invoice_detail', pk=pk)
 
 
 
@@ -1201,12 +1501,12 @@ def transfer_department(request, pk):
                 patient.save(update_fields=['department'])
                 messages.success(
                     request,
-                    f"Bemor {new_dept.name} bo'limiga ko'chirildi."
+                    _("Bemor %(dept_name)s bo'limiga ko'chirildi.") % {'dept_name': new_dept.name}
                 )
             except Department.DoesNotExist:
-                messages.error(request, "Bo'lim topilmadi.")
+                messages.error(request, _("Bo'lim topilmadi."))
         else:
-            messages.warning(request, "Yangi bo'lim tanlang.")
+            messages.warning(request, _("Yangi bo'lim tanlang."))
 
     return redirect('patient_detail', pk=pk)
 
@@ -1230,20 +1530,29 @@ def ambulatory_create(request):
 
     if request.method == 'POST':
         # POST da forma validatsiyasiz kerakli maydonlarni to'g'ridan saqlash
-        record_number = request.POST.get('medical_record_number') or gen_record_number()
-        full_name     = request.POST.get('full_name', '').strip()
-        gender        = request.POST.get('gender', '')
-        birth_date    = request.POST.get('birth_date', '') or None
-        jshshir       = request.POST.get('JSHSHIR', '').strip()
-        phone         = request.POST.get('phone', '').strip()
-        category      = request.POST.get('patient_category', 'paid')
-        now           = timezone.now()
+        from django.utils.dateparse import parse_date
+
+        record_number   = request.POST.get('medical_record_number') or gen_record_number()
+        full_name       = request.POST.get('full_name', '').strip()
+        gender          = request.POST.get('gender', '')
+        birth_date_raw  = request.POST.get('birth_date', '').strip()
+        jshshir         = request.POST.get('JSHSHIR', '').strip()
+        phone           = request.POST.get('phone', '').strip()
+        category        = request.POST.get('patient_category', 'paid')
+        now             = timezone.now()
 
         errors = {}
         if not full_name:
             errors['full_name'] = "Ism-familiyani kiriting"
         if not gender:
             errors['gender'] = "Jinsni tanlang"
+
+        birth_date = None
+        if birth_date_raw:
+            birth_date = parse_date(birth_date_raw)
+            if birth_date is None or birth_date.year < 1900 or birth_date > now.date():
+                errors['birth_date'] = "Tug'ilgan sana noto'g'ri formatda (YYYY-MM-DD)"
+                birth_date = None
 
         if errors:
             auto_number = record_number
@@ -1264,14 +1573,14 @@ def ambulatory_create(request):
         if birth_date:
             dup = _find_recent_duplicate(full_name, birth_date)
             if dup:
-                messages.warning(request, f"⚠️ Bu bemor 2 daqiqa ichida allaqachon qabul qilingan: {dup.full_name} (#{dup.medical_record_number})")
+                messages.warning(request, _("⚠️ Bu bemor 2 daqiqa ichida allaqachon qabul qilingan: %(name)s (#%(record_number)s)") % {'name': dup.full_name, 'record_number': dup.medical_record_number})
                 return redirect('patient_detail', pk=dup.pk)
 
         patient = PatientCard(
             medical_record_number = record_number,
             full_name     = full_name,
             gender        = gender,
-            birth_date    = birth_date if birth_date else None,
+            birth_date    = birth_date,
             JSHSHIR       = jshshir,
             phone         = phone,
             patient_category = category,
@@ -1281,7 +1590,7 @@ def ambulatory_create(request):
             admission_date = now,
         )
         patient.save()
-        messages.success(request, f'Ambulator bemor {patient.full_name} qabul qilindi. Bayonnoma: {record_number}')
+        messages.success(request, _('Ambulator bemor %(name)s qabul qilindi. Bayonnoma: %(record_number)s') % {'name': patient.full_name, 'record_number': record_number})
         return redirect('patient_detail', pk=patient.pk)
 
     # GET
@@ -1304,7 +1613,7 @@ def patient_transfer(request, pk):
     patient      = get_object_or_404(PatientCard, pk=pk)
 
     if patient.visit_type == 'ambulatory':
-        messages.error(request, "Ambulator bemor ko'chirilmaydi.")
+        messages.error(request, _("Ambulator bemor ko'chirilmaydi."))
         return redirect('patient_detail', pk=pk)
 
     to_dept_id   = request.POST.get('to_department')
@@ -1313,7 +1622,7 @@ def patient_transfer(request, pk):
     reason       = request.POST.get('reason', '').strip()
 
     if not to_dept_id:
-        messages.error(request, "Bo'lim tanlanmagan.")
+        messages.error(request, _("Bo'lim tanlanmagan."))
         return redirect('patient_detail', pk=pk)
 
     transfer_date_str = request.POST.get('transfer_date', '').strip()
@@ -1348,5 +1657,1800 @@ def patient_transfer(request, pk):
         update_fields.append('department_head')
     patient.save(update_fields=update_fields)
 
-    messages.success(request, f"✅ Bemor {patient.department} bo'limiga ko'chirildi.")
+    messages.success(request, _("✅ Bemor %(dept)s bo'limiga ko'chirildi.") % {'dept': patient.department})
     return redirect('patient_detail', pk=pk)
+
+
+# ==================== SHIFOKOR KABINETI ====================
+
+def _get_doctor_profile(user):
+    return getattr(user, 'doctor_profile', None)
+
+
+def _doctor_scope(doctor):
+    """Bo'lim mudiri — butun bo'lim + shaxsan biriktirilgan bemorlar (masalan,
+    bo'limsiz ambulator bemorlar); terapevt — barcha ro'yxatga olingan bemorlar
+    (bo'limidan qat'iy nazar); oddiy shifokor — tasdiqlangan biriktirish YOKI
+    xizmat/konsultatsiya orqali biriktirilgan bemorlar."""
+    qs = PatientCard.objects.select_related('department', 'attending_doctor', 'department_head')
+    if doctor.is_general_practitioner:
+        return qs.distinct()
+    personal = (
+        Q(attending_doctor=doctor, attending_doctor_confirmed=True) |
+        Q(consultation_requests__consultants=doctor) |
+        Q(diagnostic_assignments__assigned_by=doctor) |
+        Q(lab_test_assignments__assigned_by=doctor) |
+        Q(treatment_procedures__assigned_by=doctor)
+    )
+    if doctor.is_head and doctor.department_id:
+        return qs.filter(Q(department_id=doctor.department_id) | personal).distinct()
+    return qs.filter(personal).distinct()
+
+
+@login_required
+def doctor_dashboard(request):
+    if request.user.role != 'doctor' and not request.user.is_superuser:
+        return redirect('access_denied')
+    doctor = _get_doctor_profile(request.user)
+    if not doctor:
+        messages.warning(request, _("Sizning shifokor profilingiz hali yaratilmagan. Administratorga murojaat qiling."))
+        return render(request, 'patients/doctor/dashboard.html', {'doctor': None})
+
+    scope = _doctor_scope(doctor)
+    today = timezone.now().date()
+
+    stats = {
+        'total':          scope.count(),
+        'inpatient':      scope.filter(visit_type='inpatient').count(),
+        'outpatient':     scope.filter(visit_type='ambulatory').count(),
+        'railway':        scope.filter(patient_category='railway').count(),
+        'paid':           scope.filter(patient_category='paid').count(),
+        'non_resident':   scope.filter(patient_category='non_resident').count(),
+        'new_today':      scope.filter(created_at__date=today).count(),
+        'admitted_today': scope.filter(admission_date__date=today).count(),
+        'discharged':     scope.filter(status='completed').count(),
+        'active':         scope.exclude(status='completed').count(),
+    }
+
+    if doctor.is_head and doctor.department_id:
+        stats['doctors_count'] = Doctor.objects.filter(department_id=doctor.department_id, is_active=True).count()
+        stats['unassigned'] = scope.filter(visit_type='inpatient').exclude(status='completed').filter(
+            Q(attending_doctor__isnull=True) | Q(attending_doctor_confirmed=False)
+        ).count()
+
+    # So'nggi 7 kunlik qabul oqimi (diagramma uchun)
+    flow_labels, flow_counts = [], []
+    for i in range(6, -1, -1):
+        d = today - timedelta(days=i)
+        flow_labels.append(d.strftime('%d.%m'))
+        flow_counts.append(scope.filter(admission_date__date=d).count())
+
+    recent_patients = scope.order_by('-created_at')[:8]
+    notifications = DoctorNotification.objects.filter(recipient=request.user).order_by('-created_at')[:8]
+
+    return render(request, 'patients/doctor/dashboard.html', {
+        'doctor': doctor,
+        'stats': stats,
+        'flow_labels': json.dumps(flow_labels),
+        'flow_counts': json.dumps(flow_counts),
+        'category_data': json.dumps([stats['railway'], stats['paid'], stats['non_resident']]),
+        'recent_patients': recent_patients,
+        'notifications': notifications,
+    })
+
+
+@login_required
+def doctor_patient_list(request, visit_type):
+    if request.user.role != 'doctor' and not request.user.is_superuser:
+        return redirect('access_denied')
+    doctor = _get_doctor_profile(request.user)
+    if not doctor:
+        messages.warning(request, _("Sizning shifokor profilingiz hali yaratilmagan."))
+        return redirect('doctor_dashboard')
+
+    qs = _doctor_scope(doctor).filter(visit_type=visit_type)
+
+    query = request.GET.get('q', '')
+    if query:
+        qs = qs.filter(
+            Q(full_name__icontains=query) |
+            Q(medical_record_number__icontains=query) |
+            Q(case_sheet_number__icontains=query)
+        )
+
+    status = request.GET.get('status', '')
+    if status:
+        qs = qs.filter(status=status)
+
+    sort = request.GET.get('sort', '-admission_date')
+    if sort not in ('full_name', '-full_name', 'admission_date', '-admission_date', 'status', '-status'):
+        sort = '-admission_date'
+    qs = qs.order_by(sort)
+
+    paginator = Paginator(qs, 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'patients/doctor/patient_list.html', {
+        'doctor': doctor,
+        'page_obj': page_obj,
+        'visit_type': visit_type,
+        'visit_type_label': 'Statsionar' if visit_type == 'inpatient' else 'Ambulator',
+        'query': query,
+        'status': status,
+        'sort': sort,
+        'status_choices': PatientCard.STATUS_CHOICES,
+    })
+
+
+@login_required
+def doctor_assign_patients(request):
+    """Bo'lim mudiri — yangi statsionar bemorlarni o'z bo'limidagi shifokorlarga biriktiradi."""
+    doctor = _get_doctor_profile(request.user)
+    if not doctor or not doctor.is_head:
+        return redirect('access_denied')
+
+    from django.db.models import Count
+
+    if request.method == 'POST':
+        patient_id = request.POST.get('patient_id')
+        doctor_id  = request.POST.get('doctor_id')
+        patient = get_object_or_404(PatientCard, pk=patient_id, department_id=doctor.department_id)
+        target_doctor = get_object_or_404(Doctor, pk=doctor_id, department_id=doctor.department_id, is_active=True)
+        previous_doctor = patient.attending_doctor
+        previous_doctor_id = patient.attending_doctor_id
+        patient.attending_doctor = target_doctor
+        patient.attending_doctor_confirmed = True
+        if not patient.department_head_id:
+            patient.department_head = doctor
+        patient.save()
+
+        if previous_doctor_id and previous_doctor_id != target_doctor.pk:
+            # Qayta biriktirish — eski shifokorga xabar, yangi shifokorga xabar
+            _notify_doctor(
+                previous_doctor, patient,
+                f"Bemor boshqa shifokorga o'tkazildi: {patient.full_name} ({patient.medical_record_number})"
+            )
+            _notify_doctor(
+                target_doctor, patient,
+                f"Sizga bemor qayta biriktirildi: {patient.full_name} ({patient.medical_record_number})"
+            )
+            messages.success(request, _("🔄 %(patient)s — %(prev_doctor)s dan %(target_doctor)s ga qayta biriktirildi.") % {'patient': patient.full_name, 'prev_doctor': previous_doctor.full_name if previous_doctor else '—', 'target_doctor': target_doctor.full_name})
+        else:
+            _notify_doctor(
+                target_doctor, patient,
+                f"Sizga yangi bemor biriktirildi: {patient.full_name} ({patient.medical_record_number})"
+            )
+            messages.success(request, _("✅ %(patient)s — %(target_doctor)s ga biriktirildi.") % {'patient': patient.full_name, 'target_doctor': target_doctor.full_name})
+        return redirect('doctor_assign_patients')
+
+    pending = PatientCard.objects.filter(
+        department_id=doctor.department_id,
+        visit_type='inpatient',
+    ).exclude(status='completed').select_related('attending_doctor').order_by(
+        'attending_doctor_id', '-admission_date'
+    )
+
+    dept_doctors = Doctor.objects.filter(
+        department_id=doctor.department_id, is_active=True
+    ).exclude(pk=doctor.pk).annotate(
+        workload=Count('attending_cards', filter=Q(attending_cards__status__in=['registered', 'admitted']))
+    ).order_by('full_name')
+
+    history = PatientCard.objects.filter(
+        department_id=doctor.department_id,
+        attending_doctor__isnull=False,
+    ).exclude(attending_doctor=doctor).select_related('attending_doctor').order_by('-updated_at')[:15]
+
+    return render(request, 'patients/doctor/assign.html', {
+        'doctor': doctor,
+        'pending': pending,
+        'dept_doctors': dept_doctors,
+        'history': history,
+    })
+
+
+REMINDER_LEAD_MINUTES = 30
+
+
+def _schedule_recipients(occ):
+    """Rejalashtirilgan band turi bo'yicha bildirishnoma oluvchilarni aniqlaydi."""
+    if occ.treatment_procedure_id:
+        patient = occ.treatment_procedure.patient_card
+        if not patient.department_id:
+            return CustomUser.objects.none()
+        return CustomUser.objects.filter(role__in=['nurse', 'head_nurse'], department_id=patient.department_id, is_active=True)
+    if occ.lab_test_assignment_id:
+        return CustomUser.objects.filter(role='laborant', is_active=True)
+    if occ.diagnostic_assignment_id:
+        return CustomUser.objects.filter(role='diagnostician', is_active=True)
+    if occ.consultation_request_id:
+        user_ids = [c.user_id for c in occ.consultation_request.consultants.all() if c.user_id]
+        return CustomUser.objects.filter(pk__in=user_ids)
+    return CustomUser.objects.none()
+
+
+def _send_due_schedule_reminders():
+    """Rejalashtirilgan vaqti yaqinlashgan ServiceSchedule bandlari uchun bir martalik eslatma yuboradi.
+    Bir nechta foydalanuvchi 30s polling orqali bir vaqtda chaqirsa ham, cache lock orqali
+    haqiqiy so'rov faqat ~20 soniyada bir marta bajariladi (to'g'rilik reminder_sent_at'dan keladi)."""
+    from django.core.cache import cache
+    if not cache.add('schedule_reminder_sweep_lock', True, timeout=20):
+        return
+    now = timezone.now()
+    due = ServiceSchedule.objects.filter(
+        status='pending', reminder_sent_at__isnull=True,
+        scheduled_at__lte=now + timedelta(minutes=REMINDER_LEAD_MINUTES),
+    ).select_related(
+        'treatment_procedure__patient_card', 'lab_test_assignment__patient_card',
+        'diagnostic_assignment__patient_card', 'consultation_request__patient_card',
+    ).prefetch_related('consultation_request__consultants')
+    for occ in due:
+        patient = occ.patient_card
+        if not patient:
+            continue
+        when = timezone.localtime(occ.scheduled_at).strftime('%d.%m.%Y %H:%M')
+        message = f"⏰ {occ.label} vaqti yaqinlashdi: {patient.full_name} — {when}"
+        for user in _schedule_recipients(occ):
+            _notify_user(user, patient, message)
+        occ.reminder_sent_at = now
+        occ.save(update_fields=['reminder_sent_at'])
+
+
+@require_POST
+@login_required
+def schedule_occurrence_update(request, pk):
+    """Hamshira/laborant/diagnost/konsultant — rejalashtirilgan bandning holatini
+    (bajarildi/o'tkazib yuborildi/bekor qilindi) belgilaydi. Bu ota-obyektning
+    umumiy holatiga (status) yoki hisob-fakturaga ta'sir qilmaydi — mustaqil
+    tashrif kuzatuvi qatlami."""
+    occ = get_object_or_404(ServiceSchedule, pk=pk)
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+    def _error(message, status=400):
+        if is_ajax:
+            return JsonResponse({'success': False, 'error': message}, status=status)
+        messages.error(request, message)
+        return redirect(next_url)
+
+    def _occ_payload():
+        return {
+            'success': True,
+            'status': occ.status,
+            'status_display': occ.get_status_display(),
+            'reason': occ.reason,
+            'comment': occ.comment,
+            'performed_by': occ.performed_by.get_full_name() if occ.performed_by else '',
+        }
+
+    doctor = _get_doctor_profile(request.user)
+    allowed = request.user.is_superuser or (
+        (occ.treatment_procedure_id and request.user.role in ('nurse', 'head_nurse')) or
+        (occ.lab_test_assignment_id and request.user.role == 'laborant') or
+        (occ.diagnostic_assignment_id and request.user.role == 'diagnostician') or
+        (occ.consultation_request_id and doctor and occ.consultation_request.consultants.filter(pk=doctor.pk).exists())
+    )
+    next_url = request.POST.get('next') or 'nurse_dashboard'
+    if not allowed:
+        return _error(_("Ruxsat yo'q"), status=403) if is_ajax else redirect('access_denied')
+    if occ.status != 'pending':
+        return JsonResponse(_occ_payload()) if is_ajax else redirect(next_url)
+    new_status = request.POST.get('status')
+    if new_status not in dict(ServiceSchedule.STATUS_CHOICES):
+        return _error(_("Noto'g'ri holat"))
+    occ.status = new_status
+    if new_status == 'done':
+        occ.completed_at = timezone.now()
+        occ.performed_by = request.user
+        occ.comment = (request.POST.get('comment') or '').strip()
+        occ.save(update_fields=['status', 'completed_at', 'performed_by', 'comment'])
+    elif new_status == 'stopped':
+        # "To'xtatdim" faqat hamshira plitka UI'sidan keladi va u yerda sabab
+        # HTML5 `required` bilan ham majburiy — bu yerda server tomonida ham
+        # qat'iy talab qilinadi.
+        reason = (request.POST.get('reason') or '').strip()
+        if not reason:
+            return _error(_("Sabab kiritilishi shart."))
+        occ.completed_at = timezone.now()
+        occ.performed_by = request.user
+        occ.reason = reason
+        occ.save(update_fields=['status', 'completed_at', 'performed_by', 'reason'])
+    elif new_status == 'cancelled':
+        # "cancelled" ham hamshira plitka modalidan (sabab majburiy, frontendda
+        # talab qilinadi), ham laborant/diagnost/eski oddiy dropdown'lardan
+        # (sababsiz) kelishi mumkin — shu sabab bu yerda sabab ixtiyoriy.
+        occ.completed_at = timezone.now()
+        occ.performed_by = request.user
+        occ.reason = (request.POST.get('reason') or '').strip()
+        occ.save(update_fields=['status', 'completed_at', 'performed_by', 'reason'])
+    else:
+        occ.save(update_fields=['status'])
+    return JsonResponse(_occ_payload()) if is_ajax else redirect(next_url)
+
+
+@login_required
+def doctor_notifications_ajax(request):
+    _send_due_schedule_reminders()
+    base = DoctorNotification.objects.filter(recipient=request.user)
+    unread = base.filter(is_read=False).count()
+    notifications = base.order_by('-created_at')[:15]
+    data = [{
+        'id':          n.id,
+        'message':     n.message,
+        'is_read':     n.is_read,
+        'created_at':  n.created_at.strftime('%d.%m.%Y %H:%M'),
+        'patient_id':  n.patient_card_id,
+    } for n in notifications]
+    return JsonResponse({'unread': unread, 'notifications': data})
+
+
+@require_POST
+@login_required
+def doctor_notifications_read(request):
+    DoctorNotification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+    return JsonResponse({'success': True})
+
+
+def doctor_patient_card(request, pk):
+    """Shifokor kabineti — bemor kartasi (8 bo'limli ko'rinish)."""
+    doctor = _get_doctor_profile(request.user)
+    if not doctor:
+        return redirect('access_denied')
+
+    patient = get_object_or_404(
+        PatientCard.objects.select_related(
+            'department', 'attending_doctor', 'department_head',
+            'discharge_conclusion', 'registered_by'
+        ),
+        pk=pk
+    )
+
+    # Ruxsat: bo'lim mudiri — bo'lim bo'yicha, davolovchi shifokor — o'z bemori,
+    # yoki taklif qilingan konsultant — faqat shu bemor bo'yicha
+    if not _doctor_card_access(doctor, patient):
+        messages.error(request, _("Siz bu bemorni ko'rishga ruxsatingiz yo'q."))
+        return redirect('doctor_dashboard')
+
+    from apps.services.models import PatientService, PatientMedicine, ServiceCategory
+    from apps.laboratory.models import LabOrderItem
+
+    service_categories = list(
+        ServiceCategory.objects.filter(is_active=True).order_by('name').values(
+            'id', 'name', 'category_type', 'icon',
+        )
+    )
+
+    address_parts = filter(None, [
+        str(patient.country) if patient.country else '',
+        str(patient.region) if patient.region else '',
+        str(patient.district) if patient.district else '',
+        str(patient.city) if patient.city else '',
+        patient.street_address or '',
+    ])
+    full_address = ', '.join(address_parts) or '—'
+
+    # 2-tab: Shifokor ko'riklari
+    examinations = patient.medical_examinations.select_related('created_by').order_by('-examination_datetime', '-created_at')
+    initial_exam = getattr(patient, 'initial_examination', None)
+
+    # 3-tab: Tibbiy muolajalar — barcha tayinlangan muolaja/dori, tahlil/laboratoriya va diagnostika
+    # tekshiruvlari bitta ro'yxatga birlashtiriladi, har biri o'z holati va natijasi bilan.
+    operations = patient.operations.select_related('operation_type').order_by('-operation_date')
+    diagnoses = patient.episode_diagnoses.select_related('icd10_code').all()
+
+    treatment_procedures = patient.treatment_procedures.select_related('assigned_by').prefetch_related('schedule_occurrences').order_by('-created_at')
+    lab_test_assignments = patient.lab_test_assignments.select_related('assigned_by').prefetch_related('result_logs__performed_by', 'schedule_occurrences').order_by('-created_at')
+    lab_order_items = LabOrderItem.objects.filter(order__patient_card=patient).select_related(
+        'template', 'result', 'patient_service__service', 'order'
+    ).order_by('-created_at')
+    diagnostic_assignments = patient.diagnostic_assignments.select_related('assigned_by').prefetch_related('result_logs__performed_by', 'schedule_occurrences').order_by('-created_at')
+
+    def _schedule_summary(occurrences):
+        occurrences = list(occurrences)
+        if not occurrences:
+            return ''
+        done_count = sum(1 for o in occurrences if o.status == 'done')
+        next_pending = next((o for o in occurrences if o.status == 'pending'), None)
+        when = timezone.localtime(next_pending.scheduled_at).strftime('%d.%m %H:%M') if next_pending else ''
+        if len(occurrences) == 1:
+            return f"Reja: {when}" if when else ''
+        suffix = f" — keyingisi {when}" if when else ''
+        return f"Reja: {done_count}/{len(occurrences)} bajarildi{suffix}"
+
+    ACTIVITY_BADGE_CLASS = {
+        'done': 'success', 'completed': 'success', 'verified': 'success', 'printed': 'success',
+        'in_progress': 'info', 'sample_taken': 'primary', 'result_entering': 'info',
+        'cancelled': 'secondary', 'rejected': 'secondary', 'recollect': 'secondary',
+    }
+
+    assigned_activity = []
+    for proc in treatment_procedures:
+        detail = proc.dosage or ''
+        if proc.quantity > 1:
+            detail = f"{detail} ×{proc.quantity}".strip()
+        sched = _schedule_summary(proc.schedule_occurrences.all())
+        if sched:
+            detail = f"{detail} · {sched}".strip(' ·')
+        assigned_activity.append({
+            'date': proc.created_at,
+            'category': _("Dori-darmon"),
+            'name': proc.medicine_name,
+            'detail': detail,
+            'status_display': proc.get_status_display(),
+            'badge_class': ACTIVITY_BADGE_CLASS.get(proc.status, 'warning'),
+            'view_url': None,
+            'print_url': None,
+        })
+    for a in lab_test_assignments:
+        is_done = a.status == 'done'
+        detail = a.notes
+        sched = _schedule_summary(a.schedule_occurrences.all())
+        if sched:
+            detail = f"{detail} · {sched}".strip(' ·')
+        assigned_activity.append({
+            'date': a.created_at,
+            'category': _("Laboratoriya"),
+            'name': a.test_name,
+            'detail': detail,
+            'status_display': a.get_status_display(),
+            'badge_class': ACTIVITY_BADGE_CLASS.get(a.status, 'warning'),
+            'view_url': reverse('lab_test_result_form', args=[a.pk]) if is_done else None,
+            'print_url': reverse('lab_test_result_print', args=[a.pk]) if is_done else None,
+        })
+    for item in lab_order_items:
+        result = item.result
+        print_url = reverse('lab_result_print', args=[result.pk]) if result else None
+        assigned_activity.append({
+            'date': item.created_at,
+            'category': _("Laboratoriya"),
+            'name': item.template.name if item.template else item.patient_service.service.name,
+            'detail': '',
+            'status_display': item.get_status_display(),
+            'badge_class': ACTIVITY_BADGE_CLASS.get(item.status, 'warning'),
+            'view_url': print_url,
+            'print_url': print_url,
+        })
+    for a in diagnostic_assignments:
+        is_done = a.status == 'done'
+        detail = a.notes
+        sched = _schedule_summary(a.schedule_occurrences.all())
+        if sched:
+            detail = f"{detail} · {sched}".strip(' ·')
+        assigned_activity.append({
+            'date': a.created_at,
+            'category': _("Diagnostika"),
+            'name': a.get_diagnostic_type_display(),
+            'detail': detail,
+            'status_display': a.get_status_display(),
+            'badge_class': ACTIVITY_BADGE_CLASS.get(a.status, 'warning'),
+            'view_url': reverse('diagnostic_result_form', args=[a.pk]) if is_done else None,
+            'print_url': reverse('diagnostic_result_print', args=[a.pk]) if is_done else None,
+        })
+    assigned_activity.sort(key=lambda x: x['date'], reverse=True)
+
+    procedures_badge_count = len(assigned_activity) + operations.count()
+
+    # 6-tab: Konsultatsiyalar — maxsus mutaxassis va konsilium ko'riklari + so'rovlar
+    consultations = examinations.filter(examination_type__in=['specialist', 'consilium', 'anesthesia'])
+    consultation_requests = patient.consultation_requests.select_related('requested_by').prefetch_related(
+        'consultants', 'responses__responded_by', 'schedule_occurrences'
+    ).order_by('-created_at')
+
+    # Retsept tab
+    prescriptions = patient.prescriptions.select_related('doctor').order_by('-created_at')
+
+    # 7-tab: Davolash yakuni
+    discharge_exam = examinations.filter(examination_type='discharge').first()
+
+    # 8-tab: Hisob-faktura
+    patient_services = PatientService.objects.filter(patient_card=patient).select_related('service__category', 'ordered_by').order_by('-ordered_at')
+    patient_medicines = PatientMedicine.objects.filter(patient_card=patient).select_related('medicine', 'ordered_by').order_by('-ordered_at')
+    services_total = sum(s.price * s.quantity for s in patient_services) or 0
+    medicines_total = sum(m.total_price for m in patient_medicines) or 0
+    grand_total = float(services_total or 0) + float(medicines_total or 0)
+
+    return render(request, 'patients/doctor/patient_card.html', {
+        'doctor': doctor,
+        'patient': patient,
+        'full_address': full_address,
+        'examinations': examinations,
+        'initial_exam': initial_exam,
+        'exam_type_choices': MedicalExamination.EXAM_TYPE_CHOICES,
+        'operations': operations,
+        'procedures_badge_count': procedures_badge_count,
+        'service_categories': service_categories,
+        'assigned_activity': assigned_activity,
+        'diagnoses': diagnoses,
+        'consultations': consultations,
+        'consultation_requests': consultation_requests,
+        'discharge_exam': discharge_exam,
+        'prescriptions': [_prescription_payload(p) for p in prescriptions],
+        'patient_services': patient_services,
+        'patient_medicines': patient_medicines,
+        'services_total': services_total,
+        'medicines_total': medicines_total,
+        'grand_total': grand_total,
+        'ambulatory_consultation': getattr(patient, 'ambulatory_consultation', None),
+        'doctors':              Doctor.objects.filter(is_active=True).select_related('department').order_by('department__name', 'full_name'),
+        'discharge_conclusions': DischargeConclusion.objects.filter(is_active=True).order_by('name'),
+        'outcome_choices':      PatientCard.OUTCOME_CHOICES,
+        'today':                timezone.localdate(),
+    })
+
+# ==================== AMBULATOR QABUL ====================
+
+@login_required
+def ambulatory_consultation_form(request, patient_id):
+    """Ambulator bemor uchun qabul natijasini kiritish sahifasi."""
+    doctor = _get_doctor_profile(request.user)
+    if not doctor:
+        return redirect('access_denied')
+
+    patient = get_object_or_404(PatientCard, pk=patient_id)
+    if not _doctor_card_access(doctor, patient):
+        messages.error(request, _("Siz bu bemorni ko'rishga ruxsatingiz yo'q."))
+        return redirect('doctor_dashboard')
+
+    consultation, _created = AmbulatoryConsultation.objects.get_or_create(
+        patient_card=patient, defaults={'doctor': doctor}
+    )
+
+    templates_by_kind = {}
+    for kind, _label in DoctorTextTemplate.KIND_CHOICES:
+        templates_by_kind[kind] = list(
+            DoctorTextTemplate.objects.filter(doctor=doctor, kind=kind).order_by('title')
+        )
+
+    from_consultation = ConsultationRequest.objects.filter(
+        patient_card=patient, consultants=doctor, status='in_progress'
+    ).exists()
+
+    return render(request, 'patients/ambulatory_consultation_form.html', {
+        'patient': patient,
+        'consultation': consultation,
+        'templates_result': templates_by_kind['result'],
+        'templates_recommendation': templates_by_kind['recommendation'],
+        'templates_conclusion': templates_by_kind['conclusion'],
+        'from_consultation': from_consultation,
+    })
+
+
+@login_required
+@require_POST
+def ambulatory_consultation_save(request, pk):
+    """AJAX: ambulator qabul natijasini saqlash / yakunlash."""
+    doctor = _get_doctor_profile(request.user)
+    if not doctor:
+        return JsonResponse({'success': False, 'error': _("Shifokor profili topilmadi")}, status=403)
+
+    consultation = get_object_or_404(AmbulatoryConsultation, pk=pk)
+    if not _doctor_card_access(doctor, consultation.patient_card):
+        return JsonResponse({'success': False, 'error': _("Ruxsat yo'q")}, status=403)
+
+    try:
+        payload = json.loads(request.body)
+    except (ValueError, TypeError):
+        return JsonResponse({'success': False, 'error': _("Noto'g'ri so'rov")}, status=400)
+
+    consultation.result = payload.get('result', '')
+    consultation.recommendation = payload.get('recommendation', '')
+    consultation.conclusion = payload.get('conclusion', '')
+
+    if payload.get('finish'):
+        consultation.status = 'completed'
+        consultation.finished_at = timezone.now()
+
+    consultation.save()
+
+    if payload.get('finish'):
+        if consultation.patient_card.status != 'completed':
+            consultation.patient_card.status = 'completed'
+            consultation.patient_card.save(update_fields=['status'])
+
+        ConsultationRequest.objects.filter(
+            patient_card=consultation.patient_card, consultants=doctor, status='in_progress'
+        ).update(status='done')
+
+    return JsonResponse({'success': True, 'status': consultation.status})
+
+
+@login_required
+def ambulatory_consultation_print(request, pk):
+    """Ambulator qabul natijasini chop etish uchun ko'rinish."""
+    doctor = _get_doctor_profile(request.user)
+    if not doctor:
+        return redirect('access_denied')
+
+    consultation = get_object_or_404(
+        AmbulatoryConsultation.objects.select_related('patient_card', 'doctor'), pk=pk
+    )
+    if not _doctor_card_access(doctor, consultation.patient_card):
+        messages.error(request, _("Siz bu bemorni ko'rishga ruxsatingiz yo'q."))
+        return redirect('doctor_dashboard')
+
+    import base64
+    from django.conf import settings as dj_settings
+    import os as _os
+
+    header_b64 = ''
+    for header_path in [
+        _os.path.join(dj_settings.STATIC_ROOT, 'img', 'hospital_header.png'),
+        _os.path.join(dj_settings.BASE_DIR, 'static', 'img', 'hospital_header.png'),
+    ]:
+        if _os.path.exists(header_path):
+            with open(header_path, 'rb') as f:
+                header_b64 = base64.b64encode(f.read()).decode()
+            break
+
+    return render(request, 'patients/ambulatory_consultation_print.html', {
+        'consultation': consultation,
+        'patient': consultation.patient_card,
+        'header_b64': header_b64,
+        'print_date': timezone.now(),
+    })
+
+
+@login_required
+@require_POST
+def doctor_template_create(request):
+    """AJAX: shifokor o'zi uchun yangi matn shabloni qo'shadi."""
+    doctor = _get_doctor_profile(request.user)
+    if not doctor:
+        return JsonResponse({'success': False, 'error': _("Shifokor profili topilmadi")}, status=403)
+
+    try:
+        payload = json.loads(request.body)
+    except (ValueError, TypeError):
+        return JsonResponse({'success': False, 'error': _("Noto'g'ri so'rov")}, status=400)
+
+    kind = payload.get('kind', '')
+    title = (payload.get('title') or '').strip()
+    body = (payload.get('body') or '').strip()
+
+    valid_kinds = dict(DoctorTextTemplate.KIND_CHOICES)
+    if kind not in valid_kinds:
+        return JsonResponse({'success': False, 'error': _("Noto'g'ri shablon turi")}, status=400)
+    if not title or not body:
+        return JsonResponse({'success': False, 'error': _("Nomi va matnini kiriting")}, status=400)
+
+    tmpl = DoctorTextTemplate.objects.create(doctor=doctor, kind=kind, title=title, body=body)
+    return JsonResponse({'success': True, 'id': tmpl.pk, 'title': tmpl.title, 'body': tmpl.body})
+
+
+# ==================== TIBBIY MUOLAJALAR — TAYINLASH (shifokor) ====================
+
+@require_POST
+@login_required
+def procedure_assign(request, pk):
+    """Shifokor bemorga muolaja tayinlaydi — bo'lim hamshiralariga avtomatik xabar boradi."""
+    doctor = _get_doctor_profile(request.user)
+    if not doctor:
+        return redirect('access_denied')
+
+    patient = get_object_or_404(PatientCard, pk=pk)
+    if doctor.is_head:
+        if patient.department_id != doctor.department_id:
+            return redirect('access_denied')
+    else:
+        if patient.attending_doctor_id != doctor.pk:
+            return redirect('access_denied')
+
+    medicine_name = request.POST.get('medicine_name', '').strip()
+    if not medicine_name:
+        messages.error(request, _("Dori vositasi nomini kiriting."))
+        return redirect('doctor_patient_card', pk=pk)
+
+    try:
+        quantity = int(request.POST.get('quantity') or 1)
+    except ValueError:
+        quantity = 1
+
+    procedure = TreatmentProcedure.objects.create(
+        patient_card=patient,
+        assigned_by=doctor,
+        medicine_name=medicine_name,
+        dosage=request.POST.get('dosage', '').strip(),
+        quantity=quantity,
+        schedule_note=request.POST.get('schedule_note', '').strip(),
+        medicine_source=request.POST.get('medicine_source') or 'clinic_stock',
+        notes=request.POST.get('notes', '').strip(),
+    )
+
+    # Bo'lim hamshiralariga bildirishnoma
+    if patient.department_id:
+        nurses = CustomUser.objects.filter(role__in=['nurse', 'head_nurse'], department_id=patient.department_id, is_active=True)
+        for nurse in nurses:
+            _notify_user(nurse, patient, f"Yangi muolaja tayinlandi: {patient.full_name} — {procedure.medicine_name}")
+
+    messages.success(request, _("✅ Muolaja tayinlandi: %(name)s") % {'name': procedure.medicine_name})
+    return redirect('doctor_patient_card', pk=pk)
+
+
+# ==================== HAMSHIRA KABINETI ====================
+
+NURSE_OVERDUE_HOURS = 4
+
+
+@login_required
+def nurse_dashboard(request):
+    if request.user.role not in ('nurse', 'head_nurse') and not request.user.is_superuser:
+        return redirect('access_denied')
+
+    is_head_nurse = request.user.role == 'head_nurse'
+
+    view_mode = request.GET.get('view', 'service')
+    if view_mode not in ('service', 'patient'):
+        view_mode = 'service'
+
+    qs = TreatmentProcedure.objects.select_related(
+        'patient_card', 'assigned_by'
+    ).prefetch_related('execution_logs__performed_by', 'schedule_occurrences')
+
+    if request.user.department_id:
+        qs = qs.filter(patient_card__department_id=request.user.department_id)
+
+    status = request.GET.get('status', '')
+    if status:
+        qs = qs.filter(status=status)
+    else:
+        qs = qs.exclude(status__in=['done', 'cancelled'])
+
+    query = request.GET.get('q', '')
+    if query:
+        qs = qs.filter(
+            Q(patient_card__full_name__icontains=query) |
+            Q(medicine_name__icontains=query)
+        )
+
+    qs = qs.order_by('-created_at')
+
+    paginator = Paginator(qs, 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    notifications = DoctorNotification.objects.filter(recipient=request.user).order_by('-created_at')[:8]
+
+    try:
+        highlight_patient_id = int(request.GET.get('patient') or 0) or None
+    except ValueError:
+        highlight_patient_id = None
+
+    context = {
+        'page_obj': page_obj,
+        'status': status,
+        'query': query,
+        'status_choices': TreatmentProcedure.STATUS_CHOICES,
+        'notifications': notifications,
+        'is_head_nurse': is_head_nurse,
+        'view_mode': view_mode,
+        'highlight_patient_id': highlight_patient_id,
+        'pending_count': TreatmentProcedure.objects.filter(
+            patient_card__department_id=request.user.department_id, status='assigned'
+        ).count() if request.user.department_id else 0,
+    }
+
+    if view_mode == 'patient':
+        date_str = request.GET.get('date', '')
+        try:
+            selected_date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else timezone.localdate()
+        except ValueError:
+            selected_date = timezone.localdate()
+
+        dept_patients = PatientCard.objects.filter(status='admitted')
+        if request.user.department_id:
+            dept_patients = dept_patients.filter(department_id=request.user.department_id)
+        if query:
+            dept_patients = dept_patients.filter(full_name__icontains=query)
+        dept_patients = list(dept_patients.order_by('full_name'))
+
+        occ_qs = ServiceSchedule.objects.filter(
+            Q(treatment_procedure__patient_card__in=dept_patients) |
+            Q(lab_test_assignment__patient_card__in=dept_patients) |
+            Q(diagnostic_assignment__patient_card__in=dept_patients) |
+            Q(consultation_request__patient_card__in=dept_patients),
+            scheduled_at__date__gte=selected_date,
+        ).select_related(
+            'treatment_procedure__patient_card', 'lab_test_assignment__patient_card',
+            'diagnostic_assignment__patient_card', 'consultation_request__patient_card',
+        ).order_by('scheduled_at')
+
+        by_patient = {}
+        for occ in occ_qs:
+            patient = occ.patient_card
+            if patient:
+                by_patient.setdefault(patient.pk, []).append(occ)
+
+        patient_rows = []
+        for p in dept_patients:
+            occs = by_patient.get(p.pk, [])
+            days = {}
+            for occ in occs:
+                d = timezone.localtime(occ.scheduled_at).date()
+                days.setdefault(d, []).append(occ)
+            day_groups = [{'date': d, 'occurrences': days[d]} for d in sorted(days.keys())]
+            patient_rows.append({'patient': p, 'day_groups': day_groups, 'total': len(occs)})
+
+        context.update({
+            'selected_date': selected_date,
+            'patient_rows': patient_rows,
+        })
+
+    if is_head_nurse and request.user.department_id:
+        today_start = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
+        overdue_cutoff = timezone.now() - timedelta(hours=NURSE_OVERDUE_HOURS)
+
+        dept_nurses = CustomUser.objects.filter(
+            role__in=['nurse', 'head_nurse'], department_id=request.user.department_id, is_active=True,
+        ).order_by('last_name', 'first_name')
+
+        nurse_stats = []
+        for n in dept_nurses:
+            nurse_stats.append({
+                'user': n,
+                'done_today': ProcedureExecutionLog.objects.filter(
+                    performed_by=n, performed_at__gte=today_start,
+                ).count(),
+                'done_total': ProcedureExecutionLog.objects.filter(performed_by=n).count(),
+            })
+
+        overdue_procedures = TreatmentProcedure.objects.select_related('patient_card', 'assigned_by').filter(
+            patient_card__department_id=request.user.department_id,
+            status='assigned',
+            created_at__lte=overdue_cutoff,
+        ).order_by('created_at')
+
+        context.update({
+            'nurse_stats': nurse_stats,
+            'overdue_procedures': overdue_procedures,
+            'overdue_hours': NURSE_OVERDUE_HOURS,
+        })
+
+    return render(request, 'patients/nurse/dashboard.html', context)
+
+
+@require_POST
+@login_required
+def procedure_log_execution(request, pk):
+    """Hamshira — muolajani bajarganini qayd qiladi (alohida log yozuvi)."""
+    if request.user.role not in ('nurse', 'head_nurse') and not request.user.is_superuser:
+        return redirect('access_denied')
+
+    procedure = get_object_or_404(TreatmentProcedure, pk=pk)
+    ProcedureExecutionLog.objects.create(
+        procedure=procedure,
+        performed_by=request.user,
+        comment=request.POST.get('comment', '').strip(),
+    )
+    if procedure.status == 'assigned':
+        procedure.status = 'in_progress'
+        procedure.save(update_fields=['status'])
+
+    if procedure.assigned_by:
+        _notify_doctor(
+            procedure.assigned_by, procedure.patient_card,
+            f"Muolaja bajarildi: {procedure.patient_card.full_name} — {procedure.medicine_name} ({request.user.get_full_name()})"
+        )
+
+    messages.success(request, _("✅ Bajarilish qayd etildi."))
+    return redirect('nurse_dashboard')
+
+
+@require_POST
+@login_required
+def procedure_update_status(request, pk):
+    """Hamshira — muolaja holatini o'zgartiradi (Bajarilgan / Bekor qilingan)."""
+    if request.user.role not in ('nurse', 'head_nurse') and not request.user.is_superuser:
+        return redirect('access_denied')
+
+    procedure = get_object_or_404(TreatmentProcedure, pk=pk)
+    new_status = request.POST.get('status')
+    if new_status in dict(TreatmentProcedure.STATUS_CHOICES):
+        procedure.status = new_status
+        procedure.save(update_fields=['status'])
+        _sync_billing_status(procedure)
+        if new_status == 'cancelled':
+            procedure.schedule_occurrences.filter(status='pending').update(status='cancelled')
+        messages.success(request, _("Holat yangilandi: %(status)s") % {'status': procedure.get_status_display()})
+    return redirect('nurse_dashboard')
+
+
+def _doctor_card_access(doctor, patient):
+    """Shifokor ushbu bemor kartasini ko'rishi mumkinmi."""
+    if doctor.is_general_practitioner:
+        return True
+    if doctor.user_id and doctor.user.role == 'old' and patient.department_id == doctor.department_id:
+        return True
+    if doctor.is_head and patient.department_id == doctor.department_id:
+        return True
+    if patient.attending_doctor_id == doctor.pk and patient.attending_doctor_confirmed:
+        return True
+    if ConsultationRequest.objects.filter(patient_card=patient, consultants=doctor).exists():
+        return True
+    if DiagnosticAssignment.objects.filter(patient_card=patient, assigned_by=doctor).exists():
+        return True
+    if LabTestAssignment.objects.filter(patient_card=patient, assigned_by=doctor).exists():
+        return True
+    if TreatmentProcedure.objects.filter(patient_card=patient, assigned_by=doctor).exists():
+        return True
+    return False
+
+
+# ==================== RETSEPT (shifokor -> bemor) ====================
+
+def _to_int(val):
+    try:
+        return int(val)
+    except (TypeError, ValueError):
+        return None
+
+
+def _to_date(val):
+    if not val:
+        return None
+    from datetime import date
+    try:
+        return date.fromisoformat(val)
+    except ValueError:
+        return None
+
+
+def _prescription_summary(p):
+    bits = []
+    if p.dose:
+        bits.append(p.dose)
+    if p.frequency_num:
+        unit_label = dict(Prescription.FREQUENCY_UNIT_CHOICES).get(p.frequency_unit, '')
+        bits.append(f"{unit_label} {p.frequency_num} marta".strip())
+    if p.duration_days:
+        bits.append(_("%(n)s kun") % {'n': p.duration_days})
+    return f"{p.drug_name} — {', '.join(bits)}" if bits else p.drug_name
+
+
+def _prescription_payload(p):
+    return {
+        'id': p.pk,
+        'drug_name': p.drug_name,
+        'dosage_form': p.dosage_form,
+        'dose': p.dose,
+        'frequency_num': p.frequency_num,
+        'frequency_unit': p.frequency_unit,
+        'single_dose': p.single_dose,
+        'method': p.method,
+        'duration_days': p.duration_days,
+        'intake_time': p.intake_time,
+        'date_start': p.date_start.isoformat() if p.date_start else '',
+        'date_end': p.date_end.isoformat() if p.date_end else '',
+        'total_quantity': p.total_quantity,
+        'note': p.note,
+        'created_at': timezone.localtime(p.created_at).strftime('%d.%m.%Y %H:%M'),
+        'summary': _prescription_summary(p),
+    }
+
+
+def _prescription_body(request):
+    try:
+        body = json.loads(request.body)
+    except (ValueError, TypeError):
+        return None
+    return body
+
+
+def _apply_prescription_fields(p, body):
+    p.drug_name      = (body.get('drug_name') or '').strip()
+    p.dosage_form    = (body.get('dosage_form') or '').strip()
+    p.dose           = (body.get('dose') or '').strip()
+    p.frequency_num  = _to_int(body.get('frequency_num'))
+    p.frequency_unit = body.get('frequency_unit') or 'День'
+    p.single_dose    = (body.get('single_dose') or '').strip()
+    p.method         = (body.get('method') or '').strip()
+    p.duration_days  = _to_int(body.get('duration_days'))
+    p.intake_time    = (body.get('intake_time') or '').strip()
+    p.date_start     = _to_date(body.get('date_start'))
+    p.date_end       = _to_date(body.get('date_end'))
+    p.total_quantity = (body.get('total_quantity') or '').strip()
+    p.note           = (body.get('note') or '').strip()
+
+
+def _prescription_occurrence_times(p):
+    """Retsept asosida hamshira uchun kunlik bandlar vaqtini hisoblaydi.
+    Faqat 'Kuniga' (День) birligi uchun kuniga necha marta dozani teng
+    taqsimlaydi; Haftada/Oyda uchun soddalashtirib kuniga 1 marta olinadi."""
+    if not p.date_start:
+        return []
+    from datetime import time as _time
+    duration = min(p.duration_days or 1, 60)
+    doses_per_day = p.frequency_num or 1
+    if p.frequency_unit != 'День' or doses_per_day < 1:
+        doses_per_day = 1
+    try:
+        hour, minute = (int(x) for x in p.intake_time.split(':'))
+    except (ValueError, AttributeError):
+        hour, minute = 9, 0
+    step_minutes = (24 * 60) // doses_per_day if doses_per_day > 1 else 0
+    tz = timezone.get_current_timezone()
+    times = []
+    for day_offset in range(duration):
+        day = p.date_start + timedelta(days=day_offset)
+        for dose_idx in range(doses_per_day):
+            total_minutes = (hour * 60 + minute + dose_idx * step_minutes) % (24 * 60)
+            h, m = divmod(total_minutes, 60)
+            times.append(timezone.make_aware(datetime.combine(day, _time(h, m)), tz))
+    return sorted(times)
+
+
+def _sync_prescription_schedule(p, patient, doctor):
+    """Retsept saqlanganda/yangilanganda bog'langan TreatmentProcedure va
+    bajarilmagan ServiceSchedule bandlarini retsept maydonlariga moslab
+    qayta hosil qiladi — shunda hamshira buni 'Bajariladigan ishlar'
+    ro'yxatida ko'radi."""
+    occurrence_times = _prescription_occurrence_times(p)
+    proc = p.treatment_procedure
+    is_new = proc is None
+    if is_new:
+        if not occurrence_times:
+            return
+        proc = TreatmentProcedure.objects.create(
+            patient_card=patient, assigned_by=doctor,
+            medicine_name=p.drug_name, dosage=p.dose,
+            quantity=len(occurrence_times), schedule_note=p.method, notes=p.note,
+        )
+        p.treatment_procedure = proc
+        p.save(update_fields=['treatment_procedure'])
+    else:
+        proc.medicine_name = p.drug_name
+        proc.dosage = p.dose
+        proc.quantity = len(occurrence_times) or proc.quantity
+        proc.schedule_note = p.method
+        proc.notes = p.note
+        proc.save(update_fields=['medicine_name', 'dosage', 'quantity', 'schedule_note', 'notes'])
+        proc.schedule_occurrences.filter(status='pending').delete()
+
+    _create_schedule_occurrences(occurrence_times, treatment_procedure=proc)
+
+    if is_new and patient.department_id:
+        for nurse in CustomUser.objects.filter(role__in=['nurse', 'head_nurse'], department_id=patient.department_id, is_active=True):
+            _notify_user(nurse, patient, f"Retsept bo'yicha yangi muolaja: {patient.full_name} — {p.drug_name}")
+
+
+@login_required
+@require_POST
+def prescription_add(request, pk):
+    doctor = _get_doctor_profile(request.user)
+    if not doctor:
+        return JsonResponse({'success': False, 'error': _("Shifokor profili topilmadi")}, status=403)
+    patient = get_object_or_404(PatientCard, pk=pk)
+    if not _doctor_card_access(doctor, patient):
+        return JsonResponse({'success': False, 'error': _("Ruxsat yo'q")}, status=403)
+    body = _prescription_body(request)
+    if body is None:
+        return JsonResponse({'success': False, 'error': _("Noto'g'ri so'rov")}, status=400)
+    if not (body.get('drug_name') or '').strip():
+        return JsonResponse({'success': False, 'error': _("Dori nomini kiriting")}, status=400)
+
+    p = Prescription(patient_card=patient, doctor=doctor)
+    _apply_prescription_fields(p, body)
+    p.save()
+    _sync_prescription_schedule(p, patient, doctor)
+    return JsonResponse({'success': True, 'prescription': _prescription_payload(p)})
+
+
+@login_required
+@require_POST
+def prescription_update(request, pk):
+    p = get_object_or_404(Prescription, pk=pk)
+    doctor = _get_doctor_profile(request.user)
+    if not doctor or not _doctor_card_access(doctor, p.patient_card):
+        return JsonResponse({'success': False, 'error': _("Ruxsat yo'q")}, status=403)
+    body = _prescription_body(request)
+    if body is None:
+        return JsonResponse({'success': False, 'error': _("Noto'g'ri so'rov")}, status=400)
+    if not (body.get('drug_name') or '').strip():
+        return JsonResponse({'success': False, 'error': _("Dori nomini kiriting")}, status=400)
+
+    _apply_prescription_fields(p, body)
+    p.save()
+    _sync_prescription_schedule(p, p.patient_card, p.doctor or doctor)
+    return JsonResponse({'success': True, 'prescription': _prescription_payload(p)})
+
+
+@login_required
+@require_POST
+def prescription_delete(request, pk):
+    p = get_object_or_404(Prescription, pk=pk)
+    doctor = _get_doctor_profile(request.user)
+    if not doctor or not _doctor_card_access(doctor, p.patient_card):
+        return JsonResponse({'success': False, 'error': _("Ruxsat yo'q")}, status=403)
+    if p.treatment_procedure_id:
+        p.treatment_procedure.delete()
+    p.delete()
+    return JsonResponse({'success': True})
+
+
+@login_required
+def prescription_print(request, pk):
+    p = get_object_or_404(Prescription.objects.select_related('patient_card', 'doctor'), pk=pk)
+    doctor = _get_doctor_profile(request.user)
+    if not doctor or not _doctor_card_access(doctor, p.patient_card):
+        messages.error(request, _("Siz bu bemorni ko'rishga ruxsatingiz yo'q."))
+        return redirect('doctor_dashboard')
+
+    import base64
+    from django.conf import settings as dj_settings
+    import os as _os
+
+    header_b64 = ''
+    for header_path in [
+        _os.path.join(dj_settings.STATIC_ROOT, 'img', 'hospital_header.png'),
+        _os.path.join(dj_settings.BASE_DIR, 'static', 'img', 'hospital_header.png'),
+    ]:
+        if _os.path.exists(header_path):
+            with open(header_path, 'rb') as f:
+                header_b64 = base64.b64encode(f.read()).decode()
+            break
+
+    return render(request, 'patients/prescription_print.html', {
+        'p': p,
+        'patient': p.patient_card,
+        'header_b64': header_b64,
+        'print_date': timezone.now(),
+    })
+
+
+# ==================== YOZUV QO'SHISH — XIZMATLAR KATALOGIDAN PAKET TAYINLASH ====================
+
+_DIAGNOSTIC_TYPE_KEYWORDS = [
+    ('rentgen',     ['rentgen']),
+    ('uzi',         ['uzi', 'ultratovush']),
+    ('mrt',         ['mrt']),
+    ('ekg',         ['kardiologiya', 'ekg']),
+    ('kt',          ['kompyuter tomografiya']),
+    ('endoskopiya', ['endoskopiya']),
+]
+
+
+def _guess_diagnostic_type(category_name):
+    name_lower = (category_name or '').lower()
+    for dtype, keywords in _DIAGNOSTIC_TYPE_KEYWORDS:
+        if any(kw in name_lower for kw in keywords):
+            return dtype
+    return 'other'
+
+
+_BILLING_STATUS_MAP = {
+    'assigned': 'ordered', 'sample_taken': 'in_progress', 'in_progress': 'in_progress',
+    'done': 'completed', 'cancelled': 'cancelled',
+}
+
+
+def _sync_billing_status(obj):
+    """Tayinlangan muolaja/tahlil/diagnostika/konsultatsiya holati o'zgarganda,
+    unga bog'langan hisob-faktura (PatientService) yozuvi holatini ham moslashtiradi."""
+    ps = getattr(obj, 'patient_service', None)
+    if not ps:
+        return
+    new_status = _BILLING_STATUS_MAP.get(obj.status)
+    if new_status and ps.status != new_status:
+        ps.status = new_status
+        ps.save(update_fields=['status'])
+
+
+def _create_billing_record(patient, service, doctor, quantity, notes):
+    from apps.services.models import PatientService
+    return PatientService.objects.create(
+        patient_card=patient, service=service, quantity=quantity,
+        price=service.price_for_patient(patient.patient_category or 'railway'),
+        patient_category_at_order=patient.patient_category or 'railway',
+        ordered_by=doctor, notes=notes,
+    )
+
+
+def _parse_schedule_occurrences(item):
+    """Savatcha elementidagi sana/vaqt/necha-kun maydonlaridan ServiceSchedule
+    uchun rejalashtirilgan vaqtlar ro'yxatini hosil qiladi (kun sayin bittadan)."""
+    sched_date_str = (item.get('scheduled_date') or '').strip()
+    if not sched_date_str:
+        return []
+    sched_time_str = (item.get('scheduled_time') or '09:00').strip() or '09:00'
+    try:
+        base_date = datetime.strptime(sched_date_str, '%Y-%m-%d').date()
+        base_time = datetime.strptime(sched_time_str, '%H:%M').time()
+    except ValueError:
+        return []
+    try:
+        repeat_days = max(1, min(60, int(item.get('repeat_days') or 1)))
+    except (TypeError, ValueError):
+        repeat_days = 1
+    tz = timezone.get_current_timezone()
+    return [
+        timezone.make_aware(datetime.combine(base_date + timedelta(days=i), base_time), tz)
+        for i in range(repeat_days)
+    ]
+
+
+def _create_schedule_occurrences(occurrence_times, **target_kwargs):
+    if occurrence_times:
+        ServiceSchedule.objects.bulk_create([
+            ServiceSchedule(scheduled_at=dt, **target_kwargs) for dt in occurrence_times
+        ])
+
+
+@require_POST
+@login_required
+def assign_services(request, pk):
+    """Shifokor — xizmatlar katalogidan (istalgan kategoriya) bir nechta yozuvni bir vaqtda tayinlaydi.
+    Har bir xizmatga ixtiyoriy ravishda aniq bir biriktirilgan shifokor va izoh ko'rsatilishi mumkin."""
+    from apps.services.models import Service
+
+    doctor = _get_doctor_profile(request.user)
+    if not doctor:
+        return JsonResponse({'success': False, 'error': _("Shifokor profili topilmadi")}, status=403)
+    patient = get_object_or_404(PatientCard, pk=pk)
+    if not _doctor_card_access(doctor, patient):
+        return JsonResponse({'success': False, 'error': _("Ruxsat yo'q")}, status=403)
+
+    try:
+        payload = json.loads(request.body)
+    except (ValueError, TypeError):
+        return JsonResponse({'success': False, 'error': _("Noto'g'ri so'rov")}, status=400)
+
+    items = payload.get('items') or []
+    if not items:
+        return JsonResponse({'success': False, 'error': _("Kamida bitta xizmat tanlang")}, status=400)
+
+    created_lab, created_diag, created_proc, created_consult = [], [], [], []
+
+    for item in items:
+        service = Service.objects.filter(
+            pk=item.get('service_id'), is_active=True
+        ).select_related('category').first()
+        if not service:
+            continue
+        notes = (item.get('notes') or '').strip()
+        category_type = service.category.category_type
+
+        chosen_doctor = None
+        doctor_id = item.get('doctor_id')
+        if doctor_id:
+            chosen_doctor = service.assigned_doctors.filter(pk=doctor_id, is_active=True).first()
+
+        occurrence_times = _parse_schedule_occurrences(item)
+        quantity = len(occurrence_times) if occurrence_times else 1
+        billing = _create_billing_record(patient, service, doctor, quantity, notes)
+
+        if category_type == 'consultation':
+            consultation = ConsultationRequest.objects.create(
+                patient_card=patient, requested_by=doctor, service=service, reason=notes,
+                patient_service=billing,
+            )
+            if chosen_doctor:
+                consultation.consultants.set([chosen_doctor])
+                _notify_doctor(chosen_doctor, patient, f"Sizga konsultatsiya so'rovi yuborildi: {patient.full_name} — {service.name}")
+            _create_schedule_occurrences(occurrence_times, consultation_request=consultation)
+            created_consult.append(consultation)
+            continue
+
+        if category_type == 'lab':
+            obj = LabTestAssignment.objects.create(
+                patient_card=patient, assigned_by=doctor, service=service,
+                test_name=service.name, notes=notes, patient_service=billing,
+            )
+            _create_schedule_occurrences(occurrence_times, lab_test_assignment=obj)
+            created_lab.append(obj)
+        elif category_type == 'radiology':
+            obj = DiagnosticAssignment.objects.create(
+                patient_card=patient, assigned_by=doctor, service=service,
+                diagnostic_type=_guess_diagnostic_type(service.category.name), notes=notes,
+                patient_service=billing,
+            )
+            _create_schedule_occurrences(occurrence_times, diagnostic_assignment=obj)
+            created_diag.append(obj)
+        else:
+            obj = TreatmentProcedure.objects.create(
+                patient_card=patient, assigned_by=doctor, service=service,
+                medicine_name=service.name, quantity=quantity, notes=notes, patient_service=billing,
+            )
+            _create_schedule_occurrences(occurrence_times, treatment_procedure=obj)
+            created_proc.append(obj)
+
+        if chosen_doctor and chosen_doctor.user_id:
+            extra = f" — {notes}" if notes else ''
+            _notify_doctor(chosen_doctor, patient, f"Sizga {service.name} bo'yicha bemor biriktirildi: {patient.full_name}{extra}")
+
+    if created_lab:
+        for laborant in CustomUser.objects.filter(role='laborant', is_active=True):
+            _notify_user(laborant, patient, f"Yangi tahlil(lar) tayinlandi: {patient.full_name} ({len(created_lab)} ta)")
+    if created_diag:
+        for d in CustomUser.objects.filter(role='diagnostician', is_active=True):
+            _notify_user(d, patient, f"Yangi diagnostika tekshiruv(lar)i tayinlandi: {patient.full_name} ({len(created_diag)} ta)")
+    if created_proc and patient.department_id:
+        for nurse in CustomUser.objects.filter(role__in=['nurse', 'head_nurse'], department_id=patient.department_id, is_active=True):
+            _notify_user(nurse, patient, f"Yangi muolaja(lar) tayinlandi: {patient.full_name} ({len(created_proc)} ta)")
+    total = len(created_lab) + len(created_diag) + len(created_proc) + len(created_consult)
+    if total == 0:
+        return JsonResponse({'success': False, 'error': _("Hech narsa tayinlanmadi")}, status=400)
+
+    return JsonResponse({
+        'success': True,
+        'lab_count': len(created_lab),
+        'diagnostic_count': len(created_diag),
+        'procedure_count': len(created_proc),
+        'consultation_count': len(created_consult),
+    })
+
+
+# ==================== LABORATORIYA — SHIFOKOR TAYINLASH VA LABORANT NAVBATI ====================
+
+@require_POST
+@login_required
+def lab_test_assign(request, pk):
+    """Shifokor — bemorga laboratoriya tahlilini tayinlaydi va laborantlarga xabar yuboradi."""
+    doctor = _get_doctor_profile(request.user)
+    if not doctor:
+        return redirect('access_denied')
+    patient = get_object_or_404(PatientCard, pk=pk)
+    if not _doctor_card_access(doctor, patient):
+        return redirect('access_denied')
+
+    test_name = request.POST.get('test_name', '').strip()
+    if not test_name:
+        messages.error(request, _("Tahlil nomini kiriting."))
+        return redirect('doctor_patient_card', pk=pk)
+
+    assignment = LabTestAssignment.objects.create(
+        patient_card=patient, assigned_by=doctor, test_name=test_name,
+        notes=request.POST.get('notes', '').strip(),
+    )
+    for laborant in CustomUser.objects.filter(role='laborant', is_active=True):
+        _notify_user(laborant, patient, f"Yangi tahlil tayinlandi: {patient.full_name} — {assignment.test_name}")
+    messages.success(request, _("✅ Tahlil tayinlandi: %(name)s") % {'name': assignment.test_name})
+    return redirect('doctor_patient_card', pk=pk)
+
+
+@login_required
+def lab_assignment_queue(request):
+    """Laborant — shifokorlar tayinlagan tahlillar navbati."""
+    if request.user.role != 'laborant' and not request.user.is_superuser:
+        return redirect('access_denied')
+    qs = LabTestAssignment.objects.select_related('patient_card', 'assigned_by').prefetch_related('schedule_occurrences')
+    status = request.GET.get('status', '')
+    if status:
+        qs = qs.filter(status=status)
+    else:
+        qs = qs.exclude(status__in=['done', 'cancelled'])
+    query = request.GET.get('q', '')
+    if query:
+        qs = qs.filter(Q(patient_card__full_name__icontains=query) | Q(test_name__icontains=query))
+    qs = qs.order_by('-created_at')
+    paginator = Paginator(qs, 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    notifications = DoctorNotification.objects.filter(recipient=request.user).order_by('-created_at')[:8]
+    return render(request, 'patients/laborant/queue.html', {
+        'page_obj': page_obj, 'status': status, 'query': query,
+        'status_choices': LabTestAssignment.STATUS_CHOICES, 'notifications': notifications,
+        'pending_count': LabTestAssignment.objects.filter(status='assigned').count(),
+    })
+
+
+@login_required
+def lab_test_result_form(request, pk):
+    """Laborant — tahlil natijasini kiritish/ko'rish sahifasi (tayinlagan shifokor ham faqat ko'rish uchun kira oladi)."""
+    assignment = get_object_or_404(LabTestAssignment.objects.select_related('patient_card', 'assigned_by'), pk=pk)
+    is_laborant = request.user.role == 'laborant' or request.user.is_superuser
+    doctor_viewer = _get_doctor_profile(request.user)
+    if not is_laborant and not (doctor_viewer and _doctor_card_access(doctor_viewer, assignment.patient_card)):
+        return redirect('access_denied')
+
+    if is_laborant and assignment.status in ('assigned', 'sample_taken'):
+        assignment.status = 'in_progress'
+        assignment.save(update_fields=['status'])
+        _sync_billing_status(assignment)
+
+    result_log, _created = LabTestResultLog.objects.get_or_create(
+        assignment=assignment, defaults={'performed_by': request.user}
+    )
+
+    return render(request, 'patients/laborant/result_form.html', {
+        'assignment': assignment,
+        'patient': assignment.patient_card,
+        'result_log': result_log,
+    })
+
+
+@require_POST
+@login_required
+def lab_test_result_save(request, pk):
+    """AJAX — laborant natijani saqlaydi/yakunlaydi."""
+    if request.user.role != 'laborant' and not request.user.is_superuser:
+        return JsonResponse({'success': False, 'error': _("Ruxsat yo'q")}, status=403)
+    assignment = get_object_or_404(LabTestAssignment, pk=pk)
+
+    try:
+        payload = json.loads(request.body)
+    except ValueError:
+        return JsonResponse({'success': False, 'error': _("Noto'g'ri so'rov")}, status=400)
+
+    result_log, _created = LabTestResultLog.objects.get_or_create(
+        assignment=assignment, defaults={'performed_by': request.user}
+    )
+    result_log.result_text = payload.get('result_text', '').strip()
+    result_log.recommendation = payload.get('recommendation', '').strip()
+    result_log.comment = payload.get('comment', '').strip()
+    result_log.performed_by = request.user
+    result_log.save(update_fields=['result_text', 'recommendation', 'comment', 'performed_by'])
+
+    if payload.get('finish'):
+        assignment.status = 'done'
+        assignment.save(update_fields=['status'])
+        _sync_billing_status(assignment)
+        if assignment.assigned_by:
+            _notify_doctor(assignment.assigned_by, assignment.patient_card, f"Tahlil natijasi kiritildi: {assignment.patient_card.full_name} — {assignment.test_name} ({request.user.get_full_name()})")
+
+    return JsonResponse({'success': True, 'status': assignment.status})
+
+
+@login_required
+def lab_test_result_print(request, pk):
+    """Oddiy laboratoriya tahlili natijasini chop etish uchun toza (shapkali) ko'rinish."""
+    assignment = get_object_or_404(LabTestAssignment.objects.select_related('patient_card', 'assigned_by'), pk=pk)
+    is_laborant = request.user.role == 'laborant' or request.user.is_superuser
+    doctor = _get_doctor_profile(request.user)
+    if not is_laborant and not (doctor and _doctor_card_access(doctor, assignment.patient_card)):
+        return redirect('access_denied')
+    result_log = assignment.result_logs.first()
+
+    import base64
+    from django.conf import settings as dj_settings
+    import os as _os
+
+    header_b64 = ''
+    for header_path in [
+        _os.path.join(dj_settings.STATIC_ROOT, 'img', 'hospital_header.png'),
+        _os.path.join(dj_settings.BASE_DIR, 'static', 'img', 'hospital_header.png'),
+    ]:
+        if _os.path.exists(header_path):
+            with open(header_path, 'rb') as f:
+                header_b64 = base64.b64encode(f.read()).decode()
+            break
+
+    return render(request, 'patients/laborant/result_print.html', {
+        'assignment': assignment,
+        'patient': assignment.patient_card,
+        'result_log': result_log,
+        'header_b64': header_b64,
+        'print_date': timezone.now(),
+    })
+
+
+@require_POST
+@login_required
+def lab_test_update_status(request, pk):
+    """Laborant — tahlil holatini o'zgartiradi."""
+    if request.user.role != 'laborant' and not request.user.is_superuser:
+        return redirect('access_denied')
+    assignment = get_object_or_404(LabTestAssignment, pk=pk)
+    new_status = request.POST.get('status')
+    if new_status in dict(LabTestAssignment.STATUS_CHOICES):
+        assignment.status = new_status
+        assignment.save(update_fields=['status'])
+        _sync_billing_status(assignment)
+        if new_status == 'cancelled':
+            assignment.schedule_occurrences.filter(status='pending').update(status='cancelled')
+        messages.success(request, _("Holat yangilandi: %(status)s") % {'status': assignment.get_status_display()})
+    return redirect('lab_assignment_queue')
+
+
+# ==================== DIAGNOSTIKA — SHIFOKOR TAYINLASH VA DIAGNOST NAVBATI ====================
+
+@require_POST
+@login_required
+def diagnostic_assign(request, pk):
+    """Shifokor — bemorga diagnostika tekshiruvini tayinlaydi va diagnostlarga xabar yuboradi."""
+    doctor = _get_doctor_profile(request.user)
+    if not doctor:
+        return redirect('access_denied')
+    patient = get_object_or_404(PatientCard, pk=pk)
+    if not _doctor_card_access(doctor, patient):
+        return redirect('access_denied')
+
+    diagnostic_type = request.POST.get('diagnostic_type')
+    if diagnostic_type not in dict(DiagnosticAssignment.TYPE_CHOICES):
+        messages.error(request, _("Tekshiruv turini tanlang."))
+        return redirect('doctor_patient_card', pk=pk)
+
+    assignment = DiagnosticAssignment.objects.create(
+        patient_card=patient, assigned_by=doctor, diagnostic_type=diagnostic_type,
+        notes=request.POST.get('notes', '').strip(),
+    )
+    for d in CustomUser.objects.filter(role='diagnostician', is_active=True):
+        _notify_user(d, patient, f"Yangi diagnostika tayinlandi: {patient.full_name} — {assignment.get_diagnostic_type_display()}")
+    messages.success(request, _("✅ Diagnostika tayinlandi: %(name)s") % {'name': assignment.get_diagnostic_type_display()})
+    return redirect('doctor_patient_card', pk=pk)
+
+
+@login_required
+def diagnostic_queue(request):
+    """Diagnost — shifokorlar tayinlagan diagnostika tekshiruvlari navbati."""
+    if request.user.role != 'diagnostician' and not request.user.is_superuser:
+        return redirect('access_denied')
+    qs = DiagnosticAssignment.objects.select_related('patient_card', 'assigned_by').prefetch_related('schedule_occurrences')
+    status = request.GET.get('status', '')
+    if status:
+        qs = qs.filter(status=status)
+    else:
+        qs = qs.exclude(status__in=['done', 'cancelled'])
+    query = request.GET.get('q', '')
+    if query:
+        qs = qs.filter(Q(patient_card__full_name__icontains=query) | Q(diagnostic_type__icontains=query))
+    qs = qs.order_by('-created_at')
+    paginator = Paginator(qs, 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    notifications = DoctorNotification.objects.filter(recipient=request.user).order_by('-created_at')[:8]
+    return render(request, 'patients/diagnostician/queue.html', {
+        'page_obj': page_obj, 'status': status, 'query': query,
+        'status_choices': DiagnosticAssignment.STATUS_CHOICES, 'notifications': notifications,
+        'pending_count': DiagnosticAssignment.objects.filter(status='assigned').count(),
+    })
+
+
+@login_required
+def diagnostic_result_form(request, pk):
+    """Diagnost — tekshiruv natijasini kiritish/ko'rish sahifasi (tayinlagan shifokor ham faqat ko'rish uchun kira oladi)."""
+    assignment = get_object_or_404(DiagnosticAssignment.objects.select_related('patient_card', 'assigned_by'), pk=pk)
+    is_diagnostician = request.user.role == 'diagnostician' or request.user.is_superuser
+    doctor_viewer = _get_doctor_profile(request.user)
+    if not is_diagnostician and not (doctor_viewer and _doctor_card_access(doctor_viewer, assignment.patient_card)):
+        return redirect('access_denied')
+
+    if is_diagnostician and assignment.status == 'assigned':
+        assignment.status = 'in_progress'
+        assignment.save(update_fields=['status'])
+        _sync_billing_status(assignment)
+
+    result_log, _created = DiagnosticResultLog.objects.get_or_create(
+        assignment=assignment, defaults={'performed_by': request.user}
+    )
+
+    return render(request, 'patients/diagnostician/result_form.html', {
+        'assignment': assignment,
+        'patient': assignment.patient_card,
+        'result_log': result_log,
+    })
+
+
+@require_POST
+@login_required
+def diagnostic_result_save(request, pk):
+    """AJAX — diagnost natijani saqlaydi/yakunlaydi."""
+    if request.user.role != 'diagnostician' and not request.user.is_superuser:
+        return JsonResponse({'success': False, 'error': _("Ruxsat yo'q")}, status=403)
+    assignment = get_object_or_404(DiagnosticAssignment, pk=pk)
+
+    try:
+        payload = json.loads(request.body)
+    except ValueError:
+        return JsonResponse({'success': False, 'error': _("Noto'g'ri so'rov")}, status=400)
+
+    result_log, _created = DiagnosticResultLog.objects.get_or_create(
+        assignment=assignment, defaults={'performed_by': request.user}
+    )
+    result_log.conclusion = payload.get('conclusion', '').strip()
+    result_log.recommendation = payload.get('recommendation', '').strip()
+    result_log.comment = payload.get('comment', '').strip()
+    result_log.performed_by = request.user
+    result_log.save(update_fields=['conclusion', 'recommendation', 'comment', 'performed_by'])
+
+    if payload.get('finish'):
+        assignment.status = 'done'
+        assignment.save(update_fields=['status'])
+        _sync_billing_status(assignment)
+        if assignment.assigned_by:
+            _notify_doctor(assignment.assigned_by, assignment.patient_card, f"Diagnostika natijasi kiritildi: {assignment.patient_card.full_name} — {assignment.get_diagnostic_type_display()} ({request.user.get_full_name()})")
+
+    return JsonResponse({'success': True, 'status': assignment.status})
+
+
+@login_required
+def diagnostic_result_print(request, pk):
+    """Diagnostika natijasini chop etish uchun toza (shapkali) ko'rinish."""
+    assignment = get_object_or_404(DiagnosticAssignment.objects.select_related('patient_card', 'assigned_by'), pk=pk)
+    is_diagnostician = request.user.role == 'diagnostician' or request.user.is_superuser
+    doctor = _get_doctor_profile(request.user)
+    if not is_diagnostician and not (doctor and _doctor_card_access(doctor, assignment.patient_card)):
+        return redirect('access_denied')
+    result_log = assignment.result_logs.first()
+
+    import base64
+    from django.conf import settings as dj_settings
+    import os as _os
+
+    header_b64 = ''
+    for header_path in [
+        _os.path.join(dj_settings.STATIC_ROOT, 'img', 'hospital_header.png'),
+        _os.path.join(dj_settings.BASE_DIR, 'static', 'img', 'hospital_header.png'),
+    ]:
+        if _os.path.exists(header_path):
+            with open(header_path, 'rb') as f:
+                header_b64 = base64.b64encode(f.read()).decode()
+            break
+
+    return render(request, 'patients/diagnostician/result_print.html', {
+        'assignment': assignment,
+        'patient': assignment.patient_card,
+        'result_log': result_log,
+        'header_b64': header_b64,
+        'print_date': timezone.now(),
+    })
+
+
+@require_POST
+@login_required
+def diagnostic_update_status(request, pk):
+    """Diagnost — tekshiruv holatini o'zgartiradi."""
+    if request.user.role != 'diagnostician' and not request.user.is_superuser:
+        return redirect('access_denied')
+    assignment = get_object_or_404(DiagnosticAssignment, pk=pk)
+    new_status = request.POST.get('status')
+    if new_status in dict(DiagnosticAssignment.STATUS_CHOICES):
+        assignment.status = new_status
+        assignment.save(update_fields=['status'])
+        _sync_billing_status(assignment)
+        if new_status == 'cancelled':
+            assignment.schedule_occurrences.filter(status='pending').update(status='cancelled')
+        messages.success(request, _("Holat yangilandi: %(status)s") % {'status': assignment.get_status_display()})
+    return redirect('diagnostic_queue')
+
+
+# ==================== KONSULTATSIYALAR ====================
+
+@require_POST
+@login_required
+def consultation_request_create(request, pk):
+    """Shifokor — xizmatlar katalogidagi konsultatsiya xizmatini va unga biriktirilgan mutaxassis(lar)ni tanlab so'rov yuboradi."""
+    from apps.services.models import Service
+
+    doctor = _get_doctor_profile(request.user)
+    if not doctor:
+        return redirect('access_denied')
+    patient = get_object_or_404(PatientCard, pk=pk)
+    if not _doctor_card_access(doctor, patient):
+        return redirect('access_denied')
+
+    service = Service.objects.filter(
+        pk=request.POST.get('service_id'), is_active=True, category__category_type='consultation',
+    ).first()
+    if not service:
+        messages.error(request, _("Konsultatsiya xizmatini tanlang."))
+        return redirect('doctor_patient_card', pk=pk)
+
+    consultant_ids = request.POST.getlist('consultants')
+    # Faqat shu xizmatga biriktirilgan faol shifokorlar orasidan tanlash mumkin
+    consultants = list(service.assigned_doctors.filter(pk__in=consultant_ids, is_active=True))
+    if not consultants:
+        messages.error(request, _("Kamida bitta mutaxassisni tanlang."))
+        return redirect('doctor_patient_card', pk=pk)
+
+    consultation = ConsultationRequest.objects.create(
+        patient_card=patient, requested_by=doctor, service=service,
+        reason=request.POST.get('reason', '').strip(),
+    )
+    consultation.consultants.set(consultants)
+    for consultant in consultants:
+        _notify_doctor(consultant, patient, f"Sizga konsultatsiya so'rovi yuborildi: {patient.full_name} — {consultation.display_label}")
+    messages.success(request, _("✅ Konsultatsiya so'rovi yuborildi: %(label)s") % {'label': consultation.display_label})
+    return redirect('doctor_patient_card', pk=pk)
+
+
+@require_POST
+@login_required
+def consultation_respond(request, pk):
+    """Taklif qilingan mutaxassis — konsultatsiya so'roviga xulosa/javob yozadi."""
+    doctor = _get_doctor_profile(request.user)
+    if not doctor:
+        return redirect('access_denied')
+    consultation = get_object_or_404(ConsultationRequest, pk=pk)
+    if not consultation.consultants.filter(pk=doctor.pk).exists() and not request.user.is_superuser:
+        return redirect('access_denied')
+
+    conclusion = request.POST.get('conclusion', '').strip()
+    if not conclusion:
+        messages.error(request, _("Xulosa matnini kiriting."))
+        return redirect('doctor_patient_card', pk=consultation.patient_card_id)
+
+    ConsultationResponse.objects.create(
+        request=consultation, responded_by=request.user, conclusion=conclusion,
+        comment=request.POST.get('comment', '').strip(),
+    )
+    if consultation.status == 'assigned':
+        consultation.status = 'in_progress'
+        consultation.save(update_fields=['status'])
+    if consultation.requested_by:
+        _notify_doctor(consultation.requested_by, consultation.patient_card, f"Konsultatsiya javobi keldi: {consultation.patient_card.full_name} — {consultation.display_label} ({doctor.full_name})")
+    messages.success(request, _("✅ Javob yuborildi."))
+    return redirect('doctor_patient_card', pk=consultation.patient_card_id)
+
+
+@require_POST
+@login_required
+def consultation_update_status(request, pk):
+    """So'rov yuborgan shifokor — konsultatsiyani yakunlaydi yoki bekor qiladi."""
+    doctor = _get_doctor_profile(request.user)
+    if not doctor:
+        return redirect('access_denied')
+    consultation = get_object_or_404(ConsultationRequest, pk=pk)
+    if consultation.requested_by_id != doctor.pk and not request.user.is_superuser:
+        return redirect('access_denied')
+    new_status = request.POST.get('status')
+    if new_status in dict(ConsultationRequest.STATUS_CHOICES):
+        consultation.status = new_status
+        consultation.save(update_fields=['status'])
+        _sync_billing_status(consultation)
+        if new_status == 'cancelled':
+            consultation.schedule_occurrences.filter(status='pending').update(status='cancelled')
+        messages.success(request, _("Holat yangilandi: %(status)s") % {'status': consultation.get_status_display()})
+    return redirect('doctor_patient_card', pk=consultation.patient_card_id)
+
+
+@require_POST
+@login_required
+def consultation_start(request, pk):
+    """Taklif qilingan mutaxassis — konsultatsiya so'rovini boshlaydi, bemorga
+    ko'rik qo'shish oynasiga yo'naltiriladi."""
+    doctor = _get_doctor_profile(request.user)
+    if not doctor:
+        return redirect('access_denied')
+    consultation = get_object_or_404(ConsultationRequest, pk=pk)
+    if not consultation.consultants.filter(pk=doctor.pk).exists() and not request.user.is_superuser:
+        return redirect('access_denied')
+
+    if consultation.status == 'assigned':
+        consultation.status = 'in_progress'
+        consultation.save(update_fields=['status'])
+
+    return redirect('ambulatory_consultation_form', patient_id=consultation.patient_card_id)
+
+
+@require_POST
+@login_required
+def consultation_cancel(request, pk):
+    """Taklif qilingan mutaxassis — konsultatsiya so'rovini sabab bilan bekor qiladi."""
+    doctor = _get_doctor_profile(request.user)
+    if not doctor:
+        return redirect('access_denied')
+    consultation = get_object_or_404(ConsultationRequest, pk=pk)
+    if not consultation.consultants.filter(pk=doctor.pk).exists() and not request.user.is_superuser:
+        return redirect('access_denied')
+
+    reason = request.POST.get('cancel_reason', '').strip()
+    if not reason:
+        messages.error(request, _("Bekor qilish sababini kiriting."))
+        return redirect('doctor_consultation_inbox')
+
+    consultation.status = 'cancelled'
+    consultation.cancel_reason = reason
+    consultation.save(update_fields=['status', 'cancel_reason'])
+
+    if consultation.requested_by:
+        _notify_doctor(
+            consultation.requested_by, consultation.patient_card,
+            _("Konsultatsiya so'rovi bekor qilindi: %(name)s — %(label)s. Sabab: %(reason)s") % {
+                'name': consultation.patient_card.full_name,
+                'label': consultation.display_label,
+                'reason': reason,
+            }
+        )
+    messages.success(request, _("So'rov bekor qilindi."))
+    return redirect('doctor_consultation_inbox')
+
+
+@login_required
+def doctor_consultation_inbox(request):
+    """Shifokor — unga taklif sifatida yuborilgan konsultatsiya so'rovlari ro'yxati."""
+    doctor = _get_doctor_profile(request.user)
+    if not doctor:
+        return redirect('access_denied')
+    qs = ConsultationRequest.objects.filter(consultants=doctor).select_related(
+        'patient_card', 'requested_by'
+    ).prefetch_related('responses__responded_by').order_by('-created_at')
+    return render(request, 'patients/doctor/consultation_inbox.html', {
+        'doctor': doctor,
+        'consultations': qs,
+        'pending_count': qs.filter(status='assigned').count(),
+    })

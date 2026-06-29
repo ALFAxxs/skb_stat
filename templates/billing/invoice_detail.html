@@ -1,0 +1,398 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}{% blocktrans with name=patient.full_name %}Hisob-faktura — {{ name }}{% endblocktrans %}{% endblock %}
+
+{% block content %}
+<style>
+.status-pill{ display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:20px; font-size:12.5px; font-weight:700; }
+.status-pill::before{ content:''; width:7px; height:7px; border-radius:50%; }
+.status-unpaid{ background:#FDECEC; color:#B91C1C; } .status-unpaid::before{ background:#DC2626; }
+.status-partial{ background:#FEF6E7; color:#B05E03; } .status-partial::before{ background:#D97706; }
+.status-paid{ background:#EAF8EF; color:#0E7B3D; } .status-paid::before{ background:#16A34A; }
+.status-cancelled{ background:#F1F3F9; color:#94A3B8; } .status-cancelled::before{ background:#94A3B8; }
+.src-badge{ font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:10px; }
+.src-hospital{ background:#E8F7FA; color:#0A6577; }
+.src-patient{ background:#F1F3F9; color:#475569; }
+.strike{ text-decoration:line-through; color:#94A3B8; }
+.summary-sticky{ position:sticky; top:18px; }
+.summary-row{ display:flex; justify-content:space-between; padding:7px 0; font-size:13.5px; }
+.summary-row .v{ font-weight:600; }
+.summary-row.discount .v{ color:#DC2626; }
+.summary-grand{ background:#EFF4FF; border-radius:10px; padding:14px 16px; display:flex; justify-content:space-between; align-items:center; margin:10px 0 14px; }
+.summary-grand .lbl{ font-weight:700; color:#1E40AF; font-size:13px; }
+.summary-grand .val{ font-weight:800; color:#1E40AF; font-size:19px; }
+.timeline-b{ list-style:none; padding:0; margin:0; }
+.timeline-b li{ padding:5px 0 14px 18px; border-left:2px solid #E7EAF3; position:relative; font-size:13px; }
+.timeline-b li:last-child{ border-left-color:transparent; padding-bottom:0; }
+.timeline-b li::before{ content:''; position:absolute; left:-5px; top:6px; width:8px; height:8px; border-radius:50%; background:#2563EB; }
+.section-empty{ color:#94A3B8; text-align:center; padding:18px; font-size:13px; }
+</style>
+
+<div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+    <div>
+        <div class="text-muted small">{% blocktrans with name=patient.full_name %}Bemorlar / {{ name }} / Moliya{% endblocktrans %}</div>
+        <h4 class="mb-0">{% blocktrans with num=invoice.invoice_number %}Hisob-faktura № {{ num }}{% endblocktrans %}</h4>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        {% if can_manage %}
+        <button class="btn btn-outline-secondary btn-sm" id="btnRecalc"><i class="bi bi-arrow-repeat"></i> {% trans "Qayta hisoblash" %}</button>
+        {% endif %}
+        <a href="{% url 'invoice_print' patient.pk %}" target="_blank" class="btn btn-outline-secondary btn-sm"><i class="bi bi-printer"></i> {% trans "Chop etish" %}</a>
+        <a href="{% url 'invoice_pdf' patient.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-file-earmark-pdf"></i> {% trans "PDF yuklab olish" %}</a>
+        <a href="{% url 'patient_detail' patient.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> {% trans "Bemor kartasi" %}</a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+
+        <!-- Bemor + yotqizilish ma'lumotlari -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-white"><i class="bi bi-person-vcard"></i> {% trans "Bemor va yotqizilish ma'lumotlari" %}</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4"><div class="text-muted small">{% trans "F.I.Sh." %}</div><div class="fw-semibold">{{ patient.full_name }}</div></div>
+                    <div class="col-md-4"><div class="text-muted small">{% trans "Tug'ilgan sana" %}</div><div class="fw-semibold">{{ patient.birth_date|date:"d.m.Y" }}</div></div>
+                    <div class="col-md-4"><div class="text-muted small">{% trans "Bemor toifasi" %}</div><div class="fw-semibold">{{ patient.get_patient_category_display }}</div></div>
+                    <div class="col-md-4"><div class="text-muted small">{% trans "Bayonnoma № / Kasallik varaqasi №" %}</div><div class="fw-semibold">{{ patient.medical_record_number }}{% if patient.case_sheet_number %} / {{ patient.case_sheet_number }}{% endif %}</div></div>
+                    <div class="col-md-4"><div class="text-muted small">{% trans "Bo'lim / Xona" %}</div><div class="fw-semibold">{{ patient.department|default:"—" }}{% if patient.room_number %} / {{ patient.room_number }}{% endif %}</div></div>
+                    <div class="col-md-4"><div class="text-muted small">{% trans "Davolovchi shifokor" %}</div><div class="fw-semibold">{{ patient.attending_doctor|default:"—" }}</div></div>
+                    <div class="col-md-4"><div class="text-muted small">{% trans "Yotqizilgan sana" %}</div><div class="fw-semibold">{{ patient.admission_date|date:"d.m.Y H:i" }}</div></div>
+                    <div class="col-md-4"><div class="text-muted small">{% trans "Chiqarilgan sana" %}</div><div class="fw-semibold">{{ patient.discharge_date|date:"d.m.Y H:i"|default:"—" }}</div></div>
+                    <div class="col-md-4"><div class="text-muted small">{% trans "Telefon" %}</div><div class="fw-semibold">{{ patient.phone|default:"—" }}</div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Xizmat bo'limlari -->
+        {% for sec in section_list %}
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span>{{ sec.label }}</span>
+                <span class="text-muted small">{% blocktrans with cnt=sec.items|length %}{{ cnt }} ta{% endblocktrans %}</span>
+            </div>
+            {% if sec.items %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr><th>{% trans "Nomi" %}</th><th>{% trans "Holati" %}</th><th class="text-end">{% trans "Miqdor" %}</th><th class="text-end">{% trans "Narxi" %}</th><th class="text-end">{% trans "Jami" %}</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for item in sec.items %}
+                        <tr>
+                            <td class="fw-semibold">{{ item.service.display_name }}</td>
+                            <td><span class="badge {% if item.status == 'completed' %}bg-success{% elif item.status == 'cancelled' %}bg-secondary{% elif item.status == 'in_progress' %}bg-info{% else %}bg-warning text-dark{% endif %}">{{ item.get_status_display }}</span></td>
+                            <td class="text-end">{{ item.quantity }}</td>
+                            <td class="text-end">{{ item.price|floatformat:0 }}</td>
+                            <td class="text-end">{{ item.total_price|floatformat:0 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-light fw-bold"><td colspan="4">{% blocktrans with label=sec.label %}{{ label }} bo'yicha jami{% endblocktrans %}</td><td class="text-end">{% blocktrans with sum=sec.subtotal|floatformat:0 %}{{ sum }} so'm{% endblocktrans %}</td></tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+            <div class="section-empty">{% trans "Ma'lumot yo'q" %}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        <!-- Dori-darmonlar -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span>{% trans "Dori-darmonlar" %}</span>
+                <span class="text-muted small">{% blocktrans with cnt=medicines|length %}{{ cnt }} ta{% endblocktrans %}</span>
+            </div>
+            {% if medicines %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr><th>{% trans "Dori nomi" %}</th><th>{% trans "Birlik" %}</th><th class="text-end">{% trans "Miqdor" %}</th><th class="text-end">{% trans "Narxi" %}</th><th>{% trans "Manba" %}</th><th class="text-end">{% trans "Jami" %}</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for m in medicines %}
+                        <tr>
+                            <td class="fw-semibold">{{ m.medicine.name }}</td>
+                            <td class="text-muted small">{{ m.medicine.unit }}</td>
+                            <td class="text-end">{{ m.quantity }}</td>
+                            <td class="text-end {% if m.source == 'patient' %}strike{% endif %}">{{ m.price|floatformat:0 }}</td>
+                            <td><span class="src-badge {% if m.source == 'patient' %}src-patient{% else %}src-hospital{% endif %}">{{ m.get_source_display }}</span></td>
+                            <td class="text-end">{{ m.total_price|floatformat:0 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-light fw-bold"><td colspan="5">{% trans "Dorilar bo'yicha jami" %}</td><td class="text-end">{% blocktrans with sum=medicines_total|floatformat:0 %}{{ sum }} so'm{% endblocktrans %}</td></tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+            <div class="section-empty">{% trans "Dori-darmonlar qo'shilmagan" %}</div>
+            {% endif %}
+        </div>
+
+        <!-- Sarflanadigan materiallar -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span>{% trans "Sarflanadigan materiallar" %}</span>
+                {% if can_manage %}
+                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#consumableModal"><i class="bi bi-plus-lg"></i> {% trans "Material qo'shish" %}</button>
+                {% endif %}
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="consumablesTable">
+                    <thead class="table-light">
+                        <tr><th>{% trans "Nomi" %}</th><th class="text-end">{% trans "Miqdor" %}</th><th class="text-end">{% trans "Narxi" %}</th><th class="text-end">{% trans "Jami" %}</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for c in consumables %}
+                        <tr>
+                            <td class="fw-semibold">{{ c.consumable.name }}</td>
+                            <td class="text-end">{{ c.quantity }}</td>
+                            <td class="text-end">{{ c.price|floatformat:0 }}</td>
+                            <td class="text-end">{{ c.total_price|floatformat:0 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="section-empty">{% trans "Materiallar qo'shilmagan" %}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-light fw-bold"><td colspan="3">{% trans "Materiallar bo'yicha jami" %}</td><td class="text-end">{% blocktrans with sum=consumables_total|floatformat:0 %}{{ sum }} so'm{% endblocktrans %}</td></tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- Ko'chirish tarixi -->
+        {% if transfers %}
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-white">{% trans "Ko'chirish tarixi" %}</div>
+            <div class="card-body">
+                <ul class="timeline-b">
+                    {% for t in transfers %}
+                    <li>{{ t.transferred_at|date:"d.m.Y H:i" }} — {{ t.from_department|default:"—" }} → {{ t.to_department|default:"—" }}{% if t.from_doctor %} ({% blocktrans with doc=t.from_doctor %}mas'ul: {{ doc }}{% endblocktrans %}){% endif %}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- To'lovlar tarixi -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-white">{% trans "To'lovlar tarixi" %}</div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light"><tr><th>{% trans "Sana" %}</th><th class="text-end">{% trans "Summa" %}</th><th>{% trans "Usul" %}</th><th>{% trans "Kassir" %}</th><th>{% trans "Izoh" %}</th></tr></thead>
+                    <tbody>
+                        {% for p in payments %}
+                        <tr>
+                            <td>{{ p.created_at|date:"d.m.Y H:i" }}</td>
+                            <td class="text-end">{{ p.amount|floatformat:0 }}</td>
+                            <td>{{ p.get_method_display }}</td>
+                            <td>{{ p.cashier|default:"—" }}</td>
+                            <td class="text-muted small">{{ p.comment|default:"—" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="section-empty">{% trans "To'lovlar qayd etilmagan" %}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Audit jurnali -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-white">{% trans "Audit jurnali" %}</div>
+            <div class="card-body">
+                {% if audit_logs %}
+                <ul class="timeline-b">
+                    {% for log in audit_logs %}
+                    <li>{{ log.created_at|date:"d.m.Y H:i" }} — {{ log.get_action_display }}{% if log.description %}: {{ log.description }}{% endif %}{% if log.actor %} ({{ log.actor.get_full_name|default:log.actor.username }}){% endif %}</li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="section-empty">{% trans "Yozuvlar yo'q" %}</div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- O'ng tomon: to'lov xulosasi -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm summary-sticky">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span>{% trans "To'lov xulosasi" %}</span>
+                <span class="status-pill status-{{ invoice.status }}" id="statusPill">{{ invoice.get_status_display }}</span>
+            </div>
+            <div class="card-body">
+                {% for sec in section_list %}
+                <div class="summary-row"><span>{{ sec.label }}</span><span class="v">{{ sec.subtotal|floatformat:0 }}</span></div>
+                {% endfor %}
+                <div class="summary-row"><span>{% trans "Dori-darmonlar" %}</span><span class="v" id="sumMedicines">{{ medicines_total|floatformat:0 }}</span></div>
+                <div class="summary-row"><span>{% trans "Materiallar" %}</span><span class="v" id="sumConsumables">{{ consumables_total|floatformat:0 }}</span></div>
+                <hr>
+                <div class="summary-row"><span>{% trans "Jami summa" %}</span><span class="v" id="sumSubtotal">{{ subtotal|floatformat:0 }}</span></div>
+                <div class="summary-row discount"><span>{% trans "Chegirma" %}</span><span class="v" id="sumDiscount">−{{ discount_total|floatformat:0 }}</span></div>
+                <div class="summary-row"><span>{% trans "Sug'urta qoplamasi" %}</span><span class="v">{{ insurance_coverage|floatformat:0 }}</span></div>
+                <div class="summary-row"><span>{% trans "To'langan" %}</span><span class="v text-success" id="sumPaid">{{ paid_total|floatformat:0 }}</span></div>
+                <div class="summary-row"><span>{% trans "Qolgan qarz" %}</span><span class="v text-danger" id="sumRemaining">{{ remaining|floatformat:0 }}</span></div>
+                <div class="summary-grand">
+                    <span class="lbl">{% trans "UMUMIY JAMI" %}</span>
+                    <span class="val" id="sumGrand">{% blocktrans with sum=grand_total|floatformat:0 %}{{ sum }} so'm{% endblocktrans %}</span>
+                </div>
+
+                {% if can_manage %}
+                <div class="d-flex flex-column gap-2">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#paymentModal"><i class="bi bi-cash-coin"></i> {% trans "To'lovni qayd etish" %}</button>
+                    <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#discountModal"><i class="bi bi-percent"></i> {% trans "Chegirma qo'shish" %}</button>
+                    <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#refundModal"><i class="bi bi-arrow-counterclockwise"></i> {% trans "Qaytarish (refund)" %}</button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if can_manage %}
+<!-- To'lov modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">{% trans "To'lovni qayd etish" %}</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div class="mb-2"><label class="form-label small">{% trans "Summa (so'm)" %}</label><input type="number" class="form-control" id="paymentAmount" min="0" step="1"></div>
+                <div class="mb-2"><label class="form-label small">{% trans "To'lov usuli" %}</label>
+                    <select class="form-select" id="paymentMethod">
+                        <option value="cash">{% trans "Naqd" %}</option>
+                        <option value="card">{% trans "Plastik karta" %}</option>
+                        <option value="bank_transfer">{% trans "Bank o'tkazmasi" %}</option>
+                        <option value="insurance">{% trans "Sug'urta" %}</option>
+                    </select>
+                </div>
+                <div class="mb-2"><label class="form-label small">{% trans "Izoh" %}</label><input type="text" class="form-control" id="paymentComment"></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-primary" id="btnSavePayment">{% trans "Saqlash" %}</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- Chegirma modal -->
+<div class="modal fade" id="discountModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">{% trans "Chegirma qo'shish" %}</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div class="mb-2"><label class="form-label small">{% trans "Summa (so'm)" %}</label><input type="number" class="form-control" id="discountAmount" min="0" step="1"></div>
+                <div class="mb-2"><label class="form-label small">{% trans "Sababi" %}</label><input type="text" class="form-control" id="discountReason"></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-success" id="btnSaveDiscount">{% trans "Saqlash" %}</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- Refund modal -->
+<div class="modal fade" id="refundModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">{% trans "Qaytarish (refund)" %}</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div class="mb-2"><label class="form-label small">{% trans "Summa (so'm)" %}</label><input type="number" class="form-control" id="refundAmount" min="0" step="1"></div>
+                <div class="mb-2"><label class="form-label small">{% trans "Sababi" %}</label><input type="text" class="form-control" id="refundReason"></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-danger" id="btnSaveRefund">{% trans "Saqlash" %}</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- Material qo'shish modal -->
+<div class="modal fade" id="consumableModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">{% trans "Sarflanadigan material qo'shish" %}</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div class="mb-2"><label class="form-label small">{% trans "Material" %}</label>
+                    <select class="form-select" id="consumableId">
+                        {% for c in all_consumables %}
+                        <option value="{{ c.pk }}" data-price="{{ c.price }}">{{ c.name }} ({{ c.unit }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="row g-2">
+                    <div class="col-6"><label class="form-label small">{% trans "Miqdori" %}</label><input type="number" class="form-control" id="consumableQty" min="0" step="1" value="1"></div>
+                    <div class="col-6"><label class="form-label small">{% trans "Narxi (so'm)" %}</label><input type="number" class="form-control" id="consumablePrice" min="0" step="1"></div>
+                </div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-primary" id="btnSaveConsumable">{% trans "Saqlash" %}</button></div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+const PATIENT_PK = {{ patient.pk }};
+
+function postJSON(url, data){
+    return fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json', 'X-CSRFToken': CSRF},
+        body: JSON.stringify(data),
+    }).then(r => r.json());
+}
+
+document.getElementById('btnSavePayment')?.addEventListener('click', function(){
+    postJSON(`/billing/patient/${PATIENT_PK}/payment/`, {
+        amount: document.getElementById('paymentAmount').value,
+        method: document.getElementById('paymentMethod').value,
+        comment: document.getElementById('paymentComment').value,
+    }).then(res => {
+        if(res.success){ location.reload(); } else { alert(res.error || 'Xato yuz berdi'); }
+    });
+});
+
+document.getElementById('btnSaveDiscount')?.addEventListener('click', function(){
+    postJSON(`/billing/patient/${PATIENT_PK}/discount/`, {
+        amount: document.getElementById('discountAmount').value,
+        reason: document.getElementById('discountReason').value,
+    }).then(res => {
+        if(res.success){ location.reload(); } else { alert(res.error || 'Xato yuz berdi'); }
+    });
+});
+
+document.getElementById('btnSaveRefund')?.addEventListener('click', function(){
+    postJSON(`/billing/patient/${PATIENT_PK}/refund/`, {
+        amount: document.getElementById('refundAmount').value,
+        reason: document.getElementById('refundReason').value,
+    }).then(res => {
+        if(res.success){ location.reload(); } else { alert(res.error || 'Xato yuz berdi'); }
+    });
+});
+
+document.getElementById('consumableId')?.addEventListener('change', function(){
+    const opt = this.options[this.selectedIndex];
+    document.getElementById('consumablePrice').value = opt?.dataset.price || 0;
+});
+
+document.getElementById('btnSaveConsumable')?.addEventListener('click', function(){
+    postJSON(`/billing/patient/${PATIENT_PK}/consumable/add/`, {
+        consumable_id: document.getElementById('consumableId').value,
+        quantity: document.getElementById('consumableQty').value,
+        price: document.getElementById('consumablePrice').value,
+    }).then(res => {
+        if(res.success){ location.reload(); } else { alert(res.error || 'Xato yuz berdi'); }
+    });
+});
+
+document.getElementById('btnRecalc')?.addEventListener('click', function(){
+    postJSON(`/billing/patient/${PATIENT_PK}/recalculate/`, {}).then(res => {
+        if(res.success){ location.reload(); } else { alert('Xato yuz berdi'); }
+    });
+});
+</script>
+{% endblock %}

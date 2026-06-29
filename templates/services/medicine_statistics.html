@@ -1,13 +1,14 @@
 {% extends 'base.html' %}
-{% block title %}Dori-darmonlar statistikasi{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Dori-darmonlar statistikasi" %}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3>💊 Dori-darmonlar statistikasi</h3>
+    <h3>💊 {% trans "Dori-darmonlar statistikasi" %}</h3>
     <div class="d-flex gap-2">
         <a href="{% url 'export_medicine_excel' %}?{{ current_filters }}"
-           class="btn btn-success btn-sm">📥 Excel yuklab olish</a>
-        <a href="{% url 'service_statistics' %}" class="btn btn-outline-secondary btn-sm">🏥 Xizmatlar</a>
+           class="btn btn-success btn-sm">📥 {% trans "Excel yuklab olish" %}</a>
+        <a href="{% url 'service_statistics' %}" class="btn btn-outline-secondary btn-sm">🏥 {% trans "Xizmatlar" %}</a>
     </div>
 </div>
 
@@ -17,17 +18,17 @@
         <form method="get">
             <div class="row g-2 align-items-end">
                 <div class="col-md-2">
-                    <label class="form-label small fw-bold">Boshlanish sanasi</label>
+                    <label class="form-label small fw-bold">{% trans "Boshlanish sanasi" %}</label>
                     <input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from }}">
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small fw-bold">Tugash sanasi</label>
+                    <label class="form-label small fw-bold">{% trans "Tugash sanasi" %}</label>
                     <input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to }}">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label small fw-bold">Dori</label>
+                    <label class="form-label small fw-bold">{% trans "Dori" %}</label>
                     <select name="medicine" class="form-select form-select-sm">
-                        <option value="">Barchasi</option>
+                        <option value="">{% trans "Barchasi" %}</option>
                         {% for med in medicines_list %}
                         <option value="{{ med.pk }}"
                             {% if selected_medicine == med.pk|stringformat:"s" %}selected{% endif %}>
@@ -37,15 +38,15 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small fw-bold">Davr</label>
+                    <label class="form-label small fw-bold">{% trans "Davr" %}</label>
                     <select name="period" class="form-select form-select-sm">
-                        <option value="day"   {% if selected_period == 'day'   %}selected{% endif %}>Kunlik</option>
-                        <option value="month" {% if selected_period == 'month' %}selected{% endif %}>Oylik</option>
-                        <option value="year"  {% if selected_period == 'year'  %}selected{% endif %}>Yillik</option>
+                        <option value="day"   {% if selected_period == 'day'   %}selected{% endif %}>{% trans "Kunlik" %}</option>
+                        <option value="month" {% if selected_period == 'month' %}selected{% endif %}>{% trans "Oylik" %}</option>
+                        <option value="year"  {% if selected_period == 'year'  %}selected{% endif %}>{% trans "Yillik" %}</option>
                     </select>
                 </div>
                 <div class="col-md-3 d-flex gap-2">
-                    <button type="submit" class="btn btn-warning btn-sm flex-fill">🔍 Filtrlash</button>
+                    <button type="submit" class="btn btn-warning btn-sm flex-fill">🔍 {% trans "Filtrlash" %}</button>
                     <a href="{% url 'medicine_statistics' %}" class="btn btn-outline-secondary btn-sm">✕</a>
                 </div>
             </div>
@@ -58,32 +59,32 @@
     <div class="col-md-3">
         <div class="card border-0 shadow-sm text-center py-3">
             <div class="h3 fw-bold text-warning mb-1">{{ totals.total_records|default:0 }}</div>
-            <div class="small text-muted">Jami yozuvlar</div>
+            <div class="small text-muted">{% trans "Jami yozuvlar" %}</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card border-0 shadow-sm text-center py-3">
             <div class="h3 fw-bold text-info mb-1">{{ totals.patients|default:0 }}</div>
-            <div class="small text-muted">Bemorlar soni</div>
+            <div class="small text-muted">{% trans "Bemorlar soni" %}</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card border-0 shadow-sm text-center py-3">
             <div class="h3 fw-bold text-success mb-1">{{ totals.total_qty|floatformat:0|default:0 }}</div>
-            <div class="small text-muted">Jami miqdor</div>
+            <div class="small text-muted">{% trans "Jami miqdor" %}</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card border-0 shadow-sm text-center py-3">
-            <div class="h4 fw-bold text-danger mb-1">{{ totals.total_sum|floatformat:0|default:0 }} so'm</div>
-            <div class="small text-muted">Jami summa</div>
+            <div class="h4 fw-bold text-danger mb-1">{% blocktrans with sum=totals.total_sum|floatformat:0|default:0 %}{{ sum }} so'm{% endblocktrans %}</div>
+            <div class="small text-muted">{% trans "Jami summa" %}</div>
         </div>
     </div>
 </div>
 
 <!-- Trend grafigi -->
 <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white"><strong>📈 Dinamika</strong></div>
+    <div class="card-header bg-white"><strong>📈 {% trans "Dinamika" %}</strong></div>
     <div class="card-body">
         <canvas id="trendChart" height="80"></canvas>
     </div>
@@ -92,20 +93,20 @@
 <!-- Top dorilar jadvali -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white d-flex justify-content-between">
-        <strong>💊 Eng ko'p ishlatiladigan dorilar</strong>
-        <span class="badge bg-warning text-dark">{{ top_medicines|length }} ta</span>
+        <strong>💊 {% trans "Eng ko'p ishlatiladigan dorilar" %}</strong>
+        <span class="badge bg-warning text-dark">{% blocktrans with cnt=top_medicines|length %}{{ cnt }} ta{% endblocktrans %}</span>
     </div>
     <div class="card-body p-0">
         <table class="table table-hover table-sm align-middle mb-0">
             <thead class="table-light">
                 <tr>
                     <th class="ps-3" style="width:45px">№</th>
-                    <th>Dori nomi</th>
-                    <th class="text-center">Birlik</th>
-                    <th class="text-center">Yozuvlar</th>
-                    <th class="text-center">Jami miqdor</th>
-                    <th class="text-center">Bemorlar</th>
-                    <th class="text-end pe-3">Jami summa</th>
+                    <th>{% trans "Dori nomi" %}</th>
+                    <th class="text-center">{% trans "Birlik" %}</th>
+                    <th class="text-center">{% trans "Yozuvlar" %}</th>
+                    <th class="text-center">{% trans "Jami miqdor" %}</th>
+                    <th class="text-center">{% trans "Bemorlar" %}</th>
+                    <th class="text-end pe-3">{% trans "Jami summa" %}</th>
                 </tr>
             </thead>
             <tbody>
@@ -124,21 +125,21 @@
                         <span class="badge bg-info rounded-pill">{{ med.patient_count }}</span>
                     </td>
                     <td class="text-end pe-3 fw-bold text-warning">
-                        {{ med.total_sum|floatformat:0 }} so'm
+                        {% blocktrans with sum=med.total_sum|floatformat:0 %}{{ sum }} so'm{% endblocktrans %}
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="7" class="text-center text-muted py-4">Ma'lumot topilmadi</td>
+                    <td colspan="7" class="text-center text-muted py-4">{% trans "Ma'lumot topilmadi" %}</td>
                 </tr>
                 {% endfor %}
             </tbody>
             {% if totals.total_sum %}
             <tfoot class="table-light">
                 <tr>
-                    <td colspan="6" class="text-end fw-bold pe-2">Umumiy jami:</td>
+                    <td colspan="6" class="text-end fw-bold pe-2">{% trans "Umumiy jami:" %}</td>
                     <td class="text-end pe-3 fw-bold text-warning fs-6">
-                        {{ totals.total_sum|floatformat:0 }} so'm
+                        {% blocktrans with sum=totals.total_sum|floatformat:0 %}{{ sum }} so'm{% endblocktrans %}
                     </td>
                 </tr>
             </tfoot>

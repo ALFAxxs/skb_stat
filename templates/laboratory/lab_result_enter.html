@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-
-{% block title %}Natija kiritish — {{ result.patient_card.full_name }}{% endblock %}
+{% load i18n %}
+{% block title %}{% blocktrans with name=result.patient_card.full_name %}Natija kiritish — {{ name }}{% endblocktrans %}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-3">
@@ -21,33 +21,27 @@
         </span>
       </h5>
       <div class="text-muted small">
-        Karta №: <strong>{{ result.patient_card.medical_record_number }}</strong>
+        {% trans "Karta №" %}: <strong>{{ result.patient_card.medical_record_number }}</strong>
         &middot;
-        {% if result.patient_card.gender == 'M' %}Erkak{% else %}Ayol{% endif %}
+        {% if result.patient_card.gender == 'M' %}{% trans "Erkak" %}{% else %}{% trans "Ayol" %}{% endif %}
         &middot;
-        Tug'ilgan: {{ result.patient_card.birth_date|date:"d.m.Y" }}
+        {% trans "Tug'ilgan" %}: {{ result.patient_card.birth_date|date:"d.m.Y" }}
         &middot;
-        Natija №{{ result.pk }}
+        {% blocktrans with pk=result.pk %}Natija №{{ pk }}{% endblocktrans %}
         &middot;
         {{ result.created_at|date:"d.m.Y H:i" }}
       </div>
     </div>
     <div class="d-flex gap-2">
-      <a href="{% url 'lab_result_pdf_download' result.pk %}" class="btn btn-danger btn-sm" target="_blank">
-        📄 PDF ko'rish
-      </a>
-      <a href="{% url 'lab_result_print' result.pk %}" class="btn btn-outline-secondary btn-sm" target="_blank">
-        🖨 Chop etish
-      </a>
       <a href="{% url 'lab_patient' result.patient_card.pk %}" class="btn btn-outline-secondary btn-sm">
-        ← Orqaga
+        ← {% trans "Orqaga" %}
       </a>
     </div>
   </div>
 
   {% if not can_edit %}
   <div class="alert alert-warning py-2 mb-3 small">
-    <strong>Faqat ko'rish rejimi.</strong> Siz natijalarni ko'rish va chop etish huquqiga egasiz. Tahrirlash uchun laborantga murojaat qiling.
+    <strong>{% trans "Faqat ko'rish rejimi." %}</strong> {% trans "Siz natijalarni ko'rish va chop etish huquqiga egasiz. Tahrirlash uchun laborantga murojaat qiling." %}
   </div>
   {% endif %}
 
@@ -62,11 +56,11 @@
           <thead class="table-light">
             <tr>
               <th width="30">#</th>
-              <th>Parametr nomi</th>
-              <th width="130">Natija</th>
-              <th width="80">Birlik</th>
-              <th width="120">Me'yor</th>
-              <th width="180">Izoh</th>
+              <th>{% trans "Parametr nomi" %}</th>
+              <th width="130">{% trans "Natija" %}</th>
+              <th width="80">{% trans "Birlik" %}</th>
+              <th width="120">{% trans "Me'yor" %}</th>
+              <th width="180">{% trans "Izoh" %}</th>
             </tr>
           </thead>
           <tbody>
@@ -136,7 +130,7 @@
                   class="form-control form-control-sm comment-input"
                   data-param-id="{{ param.pk }}"
                   value="{{ param.current_comment }}"
-                  placeholder="Izoh..."
+                  placeholder="{% trans "Izoh..." %}"
                   tabindex="-1"
                   {% if not can_edit %}readonly{% endif %}
                 >
@@ -148,7 +142,7 @@
             {% if ungrouped %}
             {% if grouped_params %}
             <tr class="table-secondary">
-              <td colspan="6" class="fw-semibold py-1 px-3 text-muted">Boshqa parametrlar</td>
+              <td colspan="6" class="fw-semibold py-1 px-3 text-muted">{% trans "Boshqa parametrlar" %}</td>
             </tr>
             {% endif %}
             {% for param in ungrouped %}
@@ -209,7 +203,7 @@
                   class="form-control form-control-sm comment-input"
                   data-param-id="{{ param.pk }}"
                   value="{{ param.current_comment }}"
-                  placeholder="Izoh..."
+                  placeholder="{% trans "Izoh..." %}"
                   tabindex="-1"
                   {% if not can_edit %}readonly{% endif %}
                 >
@@ -226,13 +220,13 @@
 
   <!-- Xulosa -->
   <div class="card mb-3">
-    <div class="card-header py-2"><strong>Xulosa</strong></div>
+    <div class="card-header py-2"><strong>{% trans "Xulosa" %}</strong></div>
     <div class="card-body">
       <textarea
         id="conclusion-textarea"
         class="form-control"
         rows="3"
-        placeholder="Umumiy xulosa yozing..."
+        placeholder="{% trans "Umumiy xulosa yozing..." %}"
         {% if not can_edit %}readonly{% endif %}>{{ result.conclusion }}</textarea>
     </div>
   </div>
@@ -241,20 +235,17 @@
   <div class="d-flex gap-2 flex-wrap">
     {% if can_edit %}
     <button class="btn btn-success" onclick="saveResult('draft')">
-      💾 Saqlash (qoralama)
+      💾 {% trans "Saqlash (qoralama)" %}
     </button>
     <button class="btn btn-primary" onclick="saveResult('done')">
-      ✅ Bajarildi
+      ✅ {% trans "Bajarildi" %}
     </button>
     <button class="btn btn-warning" onclick="saveResult('verified')">
-      🔒 Tasdiqlash
+      🔒 {% trans "Tasdiqlash" %}
     </button>
     {% endif %}
-    <a href="{% url 'lab_result_pdf_download' result.pk %}" class="btn btn-danger" target="_blank">
-      📄 PDF ko'rish
-    </a>
     <a href="{% url 'lab_result_print' result.pk %}" class="btn btn-outline-secondary" target="_blank">
-      🖨 Chop etish
+      🖨 {% trans "Chop etish" %}
     </a>
   </div>
 
@@ -263,6 +254,17 @@
 <script>
 const SAVE_URL = "{% url 'lab_result_save' result.pk %}";
 const CSRF_TOKEN = "{{ csrf_token }}";
+const MSG_SAVING = "{% trans 'Saqlanmoqda...' %}";
+const MSG_SAVED_PREFIX = "{% trans 'Saqlandi' %}: ";
+const MSG_ERROR_PREFIX = "{% trans 'Xato' %}: ";
+const MSG_UNKNOWN_ERROR = "{% trans "Noma'lum xato" %}";
+const MSG_NETWORK_ERROR_PREFIX = "{% trans 'Tarmoq xatosi' %}: ";
+const STATUS_LABELS = {
+  draft: "{% trans 'Qoralama' %}",
+  done: "{% trans 'Bajarildi' %}",
+  verified: "{% trans 'Tasdiqlandi' %}",
+  printed: "{% trans "Chop etildi" %}",
+};
 
 function collectData(status) {
   const values = [];
@@ -286,7 +288,7 @@ async function saveResult(status) {
   const statusEl = document.getElementById('save-status');
   statusEl.style.display = 'block';
   statusEl.className = 'alert alert-info py-1 px-2 small mb-2';
-  statusEl.textContent = 'Saqlanmoqda...';
+  statusEl.textContent = MSG_SAVING;
 
   try {
     const resp = await fetch(SAVE_URL, {
@@ -299,13 +301,10 @@ async function saveResult(status) {
     });
     const data = await resp.json();
     if (data.success) {
-      const statusLabels = {
-        draft:'Qoralama', done:'Bajarildi', verified:'Tasdiqlandi', printed:'Chop etildi'
-      };
-      const label = statusLabels[data.status] || data.status || '';
+      const label = STATUS_LABELS[data.status] || data.status || '';
       const pctText = data.pct !== undefined ? ` (${data.pct}% to'liq)` : '';
       statusEl.className = 'alert alert-success py-1 px-2 small mb-2';
-      statusEl.textContent = 'Saqlandi: ' + label + pctText;
+      statusEl.textContent = MSG_SAVED_PREFIX + label + pctText;
       // To'liq saqlansa va status final bo'lsa — sahifani yangilash
       if (status && status !== '' && data.status !== 'draft') {
         setTimeout(() => location.reload(), 1000);
@@ -314,11 +313,11 @@ async function saveResult(status) {
       }
     } else {
       statusEl.className = 'alert alert-danger py-1 px-2 small mb-2';
-      statusEl.textContent = 'Xato: ' + (data.error || "Noma'lum xato");
+      statusEl.textContent = MSG_ERROR_PREFIX + (data.error || MSG_UNKNOWN_ERROR);
     }
   } catch (e) {
     statusEl.className = 'alert alert-danger py-1 px-2 small mb-2';
-    statusEl.textContent = 'Tarmoq xatosi: ' + e.message;
+    statusEl.textContent = MSG_NETWORK_ERROR_PREFIX + e.message;
   }
 }
 

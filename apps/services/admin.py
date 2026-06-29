@@ -60,6 +60,7 @@ class ServiceAdmin(admin.ModelAdmin):
     # is_operation ni to'g'ridan ro'yxatda o'zgartirib bo'ladi
     list_editable = ['is_active']
     actions = [mark_as_operation, unmark_as_operation]
+    filter_horizontal = ['assigned_doctors']
 
     # Kategoriya bo'yicha guruhlash
     list_per_page = 50
@@ -102,9 +103,11 @@ from .models import Medicine, PatientMedicine
 
 @admin.register(Medicine)
 class MedicineAdmin(admin.ModelAdmin):
-    list_display = ['name', 'unit', 'is_active']
-    list_filter = ['unit', 'is_active']
-    search_fields = ['name']
+    list_display  = ['name', 'mnn', 'strength', 'dosage_form', 'unit', 'category', 'is_active']
+    list_filter   = ['category', 'dosage_form', 'unit', 'is_active']
+    search_fields = ['name', 'mnn', 'strength']
+    list_editable = ['category', 'is_active']
+    ordering      = ['name']
 
 @admin.register(PatientMedicine)
 class PatientMedicineAdmin(admin.ModelAdmin):

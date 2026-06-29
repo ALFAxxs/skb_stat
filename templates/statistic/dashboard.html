@@ -1,55 +1,56 @@
 {% extends 'base.html' %}
-{% block title %}Statistika{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Statistika" %}{% endblock %}
 
 {% block content %}
-<h3 class="mb-3">📊 Statistika paneli</h3>
+<h3 class="mb-3">📊 {% trans "Statistika paneli" %}</h3>
 
 <!-- FILTERLAR -->
 <div class="card mb-4">
-    <div class="card-header bg-light"><strong>🔍 Filterlar</strong></div>
+    <div class="card-header bg-light"><strong>🔍 {% trans "Filterlar" %}</strong></div>
     <div class="card-body">
         <form method="get" id="stat-filter-form">
             <div class="row g-2">
                 <div class="col-md-2">
-                    <label class="form-label small">Boshlanish sanasi</label>
+                    <label class="form-label small">{% trans "Boshlanish sanasi" %}</label>
                     <input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from }}">
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small">Tugash sanasi</label>
+                    <label class="form-label small">{% trans "Tugash sanasi" %}</label>
                     <input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to }}">
                 </div>
                 <div class="col-md-1">
-                    <label class="form-label small">Yil</label>
+                    <label class="form-label small">{% trans "Yil" %}</label>
                     <select name="year" class="form-select form-select-sm">
-                        <option value="">Barchasi</option>
+                        <option value="">{% trans "Barchasi" %}</option>
                         {% for y in years %}
                         <option value="{{ y }}" {% if selected_year == y|stringformat:"s" %}selected{% endif %}>{{ y }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-1">
-                    <label class="form-label small">Oy</label>
+                    <label class="form-label small">{% trans "Oy" %}</label>
                     <select name="month" class="form-select form-select-sm">
-                        <option value="">Barchasi</option>
-                        <option value="1"  {% if selected_month == '1'  %}selected{% endif %}>Yanvar</option>
-                        <option value="2"  {% if selected_month == '2'  %}selected{% endif %}>Fevral</option>
-                        <option value="3"  {% if selected_month == '3'  %}selected{% endif %}>Mart</option>
-                        <option value="4"  {% if selected_month == '4'  %}selected{% endif %}>Aprel</option>
-                        <option value="5"  {% if selected_month == '5'  %}selected{% endif %}>May</option>
-                        <option value="6"  {% if selected_month == '6'  %}selected{% endif %}>Iyun</option>
-                        <option value="7"  {% if selected_month == '7'  %}selected{% endif %}>Iyul</option>
-                        <option value="8"  {% if selected_month == '8'  %}selected{% endif %}>Avgust</option>
-                        <option value="9"  {% if selected_month == '9'  %}selected{% endif %}>Sentabr</option>
-                        <option value="10" {% if selected_month == '10' %}selected{% endif %}>Oktabr</option>
-                        <option value="11" {% if selected_month == '11' %}selected{% endif %}>Noyabr</option>
-                        <option value="12" {% if selected_month == '12' %}selected{% endif %}>Dekabr</option>
+                        <option value="">{% trans "Barchasi" %}</option>
+                        <option value="1"  {% if selected_month == '1'  %}selected{% endif %}>{% trans "Yanvar" %}</option>
+                        <option value="2"  {% if selected_month == '2'  %}selected{% endif %}>{% trans "Fevral" %}</option>
+                        <option value="3"  {% if selected_month == '3'  %}selected{% endif %}>{% trans "Mart" %}</option>
+                        <option value="4"  {% if selected_month == '4'  %}selected{% endif %}>{% trans "Aprel" %}</option>
+                        <option value="5"  {% if selected_month == '5'  %}selected{% endif %}>{% trans "May" %}</option>
+                        <option value="6"  {% if selected_month == '6'  %}selected{% endif %}>{% trans "Iyun" %}</option>
+                        <option value="7"  {% if selected_month == '7'  %}selected{% endif %}>{% trans "Iyul" %}</option>
+                        <option value="8"  {% if selected_month == '8'  %}selected{% endif %}>{% trans "Avgust" %}</option>
+                        <option value="9"  {% if selected_month == '9'  %}selected{% endif %}>{% trans "Sentabr" %}</option>
+                        <option value="10" {% if selected_month == '10' %}selected{% endif %}>{% trans "Oktabr" %}</option>
+                        <option value="11" {% if selected_month == '11' %}selected{% endif %}>{% trans "Noyabr" %}</option>
+                        <option value="12" {% if selected_month == '12' %}selected{% endif %}>{% trans "Dekabr" %}</option>
                     </select>
                 </div>
                 {% if request.user.role == 'admin' or request.user.is_superuser %}
                 <div class="col-md-2">
-                    <label class="form-label small">Bo'lim</label>
+                    <label class="form-label small">{% trans "Bo'lim" %}</label>
                     <select name="department" class="form-select form-select-sm">
-                        <option value="">Barchasi</option>
+                        <option value="">{% trans "Barchasi" %}</option>
                         {% for dept in departments %}
                         <option value="{{ dept.pk }}" {% if selected_dept == dept.pk|stringformat:"s" %}selected{% endif %}>{{ dept.name }}</option>
                         {% endfor %}
@@ -57,89 +58,89 @@
                 </div>
                 {% endif %}
                 <div class="col-md-2">
-                    <label class="form-label small">Shifokor</label>
+                    <label class="form-label small">{% trans "Shifokor" %}</label>
                     <select name="doctor" class="form-select form-select-sm">
-                        <option value="">Barchasi</option>
+                        <option value="">{% trans "Barchasi" %}</option>
                         {% for doc in doctors %}
                         <option value="{{ doc.pk }}" {% if selected_doctor == doc.pk|stringformat:"s" %}selected{% endif %}>{{ doc.full_name }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small">Yakun</label>
+                    <label class="form-label small">{% trans "Yakun" %}</label>
                     <select name="outcome" class="form-select form-select-sm">
-                        <option value="">Barchasi</option>
-                        <option value="discharged"  {% if selected_outcome == 'discharged'  %}selected{% endif %}>Chiqarildi</option>
-                        <option value="deceased"    {% if selected_outcome == 'deceased'    %}selected{% endif %}>Vafot etdi</option>
-                        <option value="transferred" {% if selected_outcome == 'transferred' %}selected{% endif %}>O'tkazildi</option>
+                        <option value="">{% trans "Barchasi" %}</option>
+                        <option value="discharged"  {% if selected_outcome == 'discharged'  %}selected{% endif %}>{% trans "Chiqarildi" %}</option>
+                        <option value="deceased"    {% if selected_outcome == 'deceased'    %}selected{% endif %}>{% trans "Vafot etdi" %}</option>
+                        <option value="transferred" {% if selected_outcome == 'transferred' %}selected{% endif %}>{% trans "O'tkazildi" %}</option>
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small">Status</label>
+                    <label class="form-label small">{% trans "Status" %}</label>
                     <select name="status" class="form-select form-select-sm">
-                        <option value="">Barchasi</option>
-                        <option value="registered" {% if selected_status == 'registered' %}selected{% endif %}>🟡 Registratsiya</option>
-                        <option value="admitted"   {% if selected_status == 'admitted'   %}selected{% endif %}>🔵 Yotqizilgan</option>
-                        <option value="completed"  {% if selected_status == 'completed'  %}selected{% endif %}>🟢 Yakunlangan</option>
+                        <option value="">{% trans "Barchasi" %}</option>
+                        <option value="registered" {% if selected_status == 'registered' %}selected{% endif %}>🟡 {% trans "Registratsiya" %}</option>
+                        <option value="admitted"   {% if selected_status == 'admitted'   %}selected{% endif %}>🔵 {% trans "Yotqizilgan" %}</option>
+                        <option value="completed"  {% if selected_status == 'completed'  %}selected{% endif %}>🟢 {% trans "Yakunlangan" %}</option>
                     </select>
                 </div>
                 <div class="col-md-1">
-                    <label class="form-label small">Jins</label>
+                    <label class="form-label small">{% trans "Jins" %}</label>
                     <select name="gender" class="form-select form-select-sm">
-                        <option value="">Barchasi</option>
-                        <option value="M" {% if selected_gender == 'M' %}selected{% endif %}>Erkak</option>
-                        <option value="F" {% if selected_gender == 'F' %}selected{% endif %}>Ayol</option>
+                        <option value="">{% trans "Barchasi" %}</option>
+                        <option value="M" {% if selected_gender == 'M' %}selected{% endif %}>{% trans "Erkak" %}</option>
+                        <option value="F" {% if selected_gender == 'F' %}selected{% endif %}>{% trans "Ayol" %}</option>
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small">Kategoriya</label>
+                    <label class="form-label small">{% trans "Kategoriya" %}</label>
                     <select name="patient_category" class="form-select form-select-sm">
-                        <option value="">Barchasi</option>
-                        <option value="railway"      {% if selected_category == 'railway'      %}selected{% endif %}>Temir yo'lchi</option>
-                        <option value="paid"         {% if selected_category == 'paid'         %}selected{% endif %}>Pullik</option>
-                        <option value="non_resident" {% if selected_category == 'non_resident' %}selected{% endif %}>Norezident</option>
+                        <option value="">{% trans "Barchasi" %}</option>
+                        <option value="railway"      {% if selected_category == 'railway'      %}selected{% endif %}>{% trans "Temir yo'lchi" %}</option>
+                        <option value="paid"         {% if selected_category == 'paid'         %}selected{% endif %}>{% trans "Pullik" %}</option>
+                        <option value="non_resident" {% if selected_category == 'non_resident' %}selected{% endif %}>{% trans "Norezident" %}</option>
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small">Tashrif turi</label>
+                    <label class="form-label small">{% trans "Tashrif turi" %}</label>
                     <select name="visit_type" class="form-select form-select-sm">
-                        <option value="">Barchasi</option>
-                        <option value="inpatient"  {% if visit_type == 'inpatient'  %}selected{% endif %}>🏥 Statsionar</option>
-                        <option value="ambulatory" {% if visit_type == 'ambulatory' %}selected{% endif %}>🚶 Ambulator</option>
+                        <option value="">{% trans "Barchasi" %}</option>
+                        <option value="inpatient"  {% if visit_type == 'inpatient'  %}selected{% endif %}>🏥 {% trans "Statsionar" %}</option>
+                        <option value="ambulatory" {% if visit_type == 'ambulatory' %}selected{% endif %}>🚶 {% trans "Ambulator" %}</option>
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small">Yosh guruhi</label>
+                    <label class="form-label small">{% trans "Yosh guruhi" %}</label>
                     <select name="age_group" class="form-select form-select-sm">
-                        <option value="">Barchasi</option>
-                        <option value="under16" {% if age_group == 'under16' %}selected{% endif %}>👶 16 yoshgacha</option>
-                        <option value="adult"   {% if age_group == 'adult'   %}selected{% endif %}>🧑 16 yoshdan katta</option>
+                        <option value="">{% trans "Barchasi" %}</option>
+                        <option value="under16" {% if age_group == 'under16' %}selected{% endif %}>👶 {% trans "16 yoshgacha" %}</option>
+                        <option value="adult"   {% if age_group == 'adult'   %}selected{% endif %}>🧑 {% trans "16 yoshdan katta" %}</option>
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small">Rezidentlik</label>
+                    <label class="form-label small">{% trans "Rezidentlik" %}</label>
                     <select name="resident_status" class="form-select form-select-sm">
-                        <option value="">Barchasi</option>
-                        <option value="resident"     {% if selected_resident == 'resident'     %}selected{% endif %}>Rezident</option>
-                        <option value="non_resident" {% if selected_resident == 'non_resident' %}selected{% endif %}>Norezident</option>
+                        <option value="">{% trans "Barchasi" %}</option>
+                        <option value="resident"     {% if selected_resident == 'resident'     %}selected{% endif %}>{% trans "Rezident" %}</option>
+                        <option value="non_resident" {% if selected_resident == 'non_resident' %}selected{% endif %}>{% trans "Norezident" %}</option>
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small">Qabul turi</label>
+                    <label class="form-label small">{% trans "Qabul turi" %}</label>
                     <select name="referral_type" class="form-select form-select-sm">
-                        <option value="">Barchasi</option>
-                        <option value="self"      {% if selected_referral == 'self'      %}selected{% endif %}>O'zi kelgan</option>
-                        <option value="ambulance" {% if selected_referral == 'ambulance' %}selected{% endif %}>Tez yordam</option>
-                        <option value="referral"  {% if selected_referral == 'referral'  %}selected{% endif %}>Yo'llanma</option>
-                        <option value="liniya"    {% if selected_referral == 'liniya'    %}selected{% endif %}>Liniya</option>
+                        <option value="">{% trans "Barchasi" %}</option>
+                        <option value="self"      {% if selected_referral == 'self'      %}selected{% endif %}>{% trans "O'zi kelgan" %}</option>
+                        <option value="ambulance" {% if selected_referral == 'ambulance' %}selected{% endif %}>{% trans "Tez yordam" %}</option>
+                        <option value="referral"  {% if selected_referral == 'referral'  %}selected{% endif %}>{% trans "Yo'llanma" %}</option>
+                        <option value="liniya"    {% if selected_referral == 'liniya'    %}selected{% endif %}>{% trans "Liniya" %}</option>
                     </select>
                 </div>
 
                 <!-- Ish joyi select -->
                 <div class="col-md-3">
-                    <label class="form-label small">🏢 Ish joyi</label>
+                    <label class="form-label small">🏢 {% trans "Ish joyi" %}</label>
                     <select name="org" id="org-select" class="form-select form-select-sm">
-                        <option value="">Barchasi</option>
+                        <option value="">{% trans "Barchasi" %}</option>
                         {% for org in organizations %}
                         <option value="{{ org.pk }}" {% if selected_org == org.pk|stringformat:"s" %}selected{% endif %}>
                             {{ org.enterprise_name }}{% if org.branch_name %} — {{ org.branch_name }}{% endif %}
@@ -149,8 +150,8 @@
                 </div>
 
                 <div class="col-md-12 d-flex gap-2 mt-2">
-                    <button type="submit" class="btn btn-primary btn-sm">🔍 Filtrlash</button>
-                    <a href="{% url 'statistics_dashboard' %}" class="btn btn-outline-secondary btn-sm">✕ Tozalash</a>
+                    <button type="submit" class="btn btn-primary btn-sm">🔍 {% trans "Filtrlash" %}</button>
+                    <a href="{% url 'statistics_dashboard' %}" class="btn btn-outline-secondary btn-sm">✕ {% trans "Tozalash" %}</a>
                 </div>
             </div>
         </form>
@@ -163,7 +164,7 @@
         <div class="card border-primary text-center">
             <div class="card-body py-2">
                 <h3 class="text-primary mb-0">{{ total }}</h3>
-                <small>Jami bemorlar</small>
+                <small>{% trans "Jami bemorlar" %}</small>
             </div>
         </div>
     </div>
@@ -171,7 +172,7 @@
         <div class="card border-success text-center">
             <div class="card-body py-2">
                 <h3 class="text-success mb-0">{{ discharged }}</h3>
-                <small>Chiqarildi</small>
+                <small>{% trans "Chiqarildi" %}</small>
             </div>
         </div>
     </div>
@@ -179,7 +180,7 @@
         <div class="card border-danger text-center">
             <div class="card-body py-2">
                 <h3 class="text-danger mb-0">{{ deceased }}</h3>
-                <small>Vafot etdi</small>
+                <small>{% trans "Vafot etdi" %}</small>
             </div>
         </div>
     </div>
@@ -187,7 +188,7 @@
         <div class="card border-warning text-center">
             <div class="card-body py-2">
                 <h3 class="text-warning mb-0">{{ transferred }}</h3>
-                <small>O'tkazildi</small>
+                <small>{% trans "O'tkazildi" %}</small>
             </div>
         </div>
     </div>
@@ -195,7 +196,7 @@
         <div class="card border-info text-center">
             <div class="card-body py-2">
                 <h3 class="text-info mb-0">{{ avg_days }}</h3>
-                <small>O'rtacha kun</small>
+                <small>{% trans "O'rtacha kun" %}</small>
             </div>
         </div>
     </div>
@@ -203,7 +204,7 @@
         <div class="card border-secondary text-center">
             <div class="card-body py-2">
                 <h3 class="text-secondary mb-0">{{ non_resident_count }}</h3>
-                <small>Norezident</small>
+                <small>{% trans "Norezident" %}</small>
             </div>
         </div>
     </div>
@@ -213,17 +214,17 @@
 <div class="row g-2 mb-4">
     <div class="col-md-4">
         <div class="card text-center" style="border-color:#ffc107;">
-            <div class="card-body py-2"><h4 class="mb-0">🟡 {{ registered }}</h4><small>Registratsiya</small></div>
+            <div class="card-body py-2"><h4 class="mb-0">🟡 {{ registered }}</h4><small>{% trans "Registratsiya" %}</small></div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card text-center" style="border-color:#0d6efd;">
-            <div class="card-body py-2"><h4 class="mb-0">🔵 {{ admitted }}</h4><small>Yotqizilgan</small></div>
+            <div class="card-body py-2"><h4 class="mb-0">🔵 {{ admitted }}</h4><small>{% trans "Yotqizilgan" %}</small></div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card text-center" style="border-color:#198754;">
-            <div class="card-body py-2"><h4 class="mb-0">🟢 {{ completed }}</h4><small>Yakunlangan</small></div>
+            <div class="card-body py-2"><h4 class="mb-0">🟢 {{ completed }}</h4><small>{% trans "Yakunlangan" %}</small></div>
         </div>
     </div>
 </div>
@@ -232,7 +233,7 @@
 <div class="row g-3 mb-4">
     <div class="col-md-8">
         <div class="card">
-            <div class="card-header">Oylik dinamika</div>
+            <div class="card-header">{% trans "Oylik dinamika" %}</div>
             <div class="card-body"><canvas id="monthlyChart" height="100"></canvas></div>
         </div>
     </div>
@@ -245,17 +246,18 @@
                     <div class="card-body d-flex align-items-center gap-3 py-2">
                         <div style="font-size:32px">👶</div>
                         <div class="flex-fill">
-                            <div class="text-muted small">16 yoshgacha bemorlar</div>
-                            <div class="h4 fw-bold text-warning mb-0">{{ under16_count|default:0 }} ta</div>
+                            <div class="text-muted small">{% trans "16 yoshgacha bemorlar" %}</div>
+                            <div class="h4 fw-bold text-warning mb-0">{% blocktrans with cnt=under16_count|default:0 %}{{ cnt }} ta{% endblocktrans %}</div>
                             {% if total and under16_count %}
+                            {% widthratio under16_count total 100 as under16_pct %}
                             <div class="progress mt-1" style="height:3px;">
-                                <div class="progress-bar bg-warning" style="width:{% widthratio under16_count total 100 %}%"></div>
+                                <div class="progress-bar bg-warning" style="width:{{ under16_pct }}%"></div>
                             </div>
-                            <div class="text-muted small">Jami bemorlarning {% widthratio under16_count total 100 %}%</div>
+                            <div class="text-muted small">{% blocktrans with pct=under16_pct %}Jami bemorlarning {{ pct }}%{% endblocktrans %}</div>
                             {% endif %}
                         </div>
                         <a href="?age_group=under16&year={{ selected_year }}&month={{ selected_month }}&department={{ selected_dept }}&patient_category={{ selected_category }}&visit_type={{ visit_type }}"
-                           class="btn btn-sm btn-outline-warning">Ko'rish</a>
+                           class="btn btn-sm btn-outline-warning">{% trans "Ko'rish" %}</a>
                     </div>
                 </div>
             </div>
@@ -264,53 +266,54 @@
                     <div class="card-body d-flex align-items-center gap-3 py-2">
                         <div style="font-size:32px">🧑</div>
                         <div class="flex-fill">
-                            <div class="text-muted small">16 yoshdan katta bemorlar</div>
-                            <div class="h4 fw-bold text-info mb-0">{{ adult_count|default:0 }} ta</div>
+                            <div class="text-muted small">{% trans "16 yoshdan katta bemorlar" %}</div>
+                            <div class="h4 fw-bold text-info mb-0">{% blocktrans with cnt=adult_count|default:0 %}{{ cnt }} ta{% endblocktrans %}</div>
                             {% if total and adult_count %}
+                            {% widthratio adult_count total 100 as adult_pct %}
                             <div class="progress mt-1" style="height:3px;">
-                                <div class="progress-bar bg-info" style="width:{% widthratio adult_count total 100 %}%"></div>
+                                <div class="progress-bar bg-info" style="width:{{ adult_pct }}%"></div>
                             </div>
-                            <div class="text-muted small">Jami bemorlarning {% widthratio adult_count total 100 %}%</div>
+                            <div class="text-muted small">{% blocktrans with pct=adult_pct %}Jami bemorlarning {{ pct }}%{% endblocktrans %}</div>
                             {% endif %}
                         </div>
                         <a href="?age_group=adult&year={{ selected_year }}&month={{ selected_month }}&department={{ selected_dept }}&patient_category={{ selected_category }}&visit_type={{ visit_type }}"
-                           class="btn btn-sm btn-outline-info">Ko'rish</a>
+                           class="btn btn-sm btn-outline-info">{% trans "Ko'rish" %}</a>
                     </div>
                 </div>
             </div>
         </div>
         {% else %}
         <div class="alert alert-info d-flex align-items-center gap-2 py-2 mb-0">
-            {% if age_group == 'under16' %}👶 <strong>16 yoshgacha bemorlar:</strong>
-            {% else %}🧑 <strong>16 yoshdan katta bemorlar:</strong>{% endif %}
-            {{ total }} ta bemor ko'rsatilmoqda
+            {% if age_group == 'under16' %}👶 <strong>{% trans "16 yoshgacha bemorlar:" %}</strong>
+            {% else %}🧑 <strong>{% trans "16 yoshdan katta bemorlar:" %}</strong>{% endif %}
+            {% blocktrans with cnt=total %}{{ cnt }} ta bemor ko'rsatilmoqda{% endblocktrans %}
             <a href="?year={{ selected_year }}&month={{ selected_month }}&department={{ selected_dept }}&patient_category={{ selected_category }}&visit_type={{ visit_type }}"
-               class="btn btn-sm btn-outline-secondary ms-auto">✕ Filtrni olib tashlash</a>
+               class="btn btn-sm btn-outline-secondary ms-auto">✕ {% trans "Filtrni olib tashlash" %}</a>
         </div>
         {% endif %}
     </div>
 
     <div class="col-md-4">
         <div class="card">
-            <div class="card-header">Jins bo'yicha</div>
+            <div class="card-header">{% trans "Jins bo'yicha" %}</div>
             <div class="card-body"><canvas id="genderChart"></canvas></div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card">
-            <div class="card-header">Kategoriya bo'yicha</div>
+            <div class="card-header">{% trans "Kategoriya bo'yicha" %}</div>
             <div class="card-body"><canvas id="categoryChart"></canvas></div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card">
-            <div class="card-header">Kasallanish yakuni</div>
+            <div class="card-header">{% trans "Kasallanish yakuni" %}</div>
             <div class="card-body"><canvas id="outcomeChart"></canvas></div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card">
-            <div class="card-header">Qabul turi</div>
+            <div class="card-header">{% trans "Qabul turi" %}</div>
             <div class="card-body"><canvas id="emergencyChart"></canvas></div>
         </div>
     </div>
@@ -318,11 +321,11 @@
 
 <!-- Bo'lim jadvali -->
 <div class="card mb-3">
-    <div class="card-header">Bo'limlar bo'yicha</div>
+    <div class="card-header">{% trans "Bo'limlar bo'yicha" %}</div>
     <div class="card-body p-0">
         <table class="table table-hover mb-0">
             <thead class="table-light">
-                <tr><th>Bo'lim</th><th>Bemorlar</th><th>Ulushi</th></tr>
+                <tr><th>{% trans "Bo'lim" %}</th><th>{% trans "Bemorlar" %}</th><th>{% trans "Ulushi" %}</th></tr>
             </thead>
             <tbody>
                 {% for item in dept_stats %}
@@ -339,7 +342,7 @@
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="3" class="text-center text-muted">Ma'lumot yo'q</td></tr>
+                <tr><td colspan="3" class="text-center text-muted">{% trans "Ma'lumot yo'q" %}</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -348,11 +351,11 @@
 
 {% if doctor_stats %}
 <div class="card mb-4">
-    <div class="card-header">Shifokorlar bo'yicha (Top 10)</div>
+    <div class="card-header">{% trans "Shifokorlar bo'yicha (Top 10)" %}</div>
     <div class="card-body p-0">
         <table class="table table-hover mb-0">
             <thead class="table-light">
-                <tr><th>Shifokor</th><th>Bemorlar</th></tr>
+                <tr><th>{% trans "Shifokor" %}</th><th>{% trans "Bemorlar" %}</th></tr>
             </thead>
             <tbody>
                 {% for item in doctor_stats %}
@@ -371,18 +374,18 @@
 {% if org_stats %}
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <strong>🏢 Tashkilot bo'yicha statistika</strong>
-        <span class="badge bg-secondary">{{ org_stats|length }} ta</span>
+        <strong>🏢 {% trans "Tashkilot bo'yicha statistika" %}</strong>
+        <span class="badge bg-secondary">{% blocktrans with cnt=org_stats|length %}{{ cnt }} ta{% endblocktrans %}</span>
     </div>
     <div class="card-body p-0">
         <table class="table table-hover table-sm align-middle mb-0">
             <thead class="table-light">
                 <tr>
-                    <th class="ps-3">Tashkilot</th>
-                    <th class="text-center">Kod</th>
-                    <th class="text-center">Filial</th>
-                    <th class="text-center">Bemorlar</th>
-                    <th class="text-end pe-3">Xizmatlar summasi</th>
+                    <th class="ps-3">{% trans "Tashkilot" %}</th>
+                    <th class="text-center">{% trans "Kod" %}</th>
+                    <th class="text-center">{% trans "Filial" %}</th>
+                    <th class="text-center">{% trans "Bemorlar" %}</th>
+                    <th class="text-end pe-3">{% trans "Xizmatlar summasi" %}</th>
                 </tr>
             </thead>
             <tbody>
@@ -403,7 +406,7 @@
     </div>
 </div>
 <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white"><strong>📊 Tashkilotlar bo'yicha bemorlar soni</strong></div>
+    <div class="card-header bg-white"><strong>📊 {% trans "Tashkilotlar bo'yicha bemorlar soni" %}</strong></div>
     <div class="card-body"><canvas id="orgChart" height="80"></canvas></div>
 </div>
 {% endif %}
@@ -414,15 +417,15 @@
     <div class="card-body">
         <div class="row text-center g-2">
             <div class="col-md-4">
-                <div class="text-muted small mb-1">Xizmatlar jami</div>
+                <div class="text-muted small mb-1">{% trans "Xizmatlar jami" %}</div>
                 <div class="fw-bold text-info fs-5">{{ services_grand_total|floatformat:0 }} so'm</div>
             </div>
             <div class="col-md-4">
-                <div class="text-muted small mb-1">Dorilar jami</div>
+                <div class="text-muted small mb-1">{% trans "Dorilar jami" %}</div>
                 <div class="fw-bold text-warning fs-5">{{ medicines_grand_total|floatformat:0 }} so'm</div>
             </div>
             <div class="col-md-4">
-                <div class="text-muted small mb-1">Umumiy jami</div>
+                <div class="text-muted small mb-1">{% trans "Umumiy jami" %}</div>
                 <div class="fw-bold text-success fs-4">{{ services_grand_total|add:medicines_grand_total|floatformat:0 }} so'm</div>
             </div>
         </div>
@@ -433,7 +436,7 @@
 {% if top_medicines %}
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <strong>💊 Eng ko'p ishlatiladigan dorilar (Top 15)</strong>
+        <strong>💊 {% trans "Eng ko'p ishlatiladigan dorilar (Top 15)" %}</strong>
         <span class="badge bg-warning text-dark">{{ medicines_grand_total|floatformat:0 }} so'm</span>
     </div>
     <div class="card-body p-0">
@@ -441,11 +444,11 @@
             <thead class="table-light">
                 <tr>
                     <th class="ps-3" style="width:40px">№</th>
-                    <th>Dori nomi</th>
-                    <th class="text-center">Birlik</th>
-                    <th class="text-center">Jami miqdor</th>
-                    <th class="text-center">Bemorlar</th>
-                    <th class="text-end pe-3">Jami summa</th>
+                    <th>{% trans "Dori nomi" %}</th>
+                    <th class="text-center">{% trans "Birlik" %}</th>
+                    <th class="text-center">{% trans "Jami miqdor" %}</th>
+                    <th class="text-center">{% trans "Bemorlar" %}</th>
+                    <th class="text-end pe-3">{% trans "Jami summa" %}</th>
                 </tr>
             </thead>
             <tbody>
@@ -462,7 +465,7 @@
             </tbody>
             <tfoot class="table-light">
                 <tr>
-                    <td colspan="5" class="text-end fw-bold">Jami:</td>
+                    <td colspan="5" class="text-end fw-bold">{% trans "Jami:" %}</td>
                     <td class="text-end pe-3 fw-bold text-warning">{{ medicines_grand_total|floatformat:0 }} so'm</td>
                 </tr>
             </tfoot>
@@ -472,9 +475,9 @@
 {% endif %}
 
 <div class="d-flex gap-2 mb-5">
-    <a href="{% url 'export_excel' %}?{{ current_filters }}" class="btn btn-success">📥 Excel (eski)</a>
-    <a href="{% url 'export_monthly_report' %}?{{ current_filters }}" class="btn btn-warning text-dark">📋 Oylik rasmiy hisobot</a>
-    <a href="{% url 'export_full_report' %}?{{ current_filters }}" class="btn btn-primary">📊 To'liq hisobot (8 sheet)</a>
+    <a href="{% url 'export_excel' %}?{{ current_filters }}" class="btn btn-success">📥 {% trans "Excel (eski)" %}</a>
+    <a href="{% url 'export_monthly_report' %}?{{ current_filters }}" class="btn btn-warning text-dark">📋 {% trans "Oylik rasmiy hisobot" %}</a>
+    <a href="{% url 'export_full_report' %}?{{ current_filters }}" class="btn btn-primary">📊 {% trans "To'liq hisobot (8 sheet)" %}</a>
 </div>
 
 {% endblock %}

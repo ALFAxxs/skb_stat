@@ -1,5 +1,6 @@
 <!-- templates/patients/reception_form.html -->
 {% extends 'base.html' %}
+{% load i18n %}
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
@@ -31,7 +32,7 @@
 
             {% if form.errors %}
             <div class="alert alert-danger">
-                <strong>Xatoliklar bor:</strong><br>
+                <strong>{% trans "Xatoliklar bor:" %}</strong><br>
                 {% for field, errors in form.errors.items %}
                     <div>• <b>{{ field }}</b>: {{ errors|join:", " }}</div>
                 {% endfor %}
@@ -40,18 +41,18 @@
 
             <!-- 1. Bemor ma'lumotlari -->
             <div class="form-section">
-                <h5>👤 Bemor ma'lumotlari</h5>
+                <h5>👤 {% trans "Bemor ma'lumotlari" %}</h5>
                 <div class="row">
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-bold">
-                            Kelgan sana va soat <span class="text-danger">*</span>
+                            {% trans "Kelgan sana va soat" %} <span class="text-danger">*</span>
                         </label>
                         {{ form.admission_date }}
                         <div class="text-danger small">{{ form.admission_date.errors }}</div>
                     </div>
                     <div class="col-md-8 mb-3">
                         <label class="form-label fw-bold">
-                            To'liq ism-familiya <span class="text-danger">*</span>
+                            {% trans "To'liq ism-familiya" %} <span class="text-danger">*</span>
                         </label>
                         {{ form.full_name }}
                         <div class="text-danger small">{{ form.full_name.errors }}</div>
@@ -59,10 +60,10 @@
 
                     <!-- Rezidentlik — TOGGLE -->
                     <div class="col-md-3 mb-3">
-                        <label class="form-label fw-bold d-block">Rezidentlik holati</label>
+                        <label class="form-label fw-bold d-block">{% trans "Rezidentlik holati" %}</label>
                         <div class="toggle-group mt-2">
-                            <button type="button" class="toggle-btn" id="res-yes">🏠 Rezident</button>
-                            <button type="button" class="toggle-btn" id="res-no">🌍 Norezident</button>
+                            <button type="button" class="toggle-btn" id="res-yes">🏠 {% trans "Rezident" %}</button>
+                            <button type="button" class="toggle-btn" id="res-no">🌍 {% trans "Norezident" %}</button>
                         </div>
                         <input type="hidden" name="resident_status" id="resident_status_val"
                                value="{{ form.instance.resident_status|default:'resident' }}">
@@ -72,7 +73,7 @@
                     <!-- Kategoriya -->
                     <div class="col-md-3 mb-3" id="patient-category-field">
                         <label class="form-label fw-bold">
-                            Bemor kategoriyasi <span class="text-danger">*</span>
+                            {% trans "Bemor kategoriyasi" %} <span class="text-danger">*</span>
                         </label>
                         {{ form.patient_category }}
                         <div class="text-danger small">{{ form.patient_category.errors }}</div>
@@ -81,7 +82,7 @@
                     <!-- Jins -->
                     <div class="col-md-3 mb-3">
                         <label class="form-label fw-bold">
-                            Jinsi <span class="text-danger">*</span>
+                            {% trans "Jinsi" %} <span class="text-danger">*</span>
                         </label>
                         {{ form.gender }}
                         <div class="text-danger small">{{ form.gender.errors }}</div>
@@ -90,7 +91,7 @@
                     <!-- Tug'ilgan sana -->
                     <div class="col-md-3 mb-3">
                         <label class="form-label fw-bold">
-                            Tug'ilgan sana <span class="text-danger">*</span>
+                            {% trans "Tug'ilgan sana" %} <span class="text-danger">*</span>
                         </label>
                         {{ form.birth_date }}
                         <div class="text-danger small">{{ form.birth_date.errors }}</div>
@@ -118,45 +119,10 @@
                     <!-- Ijtimoiy holat -->
                     <div class="col-md-3 mb-3">
                         <label class="form-label fw-bold">
-                            Ijtimoiy holati <span class="text-danger">*</span>
+                            {% trans "Ijtimoiy holati" %} <span class="text-danger">*</span>
                         </label>
                         {{ form.social_status }}
                         <div class="text-danger small">{{ form.social_status.errors }}</div>
-                    </div>
-
-                    <!-- Ish joyi -->
-                    <div class="col-md-6 mb-3" id="workplace-field">
-                        <label class="form-label fw-bold">
-                            Ish joyi
-                            <span class="badge bg-primary ms-1 small" id="railway-badge" style="display:none;">
-                                🚂 Temir yo'lchi
-                            </span>
-                        </label>
-                        <div id="org-search-block" style="display:none;">
-                            <div class="position-relative">
-                                <input type="text" id="org-search-input"
-                                       class="form-control"
-                                       placeholder="🔍 Korxona kodi, INN, nomi yoki filial..."
-                                       autocomplete="off">
-                                <div id="org-dropdown"
-                                     style="display:none; position:absolute; top:100%; left:0; right:0;
-                                            z-index:1050; background:#fff; border:1px solid #dee2e6;
-                                            border-radius:8px; max-height:280px; overflow-y:auto;
-                                            box-shadow:0 4px 16px rgba(0,0,0,.12);">
-                                </div>
-                            </div>
-                            <input type="hidden" name="workplace_org" id="workplace_org_id" value="">
-                            <div id="org-selected" class="mt-2" style="display:none;">
-                                <div class="alert alert-success py-2 mb-0 d-flex justify-content-between align-items-start">
-                                    <div id="org-selected-info" class="small"></div>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary ms-2"
-                                            id="org-clear">✕</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="workplace-text-block">
-                            {{ form.workplace }}
-                        </div>
                     </div>
 
                     <!-- Lavozim -->
@@ -169,10 +135,10 @@
 
                     <!-- Urush qatnashchisi — TOGGLE -->
                     <div class="col-md-3 mb-3">
-                        <label class="form-label fw-bold d-block">Urush qatnashchisi?</label>
+                        <label class="form-label fw-bold d-block">{% trans "Urush qatnashchisi?" %}</label>
                         <div class="toggle-group mt-2">
-                            <button type="button" class="toggle-btn" id="vet-yes">&#9876; Ha</button>
-                            <button type="button" class="toggle-btn" id="vet-no">&#10007; Yo'q</button>
+                            <button type="button" class="toggle-btn" id="vet-yes">&#9876; {% trans "Ha" %}</button>
+                            <button type="button" class="toggle-btn" id="vet-no">&#10007; {% trans "Yo'q" %}</button>
                         </div>
                         <input type="hidden" name="is_war_veteran" id="is_war_veteran_val"
                                value="{{ form.instance.is_war_veteran|yesno:'True,False' }}">
@@ -180,10 +146,10 @@
 
                     <!-- Pensioner — TOGGLE -->
                     <div class="col-md-3 mb-3">
-                        <label class="form-label fw-bold d-block">Pensioner?</label>
+                        <label class="form-label fw-bold d-block">{% trans "Pensioner?" %}</label>
                         <div class="toggle-group mt-2">
-                            <button type="button" class="toggle-btn" id="pen-yes">&#128081; Ha</button>
-                            <button type="button" class="toggle-btn" id="pen-no">&#10007; Yo'q</button>
+                            <button type="button" class="toggle-btn" id="pen-yes">&#128081; {% trans "Ha" %}</button>
+                            <button type="button" class="toggle-btn" id="pen-no">&#10007; {% trans "Yo'q" %}</button>
                         </div>
                         <input type="hidden" name="is_pensioner" id="is_pensioner_val"
                                value="{{ form.instance.is_pensioner|yesno:'True,False'|default:'False' }}">
@@ -196,16 +162,15 @@
             <!-- OTA-ONA / VASIY MA'LUMOTLARI — alohida section -->
             <div id="parent-block-wrapper" style="display:none;">
                 <div class="form-section border-warning" style="border-left:4px solid #ffc107 !important;">
-                    <h5>👨‍👩‍👦 Ota-ona / Vasiy ma'lumotlari
-                        <span class="badge bg-warning text-dark ms-2" style="font-size:13px;">Ota-ona qaramog'ida</span>
+                    <h5>👨‍👩‍👦 {% trans "Ota-ona / Vasiy ma'lumotlari" %}
+                        <span class="badge bg-warning text-dark ms-2" style="font-size:13px;">{% trans "Ota-ona qaramog'ida" %}</span>
                         <span id="age-display" class="text-muted ms-2" style="font-size:14px;font-weight:400;"></span>
                     </h5>
 
                     <!-- 16+ ogohlantirish -->
                     <div id="railway-adult-warning" style="display:none;">
                         <div class="alert alert-warning py-2 mb-3">
-                            <strong>⚠️ Diqqat!</strong> Bemor 16 yoshga to'lgan —
-                            kategoriya avtomatik <strong>Pullik</strong> ga o'zgartirildi.
+                            <strong>⚠️ {% trans "Diqqat!" %}</strong> {% blocktrans %}Bemor 16 yoshga to'lgan — kategoriya avtomatik <strong>Pullik</strong> ga o'zgartirildi.{% endblocktrans %}
                         </div>
                     </div>
 
@@ -213,23 +178,23 @@
                         <!-- Ota-ona to'liq ismi -->
                         <div class="col-md-4 mb-3">
                             <label class="form-label fw-bold">
-                                Ota-ona / Vasiy ismi <span class="text-danger">*</span>
+                                {% trans "Ota-ona / Vasiy ismi" %} <span class="text-danger">*</span>
                             </label>
                             <input type="text" name="parent_name" id="id_parent_name"
                                    class="form-control"
                                    placeholder="Karimov Jasur Aliyevich"
                                    value="{{ form.parent_name.value|default:'' }}">
-                            <div class="form-text text-muted">To'liq ism-familiya sharif</div>
+                            <div class="form-text text-muted">{% trans "To'liq ism-familiya sharif" %}</div>
                         </div>
 
                         <!-- Ota-ona JSHSHIR — faqat TY uchun -->
                         <div class="col-md-3 mb-3" id="parent-jshshir-block" style="display:none;">
                             <label class="form-label fw-bold">
-                                Ota-ona JSHSHIR <span class="text-danger">*</span>
+                                {% trans "Ota-ona JSHSHIR" %} <span class="text-danger">*</span>
                             </label>
                             <input type="text" name="parent_jshshir" id="id_parent_jshshir"
                                    class="form-control"
-                                   placeholder="14 raqamli kod"
+                                   placeholder="{% trans "14 raqamli kod" %}"
                                    maxlength="14"
                                    value="{{ form.instance.parent_jshshir|default:'' }}">
                         </div>
@@ -237,13 +202,13 @@
                         <!-- Ota-ona ish joyi — faqat TY uchun -->
                         <div class="col-md-5 mb-3" id="parent-org-block" style="display:none;">
                             <label class="form-label fw-bold">
-                                Ota-onasining ish joyi
-                                <span class="badge bg-primary ms-1 small">🚂 TY tashkiloti</span>
+                                {% trans "Ota-onasining ish joyi" %}
+                                <span class="badge bg-primary ms-1 small">🚂 {% trans "TY tashkiloti" %}</span>
                             </label>
                             <div class="position-relative">
                                 <input type="text" id="parent-org-search"
                                        class="form-control"
-                                       placeholder="🔍 Korxona kodi, INN yoki nomi..."
+                                       placeholder="🔍 {% trans "Korxona kodi, INN yoki nomi..." %}"
                                        autocomplete="off">
                                 <div id="parent-org-dropdown"
                                      style="display:none; position:absolute; top:100%; left:0; right:0;
@@ -267,17 +232,17 @@
 
             <!-- 2. Yashash manzili -->
             <div class="form-section" id="address-section">
-                <h5>📍 Yashash manzili</h5>
+                <h5>📍 {% trans "Yashash manzili" %}</h5>
                 <div class="row">
                     <div class="col-md-3 mb-3">
-                        <label class="form-label">Davlat</label>
+                        <label class="form-label">{% trans "Davlat" %}</label>
                         {{ form.country }}
                         <div class="text-danger small">{{ form.country.errors }}</div>
                     </div>
                     <div class="col-md-3 mb-3">
-                        <label class="form-label">Viloyat</label>
+                        <label class="form-label">{% trans "Viloyat" %}</label>
                         <select name="region" id="id_region" class="form-select">
-                            <option value="">— Tanlang —</option>
+                            <option value="">{% trans "— Tanlang —" %}</option>
                             {% if form.instance.region %}
                                 <option value="{{ form.instance.region.id }}" selected>
                                     {{ form.instance.region.name }}
@@ -286,9 +251,9 @@
                         </select>
                     </div>
                     <div class="col-md-3 mb-3">
-                        <label class="form-label">Tuman</label>
+                        <label class="form-label">{% trans "Tuman" %}</label>
                         <select name="district" id="id_district" class="form-select">
-                            <option value="">— Tanlang —</option>
+                            <option value="">{% trans "— Tanlang —" %}</option>
                             {% if form.instance.district %}
                                 <option value="{{ form.instance.district.id }}" selected>
                                     {{ form.instance.district.name }}
@@ -297,9 +262,9 @@
                         </select>
                     </div>
                     <div class="col-md-3 mb-3">
-                        <label class="form-label">Shahar/Qishloq</label>
+                        <label class="form-label">{% trans "Shahar/Qishloq" %}</label>
                         <select name="city" id="id_city" class="form-select">
-                            <option value="">— Tanlang —</option>
+                            <option value="">{% trans "— Tanlang —" %}</option>
                             {% if form.instance.city %}
                                 <option value="{{ form.instance.city.id }}" selected>
                                     {{ form.instance.city.name }}
@@ -308,14 +273,70 @@
                         </select>
                     </div>
                     <div class="col-md-12 mb-3">
-                        <label class="form-label">Ko'cha nomi va uy raqami</label>
+                        <label class="form-label">{% trans "Ko'cha nomi va uy raqami" %}</label>
                         {{ form.street_address }}
                         <div class="text-danger small">{{ form.street_address.errors }}</div>
                     </div>
                 </div>
             </div>
 
-            <!-- 3. Qabul ma'lumotlari -->
+            <!-- 3. Yotish ma'lumotlari -->
+            <div class="form-section">
+                <h5>🛏 {% trans "Yotish ma'lumotlari" %}</h5>
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">{% trans "Xona raqami" %}</label>
+                        {{ form.room_number }}
+                    </div>
+                    <div class="col-md-5 mb-3">
+                        <label class="form-label fw-bold d-block">{% trans "Harakatlanish turi" %}</label>
+                        <div class="toggle-group mt-2" id="mobility-group">
+                            <button type="button" class="toggle-btn mob-btn" data-val="walking">🚶 {% trans "Yura oladi" %}</button>
+                            <button type="button" class="toggle-btn mob-btn" data-val="wheelchair">♿ {% trans "Aravachada" %}</button>
+                            <button type="button" class="toggle-btn mob-btn" data-val="stretcher">🛻 {% trans "Zambilda" %}</button>
+                        </div>
+                        <input type="hidden" name="mobility_type" id="mobility_type_val"
+                               value="{{ form.instance.mobility_type|default:'' }}">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">{% trans "Transport turi" %}</label>
+                        {{ form.transport_type }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3b. Tibbiy ma'lumotlar -->
+            <div class="form-section">
+                <h5>🩺 {% trans "Tibbiy ma'lumotlar" %}</h5>
+                <div class="row">
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">{% trans "Qon guruhi" %}</label>
+                        {{ form.blood_group }}
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">{% trans "Rezus-faktor" %}</label>
+                        {{ form.rh_factor }}
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">{% trans "Bo'yi (sm)" %}</label>
+                        {{ form.height_cm }}
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">{% trans "Vazni (kg)" %}</label>
+                        {{ form.weight_kg }}
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">{% trans "Harorat (°C)" %}</label>
+                        {{ form.body_temperature }}
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">{% trans "Dorilarga allergiya" %}</label>
+                        {{ form.drug_allergy }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Qabul ma'lumotlari -->
             <div class="form-section">
                 <h5>🏥 Qabul ma'lumotlari</h5>
                 <div class="row">
@@ -369,6 +390,11 @@
                         </label>
                         {{ form.department }}
                         <div class="text-danger small">{{ form.department.errors }}</div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">{{ form.case_sheet_number.label }}</label>
+                        {{ form.case_sheet_number }}
+                        <div class="text-danger small">{{ form.case_sheet_number.errors }}</div>
                     </div>
                     <div class="col-md-3 mb-3" id="hospital-type-field">
                         <label class="form-label">{{ form.hospital_type.label }}</label>
@@ -456,6 +482,315 @@
             </div>
 
         </form>
+
+    {% if patient %}
+    <!-- ==================== EPIZOD ACCORDION ==================== -->
+    <div class="mt-4">
+        <div class="accordion" id="episodeAccordion">
+
+            <!-- Boshlang'ich ko'rik -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#collapseExam">
+                        🩻 Первичный осмотр
+                    </button>
+                </h2>
+                <div id="collapseExam" class="accordion-collapse collapse" data-bs-parent="#episodeAccordion">
+                    <div class="accordion-body">
+                        <div id="exam-alert"></div>
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-semibold">Shikoyatlar</label>
+                                <textarea class="form-control exam-field" data-field="complaints" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-semibold">Kasallik tarixi (Anamnesis morbi)</label>
+                                <textarea class="form-control exam-field" data-field="anamnesis_morbi" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-semibold">Hayot tarixi (Anamnesis vitae)</label>
+                                <textarea class="form-control exam-field" data-field="anamnesis_vitae" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-semibold">Mahalliy holat (Status localis)</label>
+                                <textarea class="form-control exam-field" data-field="status_localis" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-semibold">Epidemiologik anamnez</label>
+                                <textarea class="form-control exam-field" data-field="epidemiological_anamnesis" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-semibold">Hozirgi holat (Status praesens)</label>
+                                <textarea class="form-control exam-field" data-field="status_praesens" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-semibold">Allergologik anamnez</label>
+                                <textarea class="form-control exam-field" data-field="allergy_anamnesis" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-semibold">Nevrologik holat</label>
+                                <textarea class="form-control exam-field" data-field="neurological_status" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Laboratoriya tekshiruvlari</label>
+                                <textarea class="form-control exam-field" data-field="lab_investigations" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-success" id="btn-save-exam">
+                            💾 Ko'rikni saqlash
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /accordion -->
+
+        <!-- ==================== EPIZOD TASHXISLARI ==================== -->
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>🏷 Диагнозы в эпизоде (МКБ-10)</strong>
+                <button class="btn btn-sm btn-outline-primary" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#diagAddForm">
+                    ➕ Tashxis qo'shish
+                </button>
+            </div>
+            <div class="card-body">
+
+                <!-- Qo'shish formasi -->
+                <div class="collapse mb-3" id="diagAddForm">
+                    <div class="card card-body bg-light">
+                        <div id="diag-alert"></div>
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">MKB-10 kodi</label>
+                                <div class="position-relative">
+                                    <input type="text" id="icd10-input" class="form-control"
+                                           placeholder="🔍 Kod yoki nom..." autocomplete="off">
+                                    <div id="icd10-dropdown"
+                                         style="display:none;position:absolute;top:100%;left:0;right:0;
+                                                z-index:1060;background:#fff;border:1px solid #dee2e6;
+                                                border-radius:8px;max-height:260px;overflow-y:auto;
+                                                box-shadow:0 4px 16px rgba(0,0,0,.12);"></div>
+                                </div>
+                                <input type="hidden" id="icd10-code-val" value="">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-semibold">Turi</label>
+                                <select id="diag-type" class="form-select">
+                                    <option value="preliminary">Dastlabki</option>
+                                    <option value="final">Yakuniy</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Roli</label>
+                                <select id="diag-role" class="form-select">
+                                    <option value="main">Asosiy</option>
+                                    <option value="comorbidity">Hamroh kasallik</option>
+                                    <option value="complication">Asorat</option>
+                                    <option value="background">Fon kasalligi</option>
+                                    <option value="competitive">Raqobatdosh</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Klinik matn</label>
+                                <textarea id="diag-text" class="form-control" rows="1"></textarea>
+                            </div>
+                            <div class="col-12 mt-2">
+                                <button type="button" class="btn btn-primary btn-sm" id="btn-add-diag">
+                                    ✅ Qo'shish
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tashxislar jadvali -->
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered align-middle" id="diag-table">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>MKB kod</th>
+                                <th>Nom</th>
+                                <th>Turi</th>
+                                <th>Roli</th>
+                                <th>Klinik matn</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="diag-tbody">
+                            <tr id="diag-empty-row">
+                                <td colspan="6" class="text-center text-muted">Tashxislar yo'q</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div><!-- /mt-4 -->
+
+    <script>
+    (function(){
+        const PATIENT_ID    = {{ patient.pk }};
+        const EXAM_URL      = `/patients/ajax/initial-examination/${PATIENT_ID}/`;
+        const DIAG_URL      = `/patients/ajax/episode-diagnoses/${PATIENT_ID}/`;
+        const ICD10_URL     = `/patients/ajax/icd10-search/`;
+        const CSRF          = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+        const MSG_EXAM_SAVED = "✅ {% trans "Ko'rik saqlandi" %}";
+        const MSG_ERROR_PREFIX = "❌ ";
+        const MSG_ERROR = "{% trans 'Xato' %}";
+        const MSG_SERVER_ERROR = "❌ {% trans 'Server xatosi' %}";
+        const MSG_NO_DIAGNOSES = "{% trans "Tashxislar yo'q" %}";
+        const MSG_DELETE_CONFIRM = "{% trans "O'chirilsinmi?" %}";
+        const MSG_DIAGNOSIS_ADDED = "✅ {% trans "Tashxis qo'shildi" %}";
+
+        function showAlert(el, msg, type='success') {
+            el.innerHTML = `<div class="alert alert-${type} py-2">${msg}</div>`;
+            if (type === 'success') setTimeout(() => { el.innerHTML = ''; }, 2000);
+        }
+
+        // ===== BOSHLANG'ICH KO'RIK =====
+        const examAlert = document.getElementById('exam-alert');
+
+        // Yuklash
+        fetch(EXAM_URL, {headers: {'X-CSRFToken': CSRF}})
+            .then(r => r.json())
+            .then(data => {
+                document.querySelectorAll('.exam-field').forEach(ta => {
+                    const f = ta.dataset.field;
+                    if (data[f] !== undefined) ta.value = data[f];
+                });
+            }).catch(() => {});
+
+        // Saqlash
+        document.getElementById('btn-save-exam')?.addEventListener('click', function() {
+            const body = {};
+            document.querySelectorAll('.exam-field').forEach(ta => {
+                body[ta.dataset.field] = ta.value;
+            });
+            fetch(EXAM_URL, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+                body: JSON.stringify(body)
+            }).then(r => r.json())
+              .then(d => {
+                  if (d.success) showAlert(examAlert, MSG_EXAM_SAVED);
+                  else showAlert(examAlert, MSG_ERROR_PREFIX + (d.error||MSG_ERROR), 'danger');
+              }).catch(() => showAlert(examAlert, MSG_SERVER_ERROR, 'danger'));
+        });
+
+        // ===== ICD10 AUTOCOMPLETE =====
+        const icd10Input    = document.getElementById('icd10-input');
+        const icd10Drop     = document.getElementById('icd10-dropdown');
+        const icd10CodeVal  = document.getElementById('icd10-code-val');
+        let icd10Timer;
+
+        icd10Input?.addEventListener('input', function() {
+            clearTimeout(icd10Timer);
+            const q = this.value.trim();
+            if (q.length < 2) { icd10Drop.style.display = 'none'; return; }
+            icd10Timer = setTimeout(() => {
+                fetch(`${ICD10_URL}?q=${encodeURIComponent(q)}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (!data.length) { icd10Drop.style.display = 'none'; return; }
+                        icd10Drop.innerHTML = data.map(d =>
+                            `<div class="icd-item" data-code="${d.code}"
+                                  data-title="${d.title_uz.replace(/"/g,'&quot;')}"
+                                  style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:13px;">
+                                <strong>${d.code}</strong> — ${d.title_uz}
+                                ${d.title_ru ? `<div class="text-muted" style="font-size:11px;">${d.title_ru}</div>` : ''}
+                             </div>`
+                        ).join('');
+                        icd10Drop.style.display = 'block';
+                        icd10Drop.querySelectorAll('.icd-item').forEach(item => {
+                            item.addEventListener('mouseenter', () => item.style.background = '#eef5ff');
+                            item.addEventListener('mouseleave', () => item.style.background = '');
+                            item.addEventListener('click', () => {
+                                icd10CodeVal.value = item.dataset.code;
+                                icd10Input.value   = `${item.dataset.code} — ${item.dataset.title}`;
+                                icd10Drop.style.display = 'none';
+                            });
+                        });
+                    });
+            }, 300);
+        });
+        document.addEventListener('click', e => {
+            if (!icd10Input?.contains(e.target) && !icd10Drop?.contains(e.target))
+                icd10Drop.style.display = 'none';
+        });
+
+        // ===== TASHXISLAR =====
+        const diagAlert = document.getElementById('diag-alert');
+        const diagTbody = document.getElementById('diag-tbody');
+
+        function renderDiags(diags) {
+            const emptyRow = document.getElementById('diag-empty-row');
+            if (!diags.length) {
+                diagTbody.innerHTML = `<tr id="diag-empty-row"><td colspan="6" class="text-center text-muted">${MSG_NO_DIAGNOSES}</td></tr>`;
+                return;
+            }
+            diagTbody.innerHTML = diags.map(d => `
+                <tr data-id="${d.id}">
+                    <td><span class="badge bg-primary">${d.icd10_code||'—'}</span></td>
+                    <td style="font-size:12px;">${d.icd10_title||'—'}</td>
+                    <td><span class="badge bg-secondary">${d.diagnosis_type_display}</span></td>
+                    <td><span class="badge bg-info text-dark">${d.diagnosis_role_display}</span></td>
+                    <td style="font-size:12px;">${d.clinical_text||''}</td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-del-diag"
+                                data-id="${d.id}">🗑</button>
+                    </td>
+                </tr>`).join('');
+            diagTbody.querySelectorAll('.btn-del-diag').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    if (!confirm(MSG_DELETE_CONFIRM)) return;
+                    fetch(`/patients/ajax/episode-diagnosis/${this.dataset.id}/delete/`, {
+                        method: 'POST',
+                        headers: {'X-CSRFToken': CSRF}
+                    }).then(r => r.json())
+                      .then(d => { if (d.success) loadDiags(); })
+                      .catch(() => {});
+                });
+            });
+        }
+
+        function loadDiags() {
+            fetch(DIAG_URL, {headers: {'X-CSRFToken': CSRF}})
+                .then(r => r.json())
+                .then(d => renderDiags(d.diagnoses || []))
+                .catch(() => {});
+        }
+        loadDiags();
+
+        document.getElementById('btn-add-diag')?.addEventListener('click', function() {
+            const body = {
+                icd10_code:     icd10CodeVal.value,
+                diagnosis_type: document.getElementById('diag-type').value,
+                diagnosis_role: document.getElementById('diag-role').value,
+                clinical_text:  document.getElementById('diag-text').value,
+            };
+            fetch(DIAG_URL, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+                body: JSON.stringify(body)
+            }).then(r => r.json())
+              .then(d => {
+                  if (d.success) {
+                      showAlert(diagAlert, MSG_DIAGNOSIS_ADDED);
+                      icd10Input.value = ''; icd10CodeVal.value = '';
+                      document.getElementById('diag-text').value = '';
+                      loadDiags();
+                  } else {
+                      showAlert(diagAlert, MSG_ERROR_PREFIX + (d.error||MSG_ERROR), 'danger');
+                  }
+              }).catch(() => showAlert(diagAlert, MSG_SERVER_ERROR, 'danger'));
+        });
+    })();
+    </script>
+    {% endif %}
+
     </div>
 </div>
 {% endblock %}
@@ -463,6 +798,14 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
+    const OPT_SELECT_PLACEHOLDER = '<option value="">{% trans "— Tanlang —" %}</option>';
+    const MSG_SEARCHING_HTML = '<div style="padding:10px;color:#888;">⏳ {% trans "Qidirilmoqda..." %}</div>';
+    const MSG_NOT_FOUND_HTML = '<div style="padding:10px;color:#888;">{% trans "Topilmadi" %}</div>';
+    const TXT_CODE_PREFIX = "{% trans 'Kod' %}: ";
+    const TXT_AGE_YEAR = "{% trans 'yosh' %}";
+    const TXT_AGE_MONTH = "{% trans 'oy' %}";
+    const TXT_AGE_DAY = "{% trans 'kun' %}";
 
     // Bootstrap stillarini qo'llash
     document.querySelectorAll('input, select, textarea').forEach(el => {
@@ -501,6 +844,21 @@ document.addEventListener('DOMContentLoaded', function () {
     initToggle('vet-yes',  'vet-no',  'is_war_veteran_val');
     initToggle('pen-yes',  'pen-no',  'is_pensioner_val');
 
+    // ==================== MOBILITY TYPE TOGGLE ====================
+    (function() {
+        const hidden = document.getElementById('mobility_type_val');
+        const btns   = document.querySelectorAll('.mob-btn');
+        if (!hidden || !btns.length) return;
+        function update(val) {
+            hidden.value = val;
+            btns.forEach(b => {
+                b.classList.toggle('active-yes', b.dataset.val === val);
+            });
+        }
+        update(hidden.value || '');
+        btns.forEach(b => b.addEventListener('click', () => update(b.dataset.val)));
+    })();
+
     // ==================== REZIDENT TOGGLE ====================
     (function () {
         const resYes = document.getElementById('res-yes');
@@ -537,109 +895,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // ==================== IJTIMOIY HOLAT ====================
     const socialStatus   = document.getElementById('id_social_status');
     const workplaceField  = document.getElementById('workplace-field');
-    const orgSearchInput  = document.getElementById('org-search-input');
-    const orgDropdown     = document.getElementById('org-dropdown');
-    const orgSearchBlock  = document.getElementById('org-search-block');
-    const orgTextBlock    = document.getElementById('workplace-text-block');
-    const orgSelected     = document.getElementById('org-selected');
-    const orgSelectedInfo = document.getElementById('org-selected-info');
-    const orgIdInput      = document.getElementById('workplace_org_id');
-    const railwayBadge    = document.getElementById('railway-badge');
-    const ORG_URL         = "{% url 'organization_search' %}";
-
-    // Kategoriya o'zgarganda ish joyi blokini yangilash
-    const catSelectR = document.getElementById('id_patient_category');
-    function updateOrgBlockR(cat) {
-        const isRailway = cat === 'railway';
-        // Temir yo'lchi bo'lsa — har doim org dropdown ko'rsatish
-        if (orgSearchBlock) orgSearchBlock.style.display = isRailway ? 'block' : 'none';
-        if (orgTextBlock)   orgTextBlock.style.display   = isRailway ? 'none'  : 'block';
-        if (railwayBadge)   railwayBadge.style.display   = isRailway ? 'inline-block' : 'none';
-        // Ish joyi maydonini ko'rsatish
-        if (workplaceField) workplaceField.style.display = 'block';
-    }
-    if (catSelectR) {
-        updateOrgBlockR(catSelectR.value);
-        catSelectR.addEventListener('change', () => updateOrgBlockR(catSelectR.value));
-    }
-
-    function fetchOrgsR(q) {
-        orgDropdown.innerHTML = '<div style="padding:10px;color:#888;">⏳ Qidirilmoqda...</div>';
-        orgDropdown.style.display = 'block';
-        fetch(`${ORG_URL}?q=${encodeURIComponent(q)}`)
-            .then(r => r.json())
-            .then(data => {
-                if (!data.length) {
-                    orgDropdown.innerHTML = '<div style="padding:10px;color:#888;">Topilmadi</div>';
-                    return;
-                }
-                orgDropdown.innerHTML = data.map(org => `
-                    <div class="org-item" data-id="${org.id}"
-                         data-name="${org.enterprise_name.replace(/"/g,'&quot;')}"
-                         data-branch="${(org.branch_name||'').replace(/"/g,'&quot;')}"
-                         data-code="${org.enterprise_code}"
-                         data-inn="${org.enterprise_inn}"
-                         data-bcode="${org.branch_code}"
-                         style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #f1f1f1;">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <div class="fw-semibold small">${org.enterprise_name}</div>
-                                ${org.branch_name ? `<div class="text-muted small">↳ ${org.branch_name}</div>` : ''}
-                            </div>
-                            <div class="text-end text-muted small ms-2">
-                                ${org.enterprise_code ? `<span class="badge bg-light text-dark border">${org.enterprise_code}</span>` : ''}
-                                ${org.branch_code ? `<span class="badge bg-light text-dark border ms-1">${org.branch_code}</span>` : ''}
-                                ${org.enterprise_inn ? `<div>INN: ${org.enterprise_inn}</div>` : ''}
-                            </div>
-                        </div>
-                    </div>`).join('');
-                orgDropdown.querySelectorAll('.org-item').forEach(item => {
-                    item.addEventListener('mouseenter', () => item.style.background = '#e8f4fd');
-                    item.addEventListener('mouseleave', () => item.style.background = '');
-                    item.addEventListener('click', () => {
-                        orgIdInput.value = item.dataset.id;
-                        orgSearchInput.value = '';
-                        orgDropdown.style.display = 'none';
-                        orgSelected.style.display = 'block';
-                        let html = `<strong>${item.dataset.name}</strong>`;
-                        if (item.dataset.branch) html += `<br><span class="text-muted">↳ ${item.dataset.branch}</span>`;
-                        const b = [];
-                        if (item.dataset.code)  b.push(`Kod: ${item.dataset.code}`);
-                        if (item.dataset.bcode) b.push(`Filial: ${item.dataset.bcode}`);
-                        if (item.dataset.inn)   b.push(`INN: ${item.dataset.inn}`);
-                        if (b.length) html += `<br><small class="text-muted">${b.join(' | ')}</small>`;
-                        orgSelectedInfo.innerHTML = html;
-                        const wp = document.getElementById('id_workplace');
-                        if (wp && !wp.value) {
-                            wp.value = item.dataset.branch
-                                ? `${item.dataset.name} — ${item.dataset.branch}`
-                                : item.dataset.name;
-                        }
-                    });
-                });
-            }).catch(() => {
-                orgDropdown.innerHTML = '<div style="padding:10px;color:red;">❌ Xato</div>';
-            });
-    }
-
-    if (orgSearchInput) {
-        orgSearchInput.addEventListener('input', () => fetchOrgsR(orgSearchInput.value));
-        orgSearchInput.addEventListener('focus', () => fetchOrgsR(orgSearchInput.value));
-    }
-    document.addEventListener('click', e => {
-        if (orgDropdown && !orgDropdown.contains(e.target) && e.target !== orgSearchInput) {
-            orgDropdown.style.display = 'none';
-        }
-    });
-    const orgClearR = document.getElementById('org-clear');
-    if (orgClearR) orgClearR.addEventListener('click', () => {
-        orgIdInput.value = '';
-        orgSelected.style.display = 'none';
-        orgSelectedInfo.innerHTML = '';
-        orgSearchInput.value = '';
-        orgSearchInput.focus();
-    });
-    const positionField  = document.getElementById('position-field');
+    const catSelectR      = document.getElementById('id_patient_category');
+    const positionField   = document.getElementById('position-field');
 
     // ==================== 16 YOSH TEKSHIRUVI ====================
     function isUnder16(dateStr) {
@@ -709,7 +966,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const ageDisplay = document.getElementById('age-display');
         if (ageDisplay && age) {
             const a = age;
-            ageDisplay.textContent = '(' + a.y + ' yosh ' + a.m + ' oy ' + a.d + ' kun)';
+            ageDisplay.textContent = '(' + a.y + ' ' + TXT_AGE_YEAR + ' ' + a.m + ' ' + TXT_AGE_MONTH + ' ' + a.d + ' ' + TXT_AGE_DAY + ')';
         } else if (ageDisplay) {
             ageDisplay.textContent = '';
         }
@@ -727,7 +984,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (railwayWarn) railwayWarn.style.display = 'block';
                 if (parentJshshir) parentJshshir.style.display = 'none';
                 if (parentOrg)     parentOrg.style.display     = 'none';
-                updateOrgBlockR('paid');
             } else {
                 // Tug'ilgan sana kiritilmagan — JSHSHIR va org ko'rsatilsin
                 if (railwayWarn)   railwayWarn.style.display   = 'none';
@@ -762,13 +1018,13 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!pSearch) return;
 
         function fetchParentOrgs(q) {
-            pDrop.innerHTML = '<div style="padding:10px;color:#888;">⏳ Qidirilmoqda...</div>';
+            pDrop.innerHTML = MSG_SEARCHING_HTML;
             pDrop.style.display = 'block';
             fetch(`{% url 'organization_search' %}?q=${encodeURIComponent(q)}`)
                 .then(r => r.json())
                 .then(data => {
                     if (!data.length) {
-                        pDrop.innerHTML = '<div style="padding:10px;color:#888;">Topilmadi</div>';
+                        pDrop.innerHTML = MSG_NOT_FOUND_HTML;
                         return;
                     }
                     pDrop.innerHTML = data.map(org =>
@@ -792,7 +1048,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             pSel.style.display = 'block';
                             let html = `<strong>${item.dataset.name}</strong>`;
                             if (item.dataset.branch) html += `<br><span class="text-muted">↳ ${item.dataset.branch}</span>`;
-                            if (item.dataset.code) html += `<br><small class="text-muted">Kod: ${item.dataset.code}</small>`;
+                            if (item.dataset.code) html += `<br><small class="text-muted">${TXT_CODE_PREFIX}${item.dataset.code}</small>`;
                             pInfo.innerHTML = html;
                         });
                     });
@@ -811,20 +1067,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     })();
 
-    // ==================== YO'LLANMA TURI ====================
-    const referralType = document.getElementById('id_referral_type');
-    const orgField     = document.getElementById('org-field');
-
-    function toggleOrgField() {
-        if (!referralType || !orgField) return;
-        const show = ['referral', 'liniya'].includes(referralType.value);
-        orgField.style.display = show ? 'block' : 'none';
-    }
-    if (referralType) {
-        referralType.addEventListener('change', toggleOrgField);
-        toggleOrgField();
-    }
-
     // ==================== MANZIL CASCADE ====================
     const countryEl = document.getElementById('id_country');
     if (countryEl) {
@@ -832,9 +1074,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const r = document.getElementById('id_region');
             const d = document.getElementById('id_district');
             const c = document.getElementById('id_city');
-            r.innerHTML = '<option value="">— Tanlang —</option>';
-            d.innerHTML = '<option value="">— Tanlang —</option>';
-            c.innerHTML = '<option value="">— Tanlang —</option>';
+            r.innerHTML = OPT_SELECT_PLACEHOLDER;
+            d.innerHTML = OPT_SELECT_PLACEHOLDER;
+            c.innerHTML = OPT_SELECT_PLACEHOLDER;
             if (!this.value) return;
             fetch(`/patients/ajax/regions/?country_id=${this.value}`)
                 .then(res => res.json())
@@ -849,8 +1091,8 @@ document.addEventListener('DOMContentLoaded', function () {
         regionEl.addEventListener('change', function () {
             const d = document.getElementById('id_district');
             const c = document.getElementById('id_city');
-            d.innerHTML = '<option value="">— Tanlang —</option>';
-            c.innerHTML = '<option value="">— Tanlang —</option>';
+            d.innerHTML = OPT_SELECT_PLACEHOLDER;
+            c.innerHTML = OPT_SELECT_PLACEHOLDER;
             if (!this.value) return;
             fetch(`/patients/ajax/districts/?region_id=${this.value}`)
                 .then(res => res.json())
@@ -864,7 +1106,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (districtEl) {
         districtEl.addEventListener('change', function () {
             const c = document.getElementById('id_city');
-            c.innerHTML = '<option value="">— Tanlang —</option>';
+            c.innerHTML = OPT_SELECT_PLACEHOLDER;
             if (!this.value) return;
             fetch(`/patients/ajax/cities/?district_id=${this.value}`)
                 .then(res => res.json())
@@ -882,15 +1124,15 @@ document.addEventListener('DOMContentLoaded', function () {
     function loadDoctors(deptId) {
         if (!doctorSelect || !headSelect) return;
         if (!deptId) {
-            doctorSelect.innerHTML = '<option value="">— Tanlang —</option>';
-            headSelect.innerHTML   = '<option value="">— Tanlang —</option>';
+            doctorSelect.innerHTML = OPT_SELECT_PLACEHOLDER;
+            headSelect.innerHTML   = OPT_SELECT_PLACEHOLDER;
             return;
         }
         fetch(`/patients/ajax/doctors/?department_id=${deptId}`)
             .then(res => res.json())
             .then(data => {
-                doctorSelect.innerHTML = '<option value="">— Tanlang —</option>';
-                headSelect.innerHTML   = '<option value="">— Tanlang —</option>';
+                doctorSelect.innerHTML = OPT_SELECT_PLACEHOLDER;
+                headSelect.innerHTML   = OPT_SELECT_PLACEHOLDER;
                 data.forEach(doc => {
                     const opt1 = new Option(doc.full_name, doc.id);
                     const opt2 = new Option(doc.full_name, doc.id);
@@ -920,6 +1162,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const CHECK_URL = "/patients/ajax/check-patient/";
         const jshshirInput  = document.getElementById('id_JSHSHIR');
         const passportInput = document.getElementById('id_passport_serial');
+        const MSG_REPEAT_PATIENT = "{% trans "Bu bemor avval ham murojaat qilgan:" %}";
+        const TXT_COPY_BTN = "{% trans "Ko'chirish" %}";
+        const TXT_VIEW_BTN = "{% trans "Ko'rish" %}";
+        const MSG_DATA_COPIED_SUFFIX = "{% trans "ma'lumotlari ko'chirildi." %}";
 
         let alertDiv = document.getElementById('repeat-patient-alert');
         if (!alertDiv) {
@@ -942,7 +1188,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 .then(data => {
                     if (!data.found) { alertDiv.style.display = 'none'; return; }
 
-                    let html = '<strong>⚠️ Bu bemor avval ham murojaat qilgan:</strong><ul class="mb-0 mt-2" style="list-style:none;padding:0;">';
+                    let html = '<strong>⚠️ ' + MSG_REPEAT_PATIENT + '</strong><ul class="mb-0 mt-2" style="list-style:none;padding:0;">';
                     data.patients.forEach(p => {
                         const statusIcon = p.status_code === 'admitted' ? '🔵' :
                                           p.status_code === 'completed' ? '🟢' : '🟡';
@@ -960,11 +1206,11 @@ document.addEventListener('DOMContentLoaded', function () {
                             <button type="button"
                                 class="btn btn-sm btn-primary flex-shrink-0 btn-copy-patient"
                                 data-patient="${safeData}">
-                                &#128203; Ko&#39;chirish
+                                &#128203; ${TXT_COPY_BTN}
                             </button>
                             <a href="/patients/${p.pk}/" target="_blank"
                                class="btn btn-sm btn-outline-secondary flex-shrink-0">
-                                &#128065; Ko&#39;rish
+                                &#128065; ${TXT_VIEW_BTN}
                             </a>
                         </li>`;
                     });
@@ -1018,7 +1264,7 @@ document.addEventListener('DOMContentLoaded', function () {
             msg.id = 'copy-success-msg';
             msg.className = 'alert alert-success alert-dismissible fade show';
             msg.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;min-width:350px;box-shadow:0 4px 12px rgba(0,0,0,.15);';
-            msg.innerHTML = '&#9989; <strong>' + p.full_name + '</strong> ma&#39;lumotlari ko&#39;chirildi.' +
+            msg.innerHTML = '&#9989; <strong>' + p.full_name + '</strong> ' + MSG_DATA_COPIED_SUFFIX +
                 '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
             document.body.appendChild(msg);
             setTimeout(function(){ if(msg.parentNode) msg.remove(); }, 4000);
@@ -1060,6 +1306,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const selInfo  = document.getElementById('ref-org-selected-info');
     const clearBtn = document.getElementById('ref-org-clear');
     if (!input) return;
+    const TXT_CODE_LABEL = "{% trans 'Kod' %}";
+    const TXT_INN_LABEL = "INN";
 
     let timer;
     input.addEventListener('input', function(){
@@ -1075,8 +1323,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 data.forEach(function(org){
                     const label = org.enterprise_name + (org.branch_name ? ' — ' + org.branch_name : '');
                     const meta  = [];
-                    if (org.enterprise_code) meta.push('Kod: ' + org.enterprise_code);
-                    if (org.enterprise_inn)  meta.push('INN: ' + org.enterprise_inn);
+                    if (org.enterprise_code) meta.push(TXT_CODE_LABEL + ': ' + org.enterprise_code);
+                    if (org.enterprise_inn)  meta.push(TXT_INN_LABEL + ': ' + org.enterprise_inn);
                     html += '<div class="ref-org-dd-item" data-id="' + org.id + '" data-label="' + label.replace(/"/g,'&quot;') + '" data-meta="' + meta.join(' | ') + '"'
                           + ' style="padding:10px 14px; cursor:pointer; border-bottom:1px solid #f0f0f0;">'
                           + '<div style="font-size:13px;font-weight:600;color:#212529;">' + org.enterprise_name + '</div>';
@@ -1124,7 +1372,7 @@ document.querySelectorAll('form').forEach(function(form) {
         const btns = form.querySelectorAll('[type="submit"], button[onclick*="submit"]');
         btns.forEach(function(btn) {
             btn.disabled = true;
-            btn.innerHTML = '⏳ Saqlanmoqda...';
+            btn.innerHTML = '⏳ {% trans "Saqlanmoqda..." %}';
         });
     });
 });

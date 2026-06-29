@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}{% trans "Kirish taqiqlangan" %}{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-center" style="min-height:60vh;">
+    <div class="text-center" style="max-width:480px;">
+        <div style="width:64px; height:64px; border-radius:50%; background:var(--warning-light); color:var(--warning); font-size:30px; display:flex; align-items:center; justify-content:center; margin:0 auto 14px;"><i class="bi bi-lock-fill"></i></div>
+        <div style="font-size:56px; font-weight:800; color:var(--warning); line-height:1; letter-spacing:-2px;">403</div>
+        <h4 class="fw-bold mt-2 mb-2">{% trans "Kirish taqiqlangan" %}</h4>
+        <p class="text-muted mb-4">
+            {% trans "Sizda bu sahifani ko'rish yoki amalni bajarish uchun ruxsat yo'q." %}<br>
+            {% trans "Agar bu xato deb hisoblasangiz, administratorga murojaat qiling." %}
+        </p>
+        <a href="{% url 'patient_list' %}" class="btn btn-primary px-4"><i class="bi bi-house-door"></i> {% trans "Bosh sahifaga" %}</a>
+        <a href="javascript:history.back()" class="btn btn-outline-secondary px-4"><i class="bi bi-arrow-left"></i> {% trans "Orqaga" %}</a>
+    </div>
+</div>
+{% endblock %}

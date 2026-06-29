@@ -3,38 +3,39 @@
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 
 class LabTemplate(models.Model):
     """Laboratoriya tahlil shabloni"""
     CATEGORY_CHOICES = [
-        ('general_blood', 'Umumiy qon tahlili'),
-        ('biochemistry', 'Biokimyo'),
-        ('urine', 'Siydik tahlili'),
-        ('coagulation', 'Koagulyatsiya'),
-        ('hormones', 'Gormonlar'),
-        ('immunology', 'Immunologiya'),
-        ('microbiology', 'Mikrobiologiya'),
-        ('serology', 'Serologiya'),
-        ('other', 'Boshqa'),
+        ('general_blood', _('Umumiy qon tahlili')),
+        ('biochemistry', _('Biokimyo')),
+        ('urine', _('Siydik tahlili')),
+        ('coagulation', _('Koagulyatsiya')),
+        ('hormones', _('Gormonlar')),
+        ('immunology', _('Immunologiya')),
+        ('microbiology', _('Mikrobiologiya')),
+        ('serology', _('Serologiya')),
+        ('other', _('Boshqa')),
     ]
 
-    name = models.CharField(max_length=255, verbose_name="Shablon nomi")
+    name = models.CharField(max_length=255, verbose_name=_("Shablon nomi"))
     category = models.CharField(
         max_length=30,
         choices=CATEGORY_CHOICES,
         default='other',
-        verbose_name="Kategoriya"
+        verbose_name=_("Kategoriya")
     )
-    description = models.TextField(blank=True, verbose_name="Tavsifi")
-    is_active = models.BooleanField(default=True, verbose_name="Faolmi")
+    description = models.TextField(blank=True, verbose_name=_("Tavsifi"))
+    is_active = models.BooleanField(default=True, verbose_name=_("Faolmi"))
 
     def __str__(self):
         return self.name
 
     class Meta:
-        verbose_name = "Lab shabloni"
-        verbose_name_plural = "Lab shablonlari"
+        verbose_name=_("Lab shabloni")
+        verbose_name_plural=_("Lab shablonlari")
         ordering = ['category', 'name']
 
 
@@ -44,105 +45,105 @@ class LabParameterGroup(models.Model):
         LabTemplate,
         on_delete=models.CASCADE,
         related_name='groups',
-        verbose_name="Shablon"
+        verbose_name=_("Shablon")
     )
-    name = models.CharField(max_length=255, verbose_name="Guruh nomi")
-    sort_order = models.PositiveSmallIntegerField(default=0, verbose_name="Tartib raqami")
+    name = models.CharField(max_length=255, verbose_name=_("Guruh nomi"))
+    sort_order = models.PositiveSmallIntegerField(default=0, verbose_name=_("Tartib raqami"))
 
     def __str__(self):
         return f"{self.template.name} — {self.name}"
 
     class Meta:
-        verbose_name = "Parametr guruhi"
-        verbose_name_plural = "Parametr guruhlari"
+        verbose_name=_("Parametr guruhi")
+        verbose_name_plural=_("Parametr guruhlari")
         ordering = ['sort_order', 'name']
 
 
 class LabParameter(models.Model):
     """Laboratoriya parametri"""
     PARAM_TYPE_CHOICES = [
-        ('numeric', 'Raqamli'),
-        ('text', 'Matnli'),
-        ('select', 'Tanlov'),
+        ('numeric', _('Raqamli')),
+        ('text', _('Matnli')),
+        ('select', _('Tanlov')),
     ]
 
     template = models.ForeignKey(
         LabTemplate,
         on_delete=models.CASCADE,
         related_name='parameters',
-        verbose_name="Shablon"
+        verbose_name=_("Shablon")
     )
     group = models.ForeignKey(
         LabParameterGroup,
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='parameters',
-        verbose_name="Guruh"
+        verbose_name=_("Guruh")
     )
-    name = models.CharField(max_length=255, verbose_name="Nomi")
-    name_ru = models.CharField(max_length=255, blank=True, verbose_name="Nomi (ruscha)")
-    unit = models.CharField(max_length=50, blank=True, verbose_name="O'lchov birligi")
+    name = models.CharField(max_length=255, verbose_name=_("Nomi"))
+    name_ru = models.CharField(max_length=255, blank=True, verbose_name=_("Nomi (ruscha)"))
+    unit = models.CharField(max_length=50, blank=True, verbose_name=_("O'lchov birligi"))
     param_type = models.CharField(
         max_length=10,
         choices=PARAM_TYPE_CHOICES,
         default='numeric',
-        verbose_name="Parametr turi"
+        verbose_name=_("Parametr turi")
     )
 
     # Umumiy me'yor
     normal_min = models.DecimalField(
         max_digits=10, decimal_places=4,
         null=True, blank=True,
-        verbose_name="Me'yor min"
+        verbose_name=_("Me'yor min")
     )
     normal_max = models.DecimalField(
         max_digits=10, decimal_places=4,
         null=True, blank=True,
-        verbose_name="Me'yor max"
+        verbose_name=_("Me'yor max")
     )
 
     # Kritik chegaralar
     critical_min = models.DecimalField(
         max_digits=10, decimal_places=4,
         null=True, blank=True,
-        verbose_name="Kritik min"
+        verbose_name=_("Kritik min")
     )
     critical_max = models.DecimalField(
         max_digits=10, decimal_places=4,
         null=True, blank=True,
-        verbose_name="Kritik max"
+        verbose_name=_("Kritik max")
     )
 
     # Erkaklar uchun me'yor
     normal_min_m = models.DecimalField(
         max_digits=10, decimal_places=4,
         null=True, blank=True,
-        verbose_name="Me'yor min (erkak)"
+        verbose_name=_("Me'yor min (erkak)")
     )
     normal_max_m = models.DecimalField(
         max_digits=10, decimal_places=4,
         null=True, blank=True,
-        verbose_name="Me'yor max (erkak)"
+        verbose_name=_("Me'yor max (erkak)")
     )
 
     # Ayollar uchun me'yor
     normal_min_f = models.DecimalField(
         max_digits=10, decimal_places=4,
         null=True, blank=True,
-        verbose_name="Me'yor min (ayol)"
+        verbose_name=_("Me'yor min (ayol)")
     )
     normal_max_f = models.DecimalField(
         max_digits=10, decimal_places=4,
         null=True, blank=True,
-        verbose_name="Me'yor max (ayol)"
+        verbose_name=_("Me'yor max (ayol)")
     )
 
     select_options = models.JSONField(
         default=list, blank=True,
-        verbose_name="Tanlov variantlari"
+        verbose_name=_("Tanlov variantlari")
     )
-    is_required = models.BooleanField(default=True, verbose_name="Majburiy")
-    sort_order = models.PositiveSmallIntegerField(default=0, verbose_name="Tartib raqami")
+    is_required = models.BooleanField(default=True, verbose_name=_("Majburiy"))
+    sort_order = models.PositiveSmallIntegerField(default=0, verbose_name=_("Tartib raqami"))
 
     def get_normal_range(self, gender=None):
         """Jinsga qarab me'yor oralig'ini qaytaradi"""
@@ -167,61 +168,61 @@ class LabParameter(models.Model):
         return f"{self.template.name} | {self.name}"
 
     class Meta:
-        verbose_name = "Lab parametri"
-        verbose_name_plural = "Lab parametrlari"
+        verbose_name=_("Lab parametri")
+        verbose_name_plural=_("Lab parametrlari")
         ordering = ['sort_order', 'name']
 
 
 class LabResult(models.Model):
     """Laboratoriya natijasi (to'ldirilgan shablon)"""
     STATUS_CHOICES = [
-        ('draft',     'Qoralama'),
-        ('done',      'Bajarildi'),
-        ('verified',  'Tasdiqlandi'),
-        ('printed',   'Chop etildi'),
+        ('draft', _('Qoralama')),
+        ('done', _('Bajarildi')),
+        ('verified', _('Tasdiqlandi')),
+        ('printed', _('Chop etildi')),
     ]
 
     patient_card = models.ForeignKey(
         'patients.PatientCard',
         on_delete=models.CASCADE,
         related_name='lab_results',
-        verbose_name="Bemor kartasi"
+        verbose_name=_("Bemor kartasi")
     )
     template = models.ForeignKey(
         LabTemplate,
         on_delete=models.PROTECT,
         related_name='results',
-        verbose_name="Shablon"
+        verbose_name=_("Shablon")
     )
     services = models.ManyToManyField(
         'services.PatientService',
         blank=True,
         related_name='lab_results',
-        verbose_name="Xizmatlar"
+        verbose_name=_("Xizmatlar")
     )
     status = models.CharField(
         max_length=10,
         choices=STATUS_CHOICES,
         default='draft',
-        verbose_name="Holati"
+        verbose_name=_("Holati")
     )
-    conclusion = models.TextField(blank=True, verbose_name="Xulosa")
+    conclusion = models.TextField(blank=True, verbose_name=_("Xulosa"))
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='created_lab_results',
-        verbose_name="Yaratgan"
+        verbose_name=_("Yaratgan")
     )
     verified_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='verified_lab_results',
-        verbose_name="Tasdiqlagan"
+        verbose_name=_("Tasdiqlagan")
     )
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Yaratilgan vaqt")
-    printed_at = models.DateTimeField(null=True, blank=True, verbose_name="Chop etilgan vaqt")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Yaratilgan vaqt"))
+    printed_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Chop etilgan vaqt"))
 
     @property
     def completion_percent(self):
@@ -241,48 +242,48 @@ class LabResult(models.Model):
         return f"{self.patient_card} — {self.template.name} ({self.get_status_display()})"
 
     class Meta:
-        verbose_name = "Lab natijasi"
-        verbose_name_plural = "Lab natijalari"
+        verbose_name=_("Lab natijasi")
+        verbose_name_plural=_("Lab natijalari")
         ordering = ['-created_at']
 
 
 class LabResultValue(models.Model):
     """Laboratoriya natijasi qiymati"""
     VALUE_STATUS_CHOICES = [
-        ('normal', 'Me\'yor'),
-        ('high', 'Yuqori'),
-        ('low', 'Past'),
-        ('critical', 'Kritik'),
-        ('text', 'Matnli'),
+        ('normal', _('Me\'yor')),
+        ('high', _('Yuqori')),
+        ('low', _('Past')),
+        ('critical', _('Kritik')),
+        ('text', _('Matnli')),
     ]
 
     result = models.ForeignKey(
         LabResult,
         on_delete=models.CASCADE,
         related_name='values',
-        verbose_name="Natija"
+        verbose_name=_("Natija")
     )
     parameter = models.ForeignKey(
         LabParameter,
         on_delete=models.CASCADE,
         related_name='result_values',
-        verbose_name="Parametr"
+        verbose_name=_("Parametr")
     )
-    value = models.CharField(max_length=500, blank=True, verbose_name="Qiymat")
+    value = models.CharField(max_length=500, blank=True, verbose_name=_("Qiymat"))
     value_status = models.CharField(
         max_length=10,
         choices=VALUE_STATUS_CHOICES,
         default='normal',
-        verbose_name="Qiymat holati"
+        verbose_name=_("Qiymat holati")
     )
-    comment = models.CharField(max_length=500, blank=True, verbose_name="Izoh")
+    comment = models.CharField(max_length=500, blank=True, verbose_name=_("Izoh"))
 
     def __str__(self):
         return f"{self.parameter.name}: {self.value}"
 
     class Meta:
-        verbose_name = "Natija qiymati"
-        verbose_name_plural = "Natija qiymatlari"
+        verbose_name=_("Natija qiymati")
+        verbose_name_plural=_("Natija qiymatlari")
         unique_together = ('result', 'parameter')
 
 
@@ -299,19 +300,19 @@ class LabTemplateService(models.Model):
         LabTemplate,
         on_delete=models.CASCADE,
         related_name='template_services',
-        verbose_name="Shablon"
+        verbose_name=_("Shablon")
     )
     service = models.ForeignKey(
         'services.Service',
         on_delete=models.CASCADE,
         related_name='lab_template_links',
-        verbose_name="Xizmat"
+        verbose_name=_("Xizmat")
     )
 
     class Meta:
         unique_together = ('template', 'service')
-        verbose_name = "Shablon-Xizmat bog'lanishi"
-        verbose_name_plural = "Shablon-Xizmat bog'lanishlari"
+        verbose_name=_("Shablon-Xizmat bog'lanishi")
+        verbose_name_plural=_("Shablon-Xizmat bog'lanishlari")
 
     def __str__(self):
         return f"{self.service.name} → {self.template.name}"
@@ -323,31 +324,31 @@ class LabOrder(models.Model):
     Bir tashrifda berilgan barcha lab xizmatlarini birlashtiradi.
     """
     STATUS_CHOICES = [
-        ('pending',   'Kutilmoqda'),
-        ('partial',   'Qisman bajarildi'),
-        ('completed', 'Bajarildi'),
-        ('verified',  'Tasdiqlandi'),
-        ('printed',   'Chop etildi'),
+        ('pending', _('Kutilmoqda')),
+        ('partial', _('Qisman bajarildi')),
+        ('completed', _('Bajarildi')),
+        ('verified', _('Tasdiqlandi')),
+        ('printed', _('Chop etildi')),
     ]
     patient_card = models.ForeignKey(
         'patients.PatientCard',
         on_delete=models.CASCADE,
         related_name='lab_orders',
-        verbose_name="Bemor"
+        verbose_name=_("Bemor")
     )
     status = models.CharField(
         max_length=15, choices=STATUS_CHOICES,
-        default='pending', verbose_name="Holat"
+        default='pending', verbose_name=_("Holat")
     )
     ordered_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='created_lab_orders',
-        verbose_name="Buyurtma bergan"
+        verbose_name=_("Buyurtma bergan")
     )
-    ordered_at = models.DateTimeField(auto_now_add=True, verbose_name="Buyurtma vaqti")
-    notes = models.TextField(blank=True, verbose_name="Izoh")
+    ordered_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Buyurtma vaqti"))
+    notes = models.TextField(blank=True, verbose_name=_("Izoh"))
 
     def sync_status(self):
         """Barcha itemlar statusiga qarab orderni yangilash"""
@@ -370,8 +371,8 @@ class LabOrder(models.Model):
         return f"Order #{self.pk} — {self.patient_card}"
 
     class Meta:
-        verbose_name = "Lab buyurtma"
-        verbose_name_plural = "Lab buyurtmalar"
+        verbose_name=_("Lab buyurtma")
+        verbose_name_plural=_("Lab buyurtmalar")
         ordering = ['-ordered_at']
 
 
@@ -381,72 +382,72 @@ class LabOrderItem(models.Model):
     Status state machine shu yerda ishlaydi.
     """
     STATUS_CHOICES = [
-        ('pending',         'Kutilmoqda'),
-        ('sample_taken',    'Namuna olindi'),
-        ('in_progress',     'Jarayonda'),
-        ('result_entering', 'Kiritilmoqda'),
-        ('completed',       'Bajarildi'),
-        ('verified',        'Tasdiqlandi'),
-        ('printed',         'Chop etildi'),
-        ('rejected',        'Rad etildi'),
-        ('recollect',       'Qayta namuna kerak'),
+        ('pending', _('Kutilmoqda')),
+        ('sample_taken', _('Namuna olindi')),
+        ('in_progress', _('Jarayonda')),
+        ('result_entering', _('Kiritilmoqda')),
+        ('completed', _('Bajarildi')),
+        ('verified', _('Tasdiqlandi')),
+        ('printed', _('Chop etildi')),
+        ('rejected', _('Rad etildi')),
+        ('recollect', _('Qayta namuna kerak')),
     ]
     REJECT_REASON_CHOICES = [
-        ('hemolyzed',    'Gemolizlangan namuna'),
-        ('insufficient', 'Namuna yetarli emas'),
-        ('wrong_tube',   'Noto\'g\'ri quvurcha'),
-        ('clotted',      'Ivigan namuna'),
-        ('contaminated', 'Ifloslangan namuna'),
-        ('other',        'Boshqa sabab'),
+        ('hemolyzed', _('Gemolizlangan namuna')),
+        ('insufficient', _('Namuna yetarli emas')),
+        ('wrong_tube', _('Noto\'g\'ri quvurcha')),
+        ('clotted', _('Ivigan namuna')),
+        ('contaminated', _('Ifloslangan namuna')),
+        ('other', _('Boshqa sabab')),
     ]
 
     order = models.ForeignKey(
         LabOrder,
         on_delete=models.CASCADE,
         related_name='items',
-        verbose_name="Buyurtma"
+        verbose_name=_("Buyurtma")
     )
     patient_service = models.ForeignKey(
         'services.PatientService',
         on_delete=models.CASCADE,
         related_name='lab_order_items',
-        verbose_name="Bemor xizmati"
+        verbose_name=_("Bemor xizmati")
     )
     template = models.ForeignKey(
         LabTemplate,
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='order_items',
-        verbose_name="Shablon"
+        verbose_name=_("Shablon")
     )
     result = models.ForeignKey(
         LabResult,
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='order_items',
-        verbose_name="Natija"
+        verbose_name=_("Natija")
     )
     status = models.CharField(
         max_length=20, choices=STATUS_CHOICES,
-        default='pending', verbose_name="Holat"
+        default='pending', verbose_name=_("Holat")
     )
     reject_reason = models.CharField(
         max_length=20, choices=REJECT_REASON_CHOICES,
-        blank=True, verbose_name="Rad sababi"
+        blank=True, verbose_name=_("Rad sababi")
     )
-    reject_note = models.TextField(blank=True, verbose_name="Rad izohi")
+    reject_note = models.TextField(blank=True, verbose_name=_("Rad izohi"))
     assigned_to = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='assigned_lab_items',
-        verbose_name="Mas'ul laborant"
+        verbose_name=_("Mas'ul laborant")
     )
     sample_taken_at = models.DateTimeField(
-        null=True, blank=True, verbose_name="Namuna olingan vaqt"
+        null=True, blank=True, verbose_name=_("Namuna olingan vaqt")
     )
     completed_at = models.DateTimeField(
-        null=True, blank=True, verbose_name="Bajarilgan vaqt"
+        null=True, blank=True, verbose_name=_("Bajarilgan vaqt")
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -481,8 +482,8 @@ class LabOrderItem(models.Model):
         return f"{self.patient_service.service.name} [{self.get_status_display()}]"
 
     class Meta:
-        verbose_name = "Buyurtma elementi"
-        verbose_name_plural = "Buyurtma elementlari"
+        verbose_name=_("Buyurtma elementi")
+        verbose_name_plural=_("Buyurtma elementlari")
         ordering = ['created_at']
 
 
@@ -495,23 +496,23 @@ class LabStatusLog(models.Model):
         LabOrderItem,
         on_delete=models.CASCADE,
         related_name='status_logs',
-        verbose_name="Buyurtma elementi"
+        verbose_name=_("Buyurtma elementi")
     )
-    from_status = models.CharField(max_length=20, verbose_name="Avvalgi holat")
-    to_status   = models.CharField(max_length=20, verbose_name="Yangi holat")
+    from_status = models.CharField(max_length=20, verbose_name=_("Avvalgi holat"))
+    to_status   = models.CharField(max_length=20, verbose_name=_("Yangi holat"))
     changed_by  = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
-        verbose_name="Kim o'zgartirdi"
+        verbose_name=_("Kim o'zgartirdi")
     )
-    changed_at  = models.DateTimeField(auto_now_add=True, verbose_name="O'zgartirilgan vaqt")
-    note        = models.TextField(blank=True, verbose_name="Izoh")
+    changed_at  = models.DateTimeField(auto_now_add=True, verbose_name=_("O'zgartirilgan vaqt"))
+    note        = models.TextField(blank=True, verbose_name=_("Izoh"))
 
     def __str__(self):
         return f"#{self.order_item_id}: {self.from_status} → {self.to_status}"
 
     class Meta:
-        verbose_name = "Status log"
-        verbose_name_plural = "Status loglar"
+        verbose_name=_("Status log")
+        verbose_name_plural=_("Status loglar")
         ordering = ['changed_at']

@@ -1,9 +1,10 @@
+{% load i18n %}
 <!DOCTYPE html>
 <html lang="uz">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lab natijasi &numero; {{ result.pk }} &mdash; {{ result.patient_card.full_name }}</title>
+  <title>{% blocktrans with pk=result.pk name=result.patient_card.full_name %}Lab natijasi &numero; {{ pk }} &mdash; {{ name }}{% endblocktrans %}</title>
   <style>
     @page {
       size: A4;
@@ -20,26 +21,13 @@
       color: #000;
       background: #fff;
       padding: 10px;
+      max-width: 21cm;
+      margin: 0 auto;
     }
     .hospital-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      border-bottom: 3px solid #1a5276;
-      padding-bottom: 8px;
       margin-bottom: 10px;
     }
-    .hospital-header img { width: 80px; height: 80px; flex-shrink: 0; }
-    .hospital-header-text { flex: 1; text-align: center; }
-    .hospital-header-text .org { font-size: 9pt; font-style: italic; color: #333; }
-    .hospital-header-text .main-name {
-      font-size: 14pt;
-      font-weight: bold;
-      color: #1a5276;
-      text-transform: uppercase;
-      margin: 3px 0;
-    }
-    .hospital-header-text .address { font-size: 8.5pt; color: #444; }
+    .hospital-header img { width: 100%; max-width: 100%; height: auto; display: block; }
     .result-title {
       text-align: center;
       margin: 10px 0;
@@ -127,21 +115,12 @@
 
   <!-- Shifoxona shapkasi -->
   <div class="hospital-header">
-    {% if logo_b64 %}<img src="data:image/png;base64,{{ logo_b64 }}" alt="logo">{% endif %}
-    <div class="hospital-header-text">
-      <div class="org">&ldquo;O&lsquo;ZBEKISTON TEMIR YO&lsquo;LLARI&rdquo; AJ</div>
-      <div class="org">&ldquo;TEMIR YO&lsquo;L IJTIMOIY XIZMATLAR&rdquo; MCHJ</div>
-      <div class="main-name">Markaziy klinik kasalxonasi filiali</div>
-      <div class="address">
-        100047 Toshkent sh., Yashnobod t-n., Cho&lsquo;lpon MFY Pahlavon Mahmud ko&lsquo;chasi 36 B-uy
-        &nbsp;|&nbsp; Tel: (99871) 299-62-90 &nbsp;|&nbsp; E-mail: mkk320@mail.ru
-      </div>
-    </div>
+    {% if header_b64 %}<img src="data:image/png;base64,{{ header_b64 }}" alt="header">{% endif %}
   </div>
 
   <!-- Natija sarlavhasi -->
   <div class="result-title">
-    <h2>LABORATORIYA TAHLILI NATIJASI</h2>
+    <h2>{% trans "LABORATORIYA TAHLILI NATIJASI" %}</h2>
     <div class="date">
       № {{ result.pk }}
       &nbsp;&nbsp;&mdash;&nbsp;&nbsp;
@@ -152,29 +131,29 @@
   <!-- Bemor ma'lumotlari -->
   <table class="info-table">
     <tr>
-      <td>F.I.O.:</td>
+      <td>{% trans "F.I.O.:" %}</td>
       <td><strong>{{ result.patient_card.full_name }}</strong></td>
     </tr>
     <tr>
-      <td>Yoshi:</td>
-      <td>{{ age }} yosh ({{ result.patient_card.birth_date|date:"d.m.Y" }})</td>
+      <td>{% trans "Yoshi:" %}</td>
+      <td>{% blocktrans with age=age birth=result.patient_card.birth_date|date:"d.m.Y" %}{{ age }} yosh ({{ birth }}){% endblocktrans %}</td>
     </tr>
     <tr>
-      <td>Jinsi:</td>
-      <td>{% if result.patient_card.gender == 'M' %}Erkak{% else %}Ayol{% endif %}</td>
+      <td>{% trans "Jinsi:" %}</td>
+      <td>{% if result.patient_card.gender == 'M' %}{% trans "Erkak" %}{% else %}{% trans "Ayol" %}{% endif %}</td>
     </tr>
     <tr>
-      <td>Karta №:</td>
+      <td>{% trans "Karta №:" %}</td>
       <td>{{ result.patient_card.medical_record_number }}</td>
     </tr>
     {% if result.patient_card.department %}
     <tr>
-      <td>Bo'lim:</td>
+      <td>{% trans "Bo'lim:" %}</td>
       <td>{{ result.patient_card.department.name }}</td>
     </tr>
     {% endif %}
     <tr>
-      <td>Tahlil turi:</td>
+      <td>{% trans "Tahlil turi:" %}</td>
       <td>{{ result.template.name }}</td>
     </tr>
   </table>
@@ -184,11 +163,11 @@
     <thead>
       <tr>
         <th width="30">#</th>
-        <th>Parametr nomi</th>
-        <th width="90">Natija</th>
-        <th width="60">Birlik</th>
-        <th width="110">Me'yor oralig'i</th>
-        <th>Izoh</th>
+        <th>{% trans "Parametr nomi" %}</th>
+        <th width="90">{% trans "Natija" %}</th>
+        <th width="60">{% trans "Birlik" %}</th>
+        <th width="110">{% trans "Me'yor oralig'i" %}</th>
+        <th>{% trans "Izoh" %}</th>
       </tr>
     </thead>
     <tbody>
@@ -222,12 +201,12 @@
 
   <!-- Xulosa -->
   {% if result.conclusion %}
-  <div class="conclusion-title">Xulosa:</div>
+  <div class="conclusion-title">{% trans "Xulosa:" %}</div>
   <div class="conclusion-box">{{ result.conclusion }}</div>
   {% endif %}
 
   <div class="footer-line">
-    <div>Sana: {{ print_date|date:"d.m.Y" }}</div>
+    <div>{% blocktrans with d=print_date|date:"d.m.Y" %}Sana: {{ d }}{% endblocktrans %}</div>
   </div>
 
   <script>

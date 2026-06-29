@@ -1,21 +1,22 @@
 {% extends 'base.html' %}
-{% block title %}Bemorlar ro'yxati{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Bemorlar ro'yxati" %}{% endblock %}
 
 {% block content %}
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div class="d-flex align-items-center gap-2">
-        <h5 class="mb-0">🏥 Bemorlar ro'yxati
+        <h5 class="mb-0">🏥 {% trans "Bemorlar ro'yxati" %}
             <span class="badge bg-secondary ms-2">{{ total_count }}</span>
         </h5>
         <a href="?status=discharged" class="btn btn-sm btn-outline-secondary {% if selected_status == 'discharged' %}active{% endif %}">
-            📤 Chiqarilganlar
+            📤 {% trans "Chiqarilganlar" %}
         </a>
     </div>
     {% if request.user.role in 'admin,reception' or request.user.is_superuser %}
     <div class="d-flex gap-2">
-        <a href="{% url 'reception_create' %}" class="btn btn-primary btn-sm">📋 Statsionar qabul</a>
-        <a href="{% url 'ambulatory_create' %}" class="btn btn-outline-primary btn-sm">🚶 Ambulator qabul</a>
+        <a href="{% url 'reception_create' %}" class="btn btn-primary btn-sm">📋 {% trans "Statsionar qabul" %}</a>
+        <a href="{% url 'ambulatory_create' %}" class="btn btn-outline-primary btn-sm">🚶 {% trans "Ambulator qabul" %}</a>
     </div>
     {% endif %}
 </div>
@@ -29,10 +30,10 @@
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-primary text-white border-0">🔍</span>
                         <input type="text" name="q" class="form-control"
-                               placeholder="Ism, bayonnoma №, passport yoki JSHSHIR..."
+                               placeholder="{% trans "Ism, bayonnoma №, kasallik varaqasi №, passport yoki JSHSHIR..." %}"
                                value="{{ query }}">
-                        <button type="submit" class="btn btn-primary btn-sm">Qidirish</button>
-                        <a href="{% url 'patient_list' %}" class="btn btn-outline-secondary btn-sm">✕ Tozalash</a>
+                        <button type="submit" class="btn btn-primary btn-sm">{% trans "Qidirish" %}</button>
+                        <a href="{% url 'patient_list' %}" class="btn btn-outline-secondary btn-sm">✕ {% trans "Tozalash" %}</a>
                     </div>
                 </div>
             </div>
@@ -41,44 +42,44 @@
 
                 <div class="col-md-2 col-6">
                     <select name="visit_type" class="form-select form-select-sm">
-                        <option value="">Barcha turlar</option>
-                        <option value="inpatient"  {% if selected_visit_type == 'inpatient' %}selected{% endif %}>🏥 Statsionar</option>
-                        <option value="ambulatory" {% if selected_visit_type == 'ambulatory' %}selected{% endif %}>🚶 Ambulator</option>
+                        <option value="">{% trans "Barcha turlar" %}</option>
+                        <option value="inpatient"  {% if selected_visit_type == 'inpatient' %}selected{% endif %}>🏥 {% trans "Statsionar" %}</option>
+                        <option value="ambulatory" {% if selected_visit_type == 'ambulatory' %}selected{% endif %}>🚶 {% trans "Ambulator" %}</option>
                     </select>
                 </div>
 
                 <div class="col-md-2 col-6">
                     <select name="status" class="form-select form-select-sm">
-                        <option value="">Faol bemorlar</option>
-                        <option value="registered" {% if selected_status == 'registered' %}selected{% endif %}>🟡 Registratsiya</option>
-                        <option value="admitted"   {% if selected_status == 'admitted' %}selected{% endif %}>🔵 Yotqizilgan</option>
-                        <option value="completed"  {% if selected_status == 'completed' %}selected{% endif %}>🟢 Yakunlangan</option>
-                        <option value="discharged" {% if selected_status == 'discharged' %}selected{% endif %}>📤 Chiqarilgan</option>
+                        <option value="">{% trans "Faol bemorlar" %}</option>
+                        <option value="registered" {% if selected_status == 'registered' %}selected{% endif %}>🟡 {% trans "Registratsiya" %}</option>
+                        <option value="admitted"   {% if selected_status == 'admitted' %}selected{% endif %}>🔵 {% trans "Yotqizilgan" %}</option>
+                        <option value="completed"  {% if selected_status == 'completed' %}selected{% endif %}>🟢 {% trans "Yakunlangan" %}</option>
+                        <option value="discharged" {% if selected_status == 'discharged' %}selected{% endif %}>📤 {% trans "Chiqarilgan" %}</option>
                     </select>
                 </div>
 
                 <div class="col-md-2 col-6">
                     <select name="outcome" class="form-select form-select-sm">
-                        <option value="">Barcha yakunlar</option>
-                        <option value="discharged"  {% if selected_outcome == 'discharged' %}selected{% endif %}>✅ Chiqarildi</option>
-                        <option value="deceased"    {% if selected_outcome == 'deceased' %}selected{% endif %}>❌ Vafot etdi</option>
-                        <option value="transferred" {% if selected_outcome == 'transferred' %}selected{% endif %}>🔄 O'tkazildi</option>
+                        <option value="">{% trans "Barcha yakunlar" %}</option>
+                        <option value="discharged"  {% if selected_outcome == 'discharged' %}selected{% endif %}>✅ {% trans "Chiqarildi" %}</option>
+                        <option value="deceased"    {% if selected_outcome == 'deceased' %}selected{% endif %}>❌ {% trans "Vafot etdi" %}</option>
+                        <option value="transferred" {% if selected_outcome == 'transferred' %}selected{% endif %}>🔄 {% trans "O'tkazildi" %}</option>
                     </select>
                 </div>
 
                 <div class="col-md-2 col-6">
                     <select name="category" class="form-select form-select-sm">
-                        <option value="">Barcha kategoriyalar</option>
-                        <option value="railway"      {% if selected_category == 'railway' %}selected{% endif %}>🚂 Temir yo'lchi</option>
-                        <option value="paid"         {% if selected_category == 'paid' %}selected{% endif %}>💳 Pullik</option>
-                        <option value="non_resident" {% if selected_category == 'non_resident' %}selected{% endif %}>🌍 Norezident</option>
+                        <option value="">{% trans "Barcha kategoriyalar" %}</option>
+                        <option value="railway"      {% if selected_category == 'railway' %}selected{% endif %}>🚂 {% trans "Temir yo'lchi" %}</option>
+                        <option value="paid"         {% if selected_category == 'paid' %}selected{% endif %}>💳 {% trans "Pullik" %}</option>
+                        <option value="non_resident" {% if selected_category == 'non_resident' %}selected{% endif %}>🌍 {% trans "Norezident" %}</option>
                     </select>
                 </div>
 
                 {% if request.user.role in 'admin,reception,statistician' or request.user.is_superuser %}
                 <div class="col-md-2 col-6">
                     <select name="department" class="form-select form-select-sm">
-                        <option value="">Barcha bo'limlar</option>
+                        <option value="">{% trans "Barcha bo'limlar" %}</option>
                         {% for dept in departments %}
                             <option value="{{ dept.pk }}" {% if selected_dept == dept.pk|stringformat:"s" %}selected{% endif %}>
                                 {{ dept.name }}
@@ -90,7 +91,7 @@
 
                 <div class="col-md-2 col-6">
                     <select name="doctor" class="form-select form-select-sm">
-                        <option value="">Barcha shifokorlar</option>
+                        <option value="">{% trans "Barcha shifokorlar" %}</option>
                         {% for doc in doctors %}
                             <option value="{{ doc.pk }}" {% if selected_doctor == doc.pk|stringformat:"s" %}selected{% endif %}>
                                 {{ doc.full_name }}
@@ -101,12 +102,12 @@
 
                 <div class="col-md-2 col-6">
                     <input type="date" name="date_from" class="form-control form-control-sm"
-                           title="Dan sana" value="{{ selected_date_from }}">
+                           title="{% trans "Dan sana" %}" value="{{ selected_date_from }}">
                 </div>
 
                 <div class="col-md-2 col-6">
                     <input type="date" name="date_to" class="form-control form-control-sm"
-                           title="Gacha sana" value="{{ selected_date_to }}">
+                           title="{% trans "Gacha sana" %}" value="{{ selected_date_to }}">
                 </div>
 
                 {% if request.user.role == 'reception' %}
@@ -117,13 +118,13 @@
                                {% if my_patients %}checked{% endif %}
                                onchange="this.form.submit()">
                         <label class="form-check-label small" for="myPatientsCheck">
-                            👤 Mening bemorlarim
+                            👤 {% trans "Mening bemorlarim" %}
                         </label>
                     </div>
                 </div>
                 {% endif %}
                 <div class="col-md-1 col-4">
-                    <select name="per_page" class="form-select form-select-sm" title="Sahifadagi son">
+                    <select name="per_page" class="form-select form-select-sm" title="{% trans "Sahifadagi son" %}">
                         <option value="20"  {% if selected_per_page == 20 %}selected{% endif %}>20</option>
                         <option value="50"  {% if selected_per_page == 50 %}selected{% endif %}>50</option>
                         <option value="100" {% if selected_per_page == 100 %}selected{% endif %}>100</option>
@@ -131,7 +132,7 @@
                 </div>
 
                 <div class="col-md-1 col-4">
-                    <button type="submit" class="btn btn-primary btn-sm w-100">Filter</button>
+                    <button type="submit" class="btn btn-primary btn-sm w-100">{% trans "Filter" %}</button>
                 </div>
 
             </div>
@@ -143,31 +144,39 @@
     <table class="table table-hover table-bordered table-sm align-middle">
         <thead class="table-primary">
             <tr>
-                <th style="width:130px">Bayonnoma №</th>
-                <th>Ism-familiya</th>
-                <th style="width:85px">Tur</th>
-                <th style="width:60px">Jinsi</th>
-                <th style="width:135px">Qabul sanasi</th>
-                <th style="width:130px">Bo'lim</th>
-                <th style="width:100px">Status</th>
-                <th style="width:95px">Yakun</th>
-                <th style="width:130px">Shifokor</th>
-                <th style="width:105px">Amallar</th>
+                <th style="width:130px">{% trans "Bayonnoma № / Kasallik varaqasi №" %}</th>
+                <th>{% trans "Ism-familiya" %}</th>
+                <th style="width:85px">{% trans "Tur" %}</th>
+                <th style="width:60px">{% trans "Jinsi" %}</th>
+                <th style="width:135px">{% trans "Qabul sanasi" %}</th>
+                <th style="width:130px">{% trans "Bo'lim" %}</th>
+                <th style="width:100px">{% trans "Status" %}</th>
+                <th style="width:95px">{% trans "Yakun" %}</th>
+                <th style="width:130px">{% trans "Shifokor" %}</th>
+                <th style="width:105px">{% trans "Amallar" %}</th>
             </tr>
         </thead>
         <tbody>
             {% for patient in page_obj %}
+            {% if request.user.role == 'doctor' %}
+                {% url 'doctor_patient_card' patient.pk as patient_url %}
+            {% else %}
+                {% url 'patient_detail' patient.pk as patient_url %}
+            {% endif %}
             <tr style="cursor:pointer;"
-                onclick="if(!event.target.closest('a,button'))window.location='{% url 'patient_detail' patient.pk %}'">
+                onclick="if(!event.target.closest('a,button'))window.location='{{ patient_url }}'">
                 <td class="small">
                     <div class="text-muted">{{ patient.medical_record_number }}</div>
+                    {% if patient.case_sheet_number %}
+                    <div class="text-secondary" style="font-size:0.7rem;">📋 {{ patient.case_sheet_number }}</div>
+                    {% endif %}
                     {% if patient.registered_by %}
                     <div class="text-secondary" style="font-size:0.7rem;">👤 {{ patient.registered_by.get_full_name|default:patient.registered_by.username }}</div>
                     {% endif %}
                 </td>
 
                 <td>
-                    <a href="{% url 'patient_detail' patient.pk %}" class="text-decoration-none fw-semibold">
+                    <a href="{{ patient_url }}" class="text-decoration-none fw-semibold">
                         {{ patient.full_name }}
                     </a>
                     {% if patient.patient_category == 'railway' %}
@@ -181,9 +190,9 @@
 
                 <td class="text-center">
                     {% if patient.visit_type == 'ambulatory' %}
-                        <span class="badge" style="background:#6f42c1;font-size:0.65rem">🚶 Amb</span>
+                        <span class="badge" style="background:#6f42c1;font-size:0.65rem">🚶 {% trans "Amb" %}</span>
                     {% else %}
-                        <span class="badge bg-info text-dark" style="font-size:0.65rem">🏥 Stat</span>
+                        <span class="badge bg-info text-dark" style="font-size:0.65rem">🏥 {% trans "Stat" %}</span>
                     {% endif %}
                 </td>
 
@@ -193,11 +202,11 @@
 
                 <td class="text-center">
                     {% if patient.status == 'registered' %}
-                        <span class="badge bg-warning text-dark" style="font-size:0.65rem">🟡 Reg</span>
+                        <span class="badge bg-warning text-dark" style="font-size:0.65rem">🟡 {% trans "Reg" %}</span>
                     {% elif patient.status == 'admitted' %}
-                        <span class="badge bg-primary" style="font-size:0.65rem">🔵 Yotq</span>
+                        <span class="badge bg-primary" style="font-size:0.65rem">🔵 {% trans "Yotq" %}</span>
                     {% elif patient.status == 'completed' %}
-                        <span class="badge bg-success" style="font-size:0.65rem">🟢 Yak</span>
+                        <span class="badge bg-success" style="font-size:0.65rem">🟢 {% trans "Yak" %}</span>
                     {% endif %}
                 </td>
 
@@ -215,20 +224,20 @@
 
                 <td>
                     <div class="d-flex gap-1">
-                        <a href="{% url 'patient_detail' patient.pk %}"
-                           class="btn btn-sm btn-info py-0 px-2" title="Ko'rish">👁</a>
+                        <a href="{{ patient_url }}"
+                           class="btn btn-sm btn-info py-0 px-2" title="{% trans "Ko'rish" %}">👁</a>
                         <a href="{% url 'patient_edit' patient.pk %}"
-                           class="btn btn-sm btn-warning py-0 px-2" title="Tahrirlash">✏️</a>
+                           class="btn btn-sm btn-warning py-0 px-2" title="{% trans "Tahrirlash" %}">✏️</a>
                         {% if request.user.role == 'admin' or request.user.is_superuser %}
                         <a href="{% url 'patient_delete' patient.pk %}"
-                           class="btn btn-sm btn-danger py-0 px-2" title="O'chirish">🗑</a>
+                           class="btn btn-sm btn-danger py-0 px-2" title="{% trans "O'chirish" %}">🗑</a>
                         {% endif %}
                     </div>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="10" class="text-center text-muted py-4">🔍 Bemor topilmadi</td>
+                <td colspan="10" class="text-center text-muted py-4">🔍 {% trans "Bemor topilmadi" %}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -238,7 +247,7 @@
 {% if page_obj.has_other_pages %}
 <nav class="d-flex justify-content-between align-items-center mt-2">
     <small class="text-muted">
-        {{ page_obj.start_index }}–{{ page_obj.end_index }} / {{ total_count }} ta bemor
+        {% blocktrans with start=page_obj.start_index end=page_obj.end_index total=total_count %}{{ start }}–{{ end }} / {{ total }} ta bemor{% endblocktrans %}
     </small>
     <ul class="pagination pagination-sm mb-0">
         {% if page_obj.has_previous %}

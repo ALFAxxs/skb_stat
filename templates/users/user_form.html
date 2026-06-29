@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load i18n %}
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
@@ -22,27 +23,39 @@
                     {% csrf_token %}
 
                     <div class="mb-3">
-                        <label class="form-label">Login</label>
+                        <label class="form-label">{% trans "Login" %}</label>
                         {{ form.username }}
                         <div class="text-danger small">{{ form.username.errors }}</div>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Ism</label>
+                            <label class="form-label">{% trans "Ism" %}</label>
                             {{ form.first_name }}
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Familiya</label>
+                            <label class="form-label">{% trans "Familiya" %}</label>
                             {{ form.last_name }}
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Rol</label>
+                        <label class="form-label">{% trans "Rol" %}</label>
                         {{ form.role }}
                         <div class="text-danger small">{{ form.role.errors }}</div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Bo'limlar</label>
+                        <label class="form-label">{% trans "Asosiy bo'lim" %}</label>
+                        {{ form.department }}
+                        <div class="text-danger small">{{ form.department.errors }}</div>
+                    </div>
+                    <div class="mb-3 form-check" id="dept-head-row" style="display:none;">
+                        {{ form.is_department_head }}
+                        <label class="form-check-label" for="{{ form.is_department_head.id_for_label }}">
+                            {{ form.is_department_head.label }}
+                        </label>
+                        <div class="text-muted small">{% trans "Belgilansa, shifokor o'z bo'limining barcha statistikasi va bemorlarini ko'radi hamda yangi bemorlarni shifokorlarga biriktiradi." %}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">{% trans "Bo'limlar" %}</label>
                         <div class="border rounded p-2" style="max-height:220px; overflow-y:auto;">
                             {% for widget in form.departments %}
                             <div class="form-check">
@@ -58,28 +71,28 @@
                             </div>
                             {% endfor %}
                         </div>
-                        <div class="text-muted small mt-1">Bir nechta bo'lim tanlash mumkin</div>
+                        <div class="text-muted small mt-1">{% trans "Bir nechta bo'lim tanlash mumkin" %}</div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Telefon</label>
+                        <label class="form-label">{% trans "Telefon" %}</label>
                         {{ form.phone }}
                     </div>
                     {% if form.password1 %}
                     <div class="mb-3">
-                        <label class="form-label">Parol</label>
+                        <label class="form-label">{% trans "Parol" %}</label>
                         {{ form.password1 }}
                         <div class="text-danger small">{{ form.password1.errors }}</div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Parolni tasdiqlang</label>
+                        <label class="form-label">{% trans "Parolni tasdiqlang" %}</label>
                         {{ form.password2 }}
                         <div class="text-danger small">{{ form.password2.errors }}</div>
                     </div>
                     {% endif %}
 
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">💾 Saqlash</button>
-                        <a href="{% url 'user_list' %}" class="btn btn-secondary">Bekor qilish</a>
+                        <button type="submit" class="btn btn-primary">💾 {% trans "Saqlash" %}</button>
+                        <a href="{% url 'user_list' %}" class="btn btn-secondary">{% trans "Bekor qilish" %}</a>
                     </div>
                 </form>
             </div>
@@ -100,5 +113,16 @@ document.querySelectorAll('select').forEach(el => {
     el.classList.remove('form-control');
     el.classList.add('form-select');
 });
+
+// Faqat rol = "doctor" bo'lganda "Bo'lim mudiri" katagi ko'rinadi
+const roleSelect = document.getElementById('{{ form.role.id_for_label }}');
+const headRow = document.getElementById('dept-head-row');
+function toggleHeadRow() {
+    headRow.style.display = (roleSelect && roleSelect.value === 'doctor') ? '' : 'none';
+}
+if (roleSelect) {
+    roleSelect.addEventListener('change', toggleHeadRow);
+    toggleHeadRow();
+}
 </script>
 {% endblock %}

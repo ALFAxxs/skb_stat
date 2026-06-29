@@ -1,17 +1,18 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Lab shablonlar{% endblock %}
+{% block title %}{% trans "Lab shablonlar" %}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-3">
 
   <!-- Sarlavha -->
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0">📋 Lab shablonlar</h4>
+    <h4 class="mb-0">📋 {% trans "Lab shablonlar" %}</h4>
     <div class="d-flex gap-2">
-      <a href="{% url 'lab_home' %}" class="btn btn-outline-secondary btn-sm">← Laboratoriya</a>
+      <a href="{% url 'lab_home' %}" class="btn btn-outline-secondary btn-sm">← {% trans "Laboratoriya" %}</a>
       <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createModal">
-        + Yangi shablon
+        + {% trans "Yangi shablon" %}
       </button>
     </div>
   </div>
@@ -23,11 +24,11 @@
         <thead class="table-light">
           <tr>
             <th width="40">#</th>
-            <th>Nomi</th>
-            <th>Kategoriya</th>
-            <th width="130" class="text-center">Parametrlar soni</th>
-            <th width="80" class="text-center">Faolmi</th>
-            <th width="80" class="text-center">Amallar</th>
+            <th>{% trans "Nomi" %}</th>
+            <th>{% trans "Kategoriya" %}</th>
+            <th width="130" class="text-center">{% trans "Parametrlar soni" %}</th>
+            <th width="80" class="text-center">{% trans "Faolmi" %}</th>
+            <th width="80" class="text-center">{% trans "Amallar" %}</th>
           </tr>
         </thead>
         <tbody>
@@ -46,9 +47,9 @@
             </td>
             <td class="text-center">
               {% if tmpl.is_active %}
-                <span class="badge bg-success">Ha</span>
+                <span class="badge bg-success">{% trans "Ha" %}</span>
               {% else %}
-                <span class="badge bg-danger">Yo'q</span>
+                <span class="badge bg-danger">{% trans "Yo'q" %}</span>
               {% endif %}
             </td>
             <td class="text-center">
@@ -59,7 +60,7 @@
           {% empty %}
           <tr>
             <td colspan="6" class="text-center text-muted py-4">
-              Hali shablon yo'q. Yangi shablon yarating.
+              {% trans "Hali shablon yo'q. Yangi shablon yarating." %}
             </td>
           </tr>
           {% endfor %}
@@ -75,17 +76,17 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Yangi shablon yaratish</h5>
+        <h5 class="modal-title">{% trans "Yangi shablon yaratish" %}</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <div id="create-error" class="alert alert-danger d-none"></div>
         <div class="mb-3">
-          <label class="form-label">Nomi <span class="text-danger">*</span></label>
-          <input type="text" id="tmpl-name" class="form-control" placeholder="Shablon nomi">
+          <label class="form-label">{% trans "Nomi" %} <span class="text-danger">*</span></label>
+          <input type="text" id="tmpl-name" class="form-control" placeholder="{% trans "Shablon nomi" %}">
         </div>
         <div class="mb-3">
-          <label class="form-label">Kategoriya</label>
+          <label class="form-label">{% trans "Kategoriya" %}</label>
           <select id="tmpl-category" class="form-select">
             {% for val, label in category_choices %}
             <option value="{{ val }}">{{ label }}</option>
@@ -93,13 +94,13 @@
           </select>
         </div>
         <div class="mb-3">
-          <label class="form-label">Tavsifi</label>
-          <textarea id="tmpl-desc" class="form-control" rows="2" placeholder="Ixtiyoriy..."></textarea>
+          <label class="form-label">{% trans "Tavsifi" %}</label>
+          <textarea id="tmpl-desc" class="form-control" rows="2" placeholder="{% trans "Ixtiyoriy..." %}"></textarea>
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor</button>
-        <button type="button" class="btn btn-primary" id="save-template-btn">Saqlash</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Bekor" %}</button>
+        <button type="button" class="btn btn-primary" id="save-template-btn">{% trans "Saqlash" %}</button>
       </div>
     </div>
   </div>
@@ -114,7 +115,7 @@ document.getElementById('save-template-btn').addEventListener('click', async fun
 
   if (!name) {
     errorDiv.classList.remove('d-none');
-    errorDiv.textContent = 'Nomi kiritilishi shart!';
+    errorDiv.textContent = '{% trans "Nomi kiritilishi shart!" %}';
     return;
   }
   errorDiv.classList.add('d-none');
@@ -133,11 +134,11 @@ document.getElementById('save-template-btn').addEventListener('click', async fun
       window.location.href = "/laboratory/templates/" + data.id + "/";
     } else {
       errorDiv.classList.remove('d-none');
-      errorDiv.textContent = data.error || 'Xato yuz berdi';
+      errorDiv.textContent = data.error || '{% trans "Xato yuz berdi" %}';
     }
   } catch (e) {
     errorDiv.classList.remove('d-none');
-    errorDiv.textContent = 'Tarmoq xatosi: ' + e.message;
+    errorDiv.textContent = '{% trans "Tarmoq xatosi:" %} ' + e.message;
   }
 });
 </script>

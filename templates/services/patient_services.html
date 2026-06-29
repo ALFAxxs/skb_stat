@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
-{% block title %}{{ patient.full_name }} — Xizmatlar{% endblock %}
+{% load i18n %}
+{% block title %}{% blocktrans with name=patient.full_name %}{{ name }} — Xizmatlar{% endblocktrans %}{% endblock %}
 
 {% block content %}
 <style>
@@ -37,7 +38,7 @@
 
 <div class="d-flex justify-content-between align-items-start mb-4">
     <div>
-        <h4 class="mb-1">🏥 Xizmatlar</h4>
+        <h4 class="mb-1">🏥 {% trans "Xizmatlar" %}</h4>
         <p class="text-muted mb-0">
             <strong>{{ patient.full_name }}</strong>
             <span class="badge bg-secondary ms-2">{{ patient.medical_record_number }}</span>
@@ -50,11 +51,11 @@
         <button class="btn btn-success"
                 data-bs-toggle="modal" data-bs-target="#addServiceModal"
                 onclick="openServiceModal()"
-                ontouchend="openServiceModal()">➕ Xizmat qo'shish</button>
+                ontouchend="openServiceModal()">➕ {% trans "Xizmat qo'shish" %}</button>
 
-        <a href="{% url 'patient_check' patient.pk %}" class="btn btn-outline-dark" target="_blank">🧾 Check</a>
+        <a href="{% url 'patient_check' patient.pk %}" class="btn btn-outline-dark" target="_blank">🧾 {% trans "Check" %}</a>
 
-        <a href="{% url 'patient_detail' patient.pk %}" class="btn btn-outline-secondary">← Bemor kartasi</a>
+        <a href="{% url 'patient_detail' patient.pk %}" class="btn btn-outline-secondary">← {% trans "Bemor kartasi" %}</a>
     </div>
 </div>
 
@@ -63,19 +64,19 @@
     <div class="col-md-4">
         <div class="stat-card bg-primary bg-opacity-10 text-center">
             <div class="h4 text-primary fw-bold mb-1">{{ total_count }}</div>
-            <div class="small text-muted">Jami xizmatlar</div>
+            <div class="small text-muted">{% trans "Jami xizmatlar" %}</div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="stat-card bg-success bg-opacity-10 text-center">
-            <div class="h6 fw-bold mb-1 text-success">{{ total_price|floatformat:0 }} so'm</div>
-            <div class="small text-muted">Xizmatlar summasi</div>
+            <div class="h6 fw-bold mb-1 text-success">{% blocktrans with sum=total_price|floatformat:0 %}{{ sum }} so'm{% endblocktrans %}</div>
+            <div class="small text-muted">{% trans "Xizmatlar summasi" %}</div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="stat-card bg-warning bg-opacity-10 text-center">
-            <div class="h6 fw-bold mb-1 text-warning">{{ medicines_total|floatformat:0 }} so'm</div>
-            <div class="small text-muted">Dorilar summasi</div>
+            <div class="h6 fw-bold mb-1 text-warning">{% blocktrans with sum=medicines_total|floatformat:0 %}{{ sum }} so'm{% endblocktrans %}</div>
+            <div class="small text-muted">{% trans "Dorilar summasi" %}</div>
         </div>
     </div>
 </div>
@@ -85,7 +86,7 @@
     {% for cat in cat_stats %}
     <span class="badge bg-light text-dark border px-3 py-2">
         {{ cat.service__category__icon|default:"🏥" }} {{ cat.service__category__name }}:
-        <strong>{{ cat.count }} ta</strong> — {{ cat.total|floatformat:0 }} so'm
+        <strong>{% blocktrans with cnt=cat.count %}{{ cnt }} ta{% endblocktrans %}</strong> — {% blocktrans with sum=cat.total|floatformat:0 %}{{ sum }} so'm{% endblocktrans %}
     </span>
     {% endfor %}
 </div>
@@ -97,31 +98,31 @@
         <table class="table table-hover align-middle mb-0" id="services-table">
             <thead class="table-light">
                 <tr>
-                    <th>Xizmat</th>
-                    <th>Kategoriya</th>
-                    <th class="text-center">Miqdor</th>
-                    <th class="text-end">Narx</th>
-                    <th class="text-end">Jami</th>
-                    <th>Holat</th>
-                    <th>Sana</th>
-                    <th class="text-center">Amallar</th>
+                    <th>{% trans "Xizmat" %}</th>
+                    <th>{% trans "Kategoriya" %}</th>
+                    <th class="text-center">{% trans "Miqdor" %}</th>
+                    <th class="text-end">{% trans "Narx" %}</th>
+                    <th class="text-end">{% trans "Jami" %}</th>
+                    <th>{% trans "Holat" %}</th>
+                    <th>{% trans "Sana" %}</th>
+                    <th class="text-center">{% trans "Amallar" %}</th>
                 </tr>
             </thead>
             <tbody>
                 {% for item in services %}
                 <tr data-cat="{{ item.service.category_id }}">
                     <td>
-                        <div class="fw-semibold">{{ item.service.name }}</div>
+                        <div class="fw-semibold">{{ item.service.display_name }}</div>
                         {% if item.ordered_by %}<small class="text-muted">👨‍⚕️ {{ item.ordered_by.full_name }}</small>{% endif %}
                     </td>
                     <td>
                         <span style="display:inline-block;background:#e9ecef;color:#495057;border-radius:6px;padding:2px 8px;font-size:0.75rem;font-weight:500;">
-                            {{ item.service.category.icon|default:"🏥" }} {{ item.service.category.name }}
+                            {{ item.service.category.icon|default:"🏥" }} {{ item.service.category.display_name }}
                         </span>
                     </td>
                     <td class="text-center">{{ item.quantity }}</td>
-                    <td class="text-end">{{ item.price|floatformat:0 }} so'm</td>
-                    <td class="text-end fw-semibold">{{ item.total_price|floatformat:0 }} so'm</td>
+                    <td class="text-end">{% blocktrans with p=item.price|floatformat:0 %}{{ p }} so'm{% endblocktrans %}</td>
+                    <td class="text-end fw-semibold">{% blocktrans with p=item.total_price|floatformat:0 %}{{ p }} so'm{% endblocktrans %}</td>
                     <td>
                         <span class="badge badge-status-{{ item.status }} px-2 py-1 rounded-pill">
                             {{ item.get_status_display }}
@@ -144,11 +145,11 @@
                 {% empty %}
                 <tr>
                     <td colspan="8" class="text-center text-muted py-5">
-                        Xizmatlar qo'shilmagan.<br>
+                        {% trans "Xizmatlar qo'shilmagan." %}<br>
                         <button class="btn btn-success btn-sm mt-2"
                                 data-bs-toggle="modal" data-bs-target="#addServiceModal"
                                 onclick="openServiceModal()"
-                                ontouchend="openServiceModal()">➕ Xizmat qo'shish</button>
+                                ontouchend="openServiceModal()">➕ {% trans "Xizmat qo'shish" %}</button>
                     </td>
                 </tr>
                 {% endfor %}
@@ -161,16 +162,16 @@
 {% if patient.visit_type != 'ambulatory' %}
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <strong>💊 Dori-darmonlar</strong>
-        <button class="btn btn-sm btn-success" id="btn-show-medicine-form">+ Dori qo'shish</button>
+        <strong>💊 {% trans "Dori-darmonlar" %}</strong>
+        <button class="btn btn-sm btn-success" id="btn-show-medicine-form">+ {% trans "Dori qo'shish" %}</button>
     </div>
     <div id="medicine-form-block" class="card-body border-bottom" style="display:none;">
         <div class="row g-2 align-items-end">
             <div class="col-md-4">
-                <label class="form-label small fw-bold">Dori nomi</label>
+                <label class="form-label small fw-bold">{% trans "Dori nomi" %}</label>
                 <div class="position-relative">
                     <input type="text" id="med-search-input" class="form-control form-control-sm"
-                           placeholder="Qidirish..." autocomplete="off">
+                           placeholder="{% trans 'Qidirish...' %}" autocomplete="off">
                     <div id="med-dropdown"
                          style="display:none; position:absolute; top:100%; left:0; right:0;
                                 z-index:1050; background:#fff; border:1px solid #dee2e6;
@@ -182,29 +183,29 @@
                 <div id="med-selected-name" class="text-success small mt-1"></div>
             </div>
             <div class="col-md-1">
-                <label class="form-label small fw-bold">Birlik</label>
+                <label class="form-label small fw-bold">{% trans "Birlik" %}</label>
                 <input type="text" id="med-unit" class="form-control form-control-sm bg-light" readonly placeholder="—">
             </div>
             <div class="col-md-2">
-                <label class="form-label small fw-bold">Miqdori</label>
+                <label class="form-label small fw-bold">{% trans "Miqdori" %}</label>
                 <input type="number" id="med-qty" class="form-control form-control-sm" value="1" min="0.01" step="0.01">
             </div>
             <div class="col-md-2">
-                <label class="form-label small fw-bold">Narxi (so'm)</label>
+                <label class="form-label small fw-bold">{% trans "Narxi (so'm)" %}</label>
                 <input type="number" id="med-price" class="form-control form-control-sm" value="0" min="0">
             </div>
             <div class="col-md-3">
-                <label class="form-label small fw-bold">Shifokor</label>
+                <label class="form-label small fw-bold">{% trans "Shifokor" %}</label>
                 <select id="med-doctor" class="form-select form-select-sm">
-                    <option value="">— Tanlang —</option>
+                    <option value="">{% trans "— Tanlang —" %}</option>
                 </select>
             </div>
             <div class="col-md-9">
-                <label class="form-label small fw-bold">Izoh</label>
-                <input type="text" id="med-notes" class="form-control form-control-sm" placeholder="Ixtiyoriy...">
+                <label class="form-label small fw-bold">{% trans "Izoh" %}</label>
+                <input type="text" id="med-notes" class="form-control form-control-sm" placeholder="{% trans 'Ixtiyoriy...' %}">
             </div>
             <div class="col-md-3">
-                <button class="btn btn-primary btn-sm w-100" id="btn-add-medicine">💊 Qo'shish</button>
+                <button class="btn btn-primary btn-sm w-100" id="btn-add-medicine">💊 {% trans "Qo'shish" %}</button>
             </div>
         </div>
         <div id="med-error" class="alert alert-danger mt-2 py-2" style="display:none;"></div>
@@ -213,13 +214,13 @@
         <table class="table table-sm table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
-                    <th class="ps-3">Dori nomi</th>
-                    <th>Birlik</th>
-                    <th class="text-center">Miqdori</th>
-                    <th class="text-end">Narxi</th>
-                    <th class="text-end">Jami</th>
-                    <th>Shifokor</th>
-                    <th>Sana</th>
+                    <th class="ps-3">{% trans "Dori nomi" %}</th>
+                    <th>{% trans "Birlik" %}</th>
+                    <th class="text-center">{% trans "Miqdori" %}</th>
+                    <th class="text-end">{% trans "Narxi" %}</th>
+                    <th class="text-end">{% trans "Jami" %}</th>
+                    <th>{% trans "Shifokor" %}</th>
+                    <th>{% trans "Sana" %}</th>
                     <th></th>
                 </tr>
             </thead>
@@ -230,7 +231,7 @@
                     <td class="text-muted small">{{ med.medicine.unit }}</td>
                     <td class="text-center">{{ med.quantity }}</td>
                     <td class="text-end">{{ med.price|floatformat:0 }}</td>
-                    <td class="text-end fw-semibold">{{ med.total_price|floatformat:0 }} so'm</td>
+                    <td class="text-end fw-semibold">{% blocktrans with p=med.total_price|floatformat:0 %}{{ p }} so'm{% endblocktrans %}</td>
                     <td class="small">{{ med.ordered_by.full_name|default:"—" }}</td>
                     <td class="small text-muted">{{ med.ordered_at|date:"d.m.Y H:i" }}</td>
                     <td>
@@ -239,15 +240,15 @@
                 </tr>
                 {% empty %}
                 <tr id="med-empty-row">
-                    <td colspan="8" class="text-center text-muted py-3">Dori-darmon qo'shilmagan</td>
+                    <td colspan="8" class="text-center text-muted py-3">{% trans "Dori-darmon qo'shilmagan" %}</td>
                 </tr>
                 {% endfor %}
             </tbody>
             {% if medicines %}
             <tfoot class="table-light">
                 <tr>
-                    <td colspan="4" class="text-end fw-bold pe-2">Dorilar jami:</td>
-                    <td class="text-end fw-bold text-success">{{ medicines_total|floatformat:0 }} so'm</td>
+                    <td colspan="4" class="text-end fw-bold pe-2">{% trans "Dorilar jami:" %}</td>
+                    <td class="text-end fw-bold text-success">{% blocktrans with sum=medicines_total|floatformat:0 %}{{ sum }} so'm{% endblocktrans %}</td>
                     <td colspan="3"></td>
                 </tr>
             </tfoot>
@@ -262,14 +263,14 @@
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header bg-success text-white">
-                <h5 class="modal-title">➕ Xizmatlar qo'shish
+                <h5 class="modal-title">➕ {% trans "Xizmatlar qo'shish" %}
                     <span class="badge ms-2 fw-normal fs-6
                         {% if patient.patient_category == 'railway' %}bg-primary
                         {% elif patient.patient_category == 'non_resident' %}bg-danger
                         {% else %}bg-warning text-dark{% endif %}">
-                        {% if patient.patient_category == 'railway' %}🚆 Temir yo'lchi narxi
-                        {% elif patient.patient_category == 'non_resident' %}🌍 Norezident narxi (+25%)
-                        {% else %}💰 Pullik narxi{% endif %}
+                        {% if patient.patient_category == 'railway' %}🚆 {% trans "Temir yo'lchi narxi" %}
+                        {% elif patient.patient_category == 'non_resident' %}🌍 {% trans "Norezident narxi (+25%)" %}
+                        {% else %}💰 {% trans "Pullik narxi" %}{% endif %}
                     </span>
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -279,49 +280,49 @@
                     <!-- CHAP: Qidiruv -->
                     <div class="col-md-6">
                         <div class="card border h-100">
-                            <div class="card-header bg-light py-2"><strong>🔍 Xizmat tanlash</strong></div>
+                            <div class="card-header bg-light py-2"><strong>🔍 {% trans "Xizmat tanlash" %}</strong></div>
                             <div class="card-body">
                                 <div class="mb-2">
                                     <div class="d-flex flex-wrap gap-1" id="modal-cat-btns">
-                                        <button type="button" class="btn btn-primary modal-cat-btn py-1 px-2" style="font-size:12px" data-cat="">Barchasi</button>
-                                        <button type="button" class="btn btn-outline-warning modal-cat-btn py-1 px-2" style="font-size:12px" data-cat="__my_packages__">⭐ Mening paketim</button>
+                                        <button type="button" class="btn btn-primary modal-cat-btn py-1 px-2" style="font-size:12px" data-cat="">{% trans "Barchasi" %}</button>
+                                        <button type="button" class="btn btn-outline-warning modal-cat-btn py-1 px-2" style="font-size:12px" data-cat="__my_packages__">⭐ {% trans "Mening paketim" %}</button>
                                         {% for cat in categories %}
-                                        <button type="button" class="btn btn-outline-primary modal-cat-btn py-1 px-2" style="font-size:12px" data-cat="{{ cat.id }}">{{ cat.icon }} {{ cat.name }}</button>
+                                        <button type="button" class="btn btn-outline-primary modal-cat-btn py-1 px-2" style="font-size:12px" data-cat="{{ cat.id }}">{{ cat.icon }} {{ cat.display_name }}</button>
                                         {% endfor %}
                                     </div>
                                 </div>
                                 <div class="mb-2" style="position:relative;">
-                                    <input type="text" id="svc-search" class="form-control" placeholder="🔍 Xizmat nomi yoki kodi..." autocomplete="off">
+                                    <input type="text" id="svc-search" class="form-control" placeholder="🔍 {% trans 'Xizmat nomi yoki kodi...' %}" autocomplete="off">
                                     <div id="svc-dropdown" class="svc-dropdown"></div>
                                 </div>
                                 <!-- Paket paneli -->
                                 <div id="pkg-panel" style="display:none; border:1px solid #dee2e6; border-radius:8px; padding:10px; max-height:280px; overflow-y:auto; background:#fff;"></div>
                                 <div class="row g-2 mb-2">
                                     <div class="col-6">
-                                        <label class="form-label small fw-bold mb-1">Miqdori</label>
+                                        <label class="form-label small fw-bold mb-1">{% trans "Miqdori" %}</label>
                                         <input type="number" id="svc-qty" class="form-control form-control-sm" value="1" min="1">
                                     </div>
                                     <div class="col-6">
-                                        <label class="form-label small fw-bold mb-1">Narxi</label>
-                                        <div class="form-control form-control-sm bg-light text-success fw-bold" id="svc-price">— so'm</div>
+                                        <label class="form-label small fw-bold mb-1">{% trans "Narxi" %}</label>
+                                        <div class="form-control form-control-sm bg-light text-success fw-bold" id="svc-price">{% trans "— so'm" %}</div>
                                     </div>
                                 </div>
                                 <!-- ✅ TO'G'RI ID: svc-doctor -->
                                 <div class="mb-3">
-                                    <label class="form-label small fw-bold mb-1">Shifokor</label>
+                                    <label class="form-label small fw-bold mb-1">{% trans "Shifokor" %}</label>
                                     <select id="svc-doctor" class="form-select form-select-sm">
-                                        <option value="">— Tanlang —</option>
+                                        <option value="">{% trans "— Tanlang —" %}</option>
                                     </select>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label small fw-bold mb-1">Izoh</label>
+                                    <label class="form-label small fw-bold mb-1">{% trans "Izoh" %}</label>
                                     <textarea id="svc-notes" class="form-control form-control-sm" rows="2"></textarea>
                                 </div>
-                                <div class="checked-summary" id="checked-summary">✅ <span id="checked-count">0</span> ta xizmat belgilandi</div>
-                                <button type="button" class="btn-add-checked" id="btn-add-checked">➕ Belgilanganlarni savatga qo'shish</button>
+                                <div class="checked-summary" id="checked-summary">✅ <span id="checked-count">0</span> {% trans "ta xizmat belgilandi" %}</div>
+                                <button type="button" class="btn-add-checked" id="btn-add-checked">➕ {% trans "Belgilanganlarni savatga qo'shish" %}</button>
                                 <hr class="my-2">
-                                <div class="text-muted small mb-1">Yoki bitta xizmat:</div>
-                                <button type="button" class="btn btn-outline-primary btn-sm w-100" id="btn-add-to-cart">➕ Tanlangan xizmatni qo'shish</button>
+                                <div class="text-muted small mb-1">{% trans "Yoki bitta xizmat:" %}</div>
+                                <button type="button" class="btn btn-outline-primary btn-sm w-100" id="btn-add-to-cart">➕ {% trans "Tanlangan xizmatni qo'shish" %}</button>
                                 <div id="add-cart-error" class="alert alert-danger mt-2 py-2" style="display:none;"></div>
                             </div>
                         </div>
@@ -330,25 +331,25 @@
                     <div class="col-md-6">
                         <div class="card border h-100">
                             <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
-                                <strong>🛒 Savat <span class="badge bg-success" id="cart-count">0</span></strong>
-                                <button type="button" class="btn btn-outline-danger btn-sm" id="btn-clear-cart">🗑 Tozalash</button>
+                                <strong>🛒 {% trans "Savat" %} <span class="badge bg-success" id="cart-count">0</span></strong>
+                                <button type="button" class="btn btn-outline-danger btn-sm" id="btn-clear-cart">🗑 {% trans "Tozalash" %}</button>
                             </div>
                             <div class="card-body p-0">
-                                <div id="cart-empty" class="text-center text-muted py-5 cart-empty">Hali xizmat tanlanmagan.<br>Chapdan xizmat tanlang ➜</div>
+                                <div id="cart-empty" class="text-center text-muted py-5 cart-empty">{% trans "Hali xizmat tanlanmagan." %}<br>{% trans "Chapdan xizmat tanlang ➜" %}</div>
                                 <table class="table cart-table mb-0" id="cart-table" style="display:none;">
                                     <thead class="table-light">
                                         <tr>
-                                            <th>Xizmat</th>
-                                            <th class="text-center">Soni</th>
-                                            <th class="text-end">Jami</th>
+                                            <th>{% trans "Xizmat" %}</th>
+                                            <th class="text-center">{% trans "Soni" %}</th>
+                                            <th class="text-end">{% trans "Jami" %}</th>
                                             <th></th>
                                         </tr>
                                     </thead>
                                     <tbody id="cart-body"></tbody>
                                     <tfoot>
                                         <tr class="cart-total-row">
-                                            <td colspan="2">Jami:</td>
-                                            <td class="text-end text-success" id="cart-grand-total">0 so'm</td>
+                                            <td colspan="2">{% trans "Jami:" %}</td>
+                                            <td class="text-end text-success" id="cart-grand-total">{% trans "0 so'm" %}</td>
                                             <td></td>
                                         </tr>
                                     </tfoot>
@@ -360,9 +361,9 @@
                 <div id="save-error" class="alert alert-danger mt-3" style="display:none;"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Bekor" %}</button>
                 <button type="button" class="btn btn-success btn-lg px-5" id="btn-save-all" disabled>
-                    ✅ Barchasini saqlash (<span id="save-count">0</span> ta)
+                    ✅ {% trans "Barchasini saqlash" %} (<span id="save-count">0</span> {% trans "ta" %})
                 </button>
             </div>
         </div>
@@ -375,20 +376,20 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">🏥 MRT Navbat Yaratildi</h5>
+                <h5 class="modal-title">🏥 {% trans "MRT Navbat Yaratildi" %}</h5>
             </div>
             <div class="modal-body text-center py-4">
                 <div style="font-size:90px; font-weight:900; color:#185FA5; line-height:1;" id="modal-queue-number">—</div>
-                <div class="text-muted mt-2 mb-3">Navbat raqami</div>
+                <div class="text-muted mt-2 mb-3">{% trans "Navbat raqami" %}</div>
                 <div class="fw-semibold fs-5" id="modal-patient-name"></div>
                 <div class="alert alert-info py-2">
-                    📢 Bemorga navbat raqamini ayting
+                    📢 {% trans "Bemorga navbat raqamini ayting" %}
                 </div>
-                <div class="text-muted small">MRT xonasi • Bugun</div>
+                <div class="text-muted small">{% trans "MRT xonasi" %} • {% trans "Bugun" %}</div>
             </div>
             <div class="modal-footer justify-content-center gap-2">
-                <button type="button" class="btn btn-outline-secondary px-4" id="btn-print-ticket">🖨 Chop etish</button>
-                <button type="button" class="btn btn-primary px-5" id="queue-modal-ok">✅ Tushunarli</button>
+                <button type="button" class="btn btn-outline-secondary px-4" id="btn-print-ticket">🖨 {% trans "Chop etish" %}</button>
+                <button type="button" class="btn btn-primary px-5" id="queue-modal-ok">✅ {% trans "Tushunarli" %}</button>
             </div>
             <div id="print-ticket" style="display:none; position:absolute; left:-9999px;">
                 <style>
@@ -399,12 +400,12 @@
                 }
                 </style>
                 <div style="text-align:center; font-family:'Courier New',monospace; width:76mm; padding:4mm;">
-                    <div style="font-size:10pt; border-bottom:1px dashed #000; padding-bottom:3mm; margin-bottom:3mm;">Markaziy klinik kasalxona<br>MRT bo'limi</div>
-                    <div style="font-size:11pt; margin-bottom:2mm;">Navbat raqami</div>
+                    <div style="font-size:10pt; border-bottom:1px dashed #000; padding-bottom:3mm; margin-bottom:3mm;">{% trans "Markaziy klinik kasalxona" %}<br>{% trans "MRT bo'limi" %}</div>
+                    <div style="font-size:11pt; margin-bottom:2mm;">{% trans "Navbat raqami" %}</div>
                     <div id="print-num" style="font-size:48pt; font-weight:900; line-height:1;">—</div>
-                    <div style="font-size:9pt; margin-top:3mm; border-top:1px dashed #000; padding-top:3mm;">MRT xonasi</div>
+                    <div style="font-size:9pt; margin-top:3mm; border-top:1px dashed #000; padding-top:3mm;">{% trans "MRT xonasi" %}</div>
                     <div id="print-date" style="font-size:8pt; color:#333;"></div>
-                    <div style="font-size:7pt; margin-top:3mm; border-top:1px dashed #000; padding-top:2mm;">Navbat kelguncha kuting.<br>Ekrandan raqamingizni kuzating.</div>
+                    <div style="font-size:7pt; margin-top:3mm; border-top:1px dashed #000; padding-top:2mm;">{% trans "Navbat kelguncha kuting." %}<br>{% trans "Ekrandan raqamingizni kuzating." %}</div>
                 </div>
             </div>
         </div>
@@ -416,36 +417,36 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">✏️ Yangilash</h5>
+                <h5 class="modal-title">✏️ {% trans "Yangilash" %}</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="edit-id">
                 <div class="mb-3">
-                    <label class="form-label fw-bold">Holat</label>
+                    <label class="form-label fw-bold">{% trans "Holat" %}</label>
                     <select id="edit-status" class="form-select">
-                        <option value="ordered">Buyurtma berildi</option>
-                        <option value="in_progress">Bajarilmoqda</option>
-                        <option value="completed">Bajarildi</option>
-                        <option value="cancelled">Bekor qilindi</option>
+                        <option value="ordered">{% trans "Buyurtma berildi" %}</option>
+                        <option value="in_progress">{% trans "Bajarilmoqda" %}</option>
+                        <option value="completed">{% trans "Bajarildi" %}</option>
+                        <option value="cancelled">{% trans "Bekor qilindi" %}</option>
                     </select>
                 </div>
                 <!-- ✅ TO'G'RI ID: edit-doctor (faqat shu yerda) -->
                 <div class="mb-3">
-                    <label class="form-label fw-bold">Shifokor</label>
+                    <label class="form-label fw-bold">{% trans "Shifokor" %}</label>
                     <select id="edit-doctor" class="form-select">
-                        <option value="">— Tanlang —</option>
+                        <option value="">{% trans "— Tanlang —" %}</option>
                     </select>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label fw-bold">Natija</label>
+                    <label class="form-label fw-bold">{% trans "Natija" %}</label>
                     <textarea id="edit-result" class="form-control" rows="3"></textarea>
                 </div>
                 <div id="edit-error" class="alert alert-danger" style="display:none;"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor</button>
-                <button type="button" class="btn btn-primary" id="btn-update">Saqlash</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Bekor" %}</button>
+                <button type="button" class="btn btn-primary" id="btn-update">{% trans "Saqlash" %}</button>
             </div>
         </div>
     </div>

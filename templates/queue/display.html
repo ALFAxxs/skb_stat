@@ -1,10 +1,11 @@
 {% load static %}
+{% load i18n %}
 <!DOCTYPE html>
 <html lang="uz">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MRT Navbat Ekrani</title>
+<title>{% trans "MRT Navbat Ekrani" %}</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -181,18 +182,18 @@ body {
   align-items:center; justify-content:center;
   cursor:pointer;">
   <div style="font-size:64px; margin-bottom:20px;">🔊</div>
-  <div style="font-size:28px; font-weight:700; color:#fff; margin-bottom:12px;">Navbat tizimi</div>
-  <div style="font-size:18px; color:#B5D4F4; margin-bottom:32px;">Ishga tushirish uchun ekranga bosing</div>
+  <div style="font-size:28px; font-weight:700; color:#fff; margin-bottom:12px;">{% trans "Navbat tizimi" %}</div>
+  <div style="font-size:18px; color:#B5D4F4; margin-bottom:32px;">{% trans "Ishga tushirish uchun ekranga bosing" %}</div>
   <div style="background:#185FA5; color:#fff; padding:16px 48px; border-radius:12px; font-size:20px; font-weight:600;">
-    ▶ Boshlash
+    ▶ {% trans "Boshlash" %}
   </div>
 </div>
 
 <!-- Header -->
 <div class="header">
   <div>
-    <div class="header-logo">🏥 Markaziy klinik kasalxona</div>
-    <div class="header-sub">MRT bo'limi — Elektron navbat tizimi</div>
+    <div class="header-logo">🏥 {% trans "Markaziy klinik kasalxona" %}</div>
+    <div class="header-sub">{% trans "MRT bo'limi — Elektron navbat tizimi" %}</div>
   </div>
   <div class="header-time" id="clock">--:--:--</div>
 </div>
@@ -201,7 +202,7 @@ body {
 <div class="main">
   <!-- Hozirgi navbat -->
   <div class="current-section">
-    <div class="current-label">Hozirgi navbat</div>
+    <div class="current-label">{% trans "Hozirgi navbat" %}</div>
     <div class="current-number" id="current-number">—</div>
     <div class="current-room"   id="current-room"></div>
     <div class="current-name"   id="current-name"></div>
@@ -210,12 +211,12 @@ body {
   <!-- Kutayotganlar -->
   <div class="waiting-section">
     <div class="waiting-header">
-      <div class="waiting-title">Navbat kutmoqda</div>
-      <div class="waiting-count" id="waiting-count">0 kishi</div>
+      <div class="waiting-title">{% trans "Navbat kutmoqda" %}</div>
+      <div class="waiting-count" id="waiting-count">0 {% trans "kishi" %}</div>
     </div>
     <div class="waiting-list" id="waiting-list">
       <div style="text-align:center; color:#37474f; padding:40px 20px;">
-        Navbat bo'sh
+        {% trans "Navbat bo'sh" %}
       </div>
     </div>
   </div>
@@ -224,9 +225,9 @@ body {
 <!-- Ticker -->
 <div class="ticker">
   <span class="ticker-inner">
-    🏥 Markaziy klinik kasalxona MRT bo'limi — Xizmat soatlari: 08:00 — 18:00 &nbsp;&nbsp;&nbsp;
-    📞 Qo'shimcha ma'lumot uchun qabulxonaga murojaat qiling &nbsp;&nbsp;&nbsp;
-    ✅ Navbatingizni kuting, ism-familiyangiz e'lon qilinadi
+    🏥 {% trans "Markaziy klinik kasalxona MRT bo'limi — Xizmat soatlari: 08:00 — 18:00" %} &nbsp;&nbsp;&nbsp;
+    📞 {% trans "Qo'shimcha ma'lumot uchun qabulxonaga murojaat qiling" %} &nbsp;&nbsp;&nbsp;
+    ✅ {% trans "Navbatingizni kuting, ism-familiyangiz e'lon qilinadi" %}
   </span>
 </div>
 

@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}{% blocktrans with t=assignment.get_diagnostic_type_display name=patient.full_name %}{{ t }} — {{ name }}{% endblocktrans %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+    <div>
+      <h4 class="mb-1">🩻 {{ assignment.get_diagnostic_type_display }} — {{ patient.full_name }}</h4>
+      <div class="text-muted small">
+        {% trans "Tug'ilgan sana" %}: <strong>{{ patient.birth_date|date:"d.m.Y" }}</strong>
+        &middot; {{ patient.get_gender_display }}
+        &middot; {% trans "Tayinlagan shifokor" %}: <strong>{{ assignment.assigned_by.full_name|default:'—' }}</strong>
+        &middot; {{ assignment.created_at|date:"d.m.Y H:i" }}
+      </div>
+      {% if assignment.notes %}<div class="text-muted small mt-1">{% trans "Klinik ko'rsatma" %}: {{ assignment.notes }}</div>{% endif %}
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'diagnostic_queue' %}" class="btn btn-outline-secondary btn-sm">← {% trans "Navbatga qaytish" %}</a>
+    </div>
+  </div>
+
+  {% if assignment.status == 'done' %}
+  <div class="alert alert-success py-2 mb-3 small">
+    <strong>{% trans "Tekshiruv yakunlangan." %}</strong>
+  </div>
+
+  <!-- FAQAT KO'RISH -->
+  <div class="card mb-3">
+    <div class="card-header py-2"><strong>{% trans "Xulosa" %}</strong></div>
+    <div class="card-body" style="white-space: pre-wrap;">{{ result_log.conclusion|default:'—' }}</div>
+  </div>
+  <div class="card mb-3">
+    <div class="card-header py-2"><strong>{% trans "Tavsiya" %}</strong></div>
+    <div class="card-body" style="white-space: pre-wrap;">{{ result_log.recommendation|default:'—' }}</div>
+  </div>
+  {% if result_log.comment %}
+  <div class="card mb-3">
+    <div class="card-header py-2"><strong>{% trans "Izoh" %}</strong></div>
+    <div class="card-body" style="white-space: pre-wrap;">{{ result_log.comment }}</div>
+  </div>
+  {% endif %}
+  <a href="{% url 'diagnostic_result_print' assignment.pk %}" class="btn btn-outline-secondary" target="_blank">🖨 {% trans "Chop etish" %}</a>
+
+  {% else %}
+
+  <div id="save-status" class="alert alert-info py-1 px-2 small mb-2" style="display:none;"></div>
+
+  <div class="card mb-3">
+    <div class="card-header py-2"><strong>{% trans "Xulosa" %}</strong></div>
+    <div class="card-body">
+      <textarea id="field-conclusion" class="form-control" rows="6"
+                placeholder="{% trans "Tekshiruv xulosasini yozing..." %}">{{ result_log.conclusion }}</textarea>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header py-2"><strong>{% trans "Tavsiya" %}</strong></div>
+    <div class="card-body">
+      <textarea id="field-recommendation" class="form-control" rows="3"
+                placeholder="{% trans "Tavsiyalarni yozing..." %}">{{ result_log.recommendation }}</textarea>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header py-2"><strong>{% trans "Izoh" %}</strong></div>
+    <div class="card-body">
+      <input type="text" id="field-comment" class="form-control"
+             placeholder="{% trans "Qo'shimcha izoh..." %}" value="{{ result_log.comment }}">
+    </div>
+  </div>
+
+  <div class="d-flex gap-2 flex-wrap mb-5">
+    <button class="btn btn-success" onclick="saveResult(false)">💾 {% trans "Saqlash" %}</button>
+    <button class="btn btn-primary" onclick="saveResult(true)">✅ {% trans "Tekshiruvni yakunlash" %}</button>
+  </div>
+
+  <script>
+  const SAVE_URL = "{% url 'diagnostic_result_save' assignment.pk %}";
+  const QUEUE_URL = "{% url 'diagnostic_queue' %}";
+  const CSRF_TOKEN = "{{ csrf_token }}";
+
+  async function saveResult(finish) {
+      const statusEl = document.getElementById('save-status');
+      statusEl.style.display = 'block';
+      statusEl.className = 'alert alert-info py-1 px-2 small mb-2';
+      statusEl.textContent = "{% trans 'Saqlanmoqda...' %}";
+
+      try {
+          const resp = await fetch(SAVE_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+              body: JSON.stringify({
+                  conclusion: document.getElementById('field-conclusion').value,
+                  recommendation: document.getElementById('field-recommendation').value,
+                  comment: document.getElementById('field-comment').value,
+                  finish: finish,
+              }),
+          });
+          const data = await resp.json();
+          if (data.success) {
+              statusEl.className = 'alert alert-success py-1 px-2 small mb-2';
+              statusEl.textContent = finish ? "{% trans 'Tekshiruv yakunlandi' %}" : "{% trans 'Saqlandi' %}";
+              if (finish) {
+                  setTimeout(() => { window.location.href = QUEUE_URL; }, 800);
+              } else {
+                  setTimeout(() => { statusEl.style.display = 'none'; }, 2500);
+              }
+          } else {
+              statusEl.className = 'alert alert-danger py-1 px-2 small mb-2';
+              statusEl.textContent = "{% trans 'Xato' %}: " + (data.error || "{% trans 'Noma’lum xato' %}");
+          }
+      } catch (e) {
+          statusEl.className = 'alert alert-danger py-1 px-2 small mb-2';
+          statusEl.textContent = "{% trans 'Tarmoq xatosi' %}: " + e.message;
+      }
+  }
+  </script>
+
+  {% endif %}
+
+</div>
+{% endblock %}
