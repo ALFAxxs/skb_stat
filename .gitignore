@@ -24,6 +24,9 @@ db.sqlite3
 db.sqlite3-journal
 media/
 
+# Avtomatik yaratiladigan shartnoma PDF'lari (apps/contracts/ — ilova kodi, tegilmaydi)
+/contracts/
+
 # Static files (agar collect qilinsagan bo'lsa)
 staticfiles/
 static_root/
