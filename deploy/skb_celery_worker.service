@@ -1,0 +1,16 @@
+[Unit]
+Description=SKB Stat Celery Worker
+After=network.target redis.service
+
+[Service]
+User=root
+WorkingDirectory=/var/www/skb_stat
+EnvironmentFile=/var/www/skb_stat/.env
+ExecStart=/var/www/skb_stat/.venv/bin/celery -A conf worker \
+    --loglevel=info \
+    --logfile=/var/log/skb_stat/celery_worker.log
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
