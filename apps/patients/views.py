@@ -823,7 +823,7 @@ def sevgi_maktubi(request):
     return render(request, 'patients/sevgim.html')
 
 @login_required
-@role_required('admin', 'doctor', 'statistician', 'reception')
+@role_required('admin', 'doctor', 'statistician', 'reception', 'old')
 def patient_card_edit(request, pk):
     patient = get_object_or_404(PatientCard, pk=pk)
 
