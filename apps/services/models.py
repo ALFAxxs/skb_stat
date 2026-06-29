@@ -4,7 +4,7 @@ from django.db import models
 from django.db.models import Sum
 from django.utils import translation
 from django.utils.translation import gettext_lazy as _
-from apps.patients.models import PatientCard, Department, Doctor
+from apps.patients.models import PatientCard, Department
 
 
 class ServiceCategory(models.Model):
@@ -89,7 +89,7 @@ class Service(models.Model):
 
     # Konsultatsiya turidagi xizmatlar uchun — ushbu xizmatni qaysi shifokor(lar) ko'ra oladi
     assigned_doctors = models.ManyToManyField(
-        Doctor, blank=True, related_name='assignable_services',
+        'users.CustomUser', blank=True, related_name='assignable_services',
         verbose_name=_("Biriktirilgan shifokorlar")
     )
 
@@ -148,7 +148,7 @@ class PatientService(models.Model):
 
     # Buyurtma beruvchi
     ordered_by = models.ForeignKey(
-        Doctor,
+        'users.CustomUser',
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='ordered_services',
@@ -158,7 +158,7 @@ class PatientService(models.Model):
 
     # Bajargchi
     performed_by = models.ForeignKey(
-        Doctor,
+        'users.CustomUser',
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='performed_services',
@@ -290,7 +290,7 @@ class PatientMedicine(models.Model):
         default=0, verbose_name=_("Narxi (so'm)")
     )
     ordered_by = models.ForeignKey(
-        Doctor,
+        'users.CustomUser',
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='ordered_medicines',

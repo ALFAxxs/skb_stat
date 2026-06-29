@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from apps.patients.models import ConsultationRequest, Department, Doctor, PatientCard
+from apps.patients.models import ConsultationRequest, Department, PatientCard
 
 from .models import AuditLog, EmergencyEvent, MedicationOrder, NurseTask, Notification, Referral
 from .tasks import check_overdue_tasks
@@ -28,13 +28,7 @@ class CareApiTests(TestCase):
         )
         self.head_user = User.objects.create_user(
             username='head1', password='pass12345', role='doctor', department=self.department,
-        )
-
-        self.doctor = Doctor.objects.create(
-            full_name="Dr. Aliyev", department=self.department, user=self.doctor_user,
-        )
-        self.head_doctor = Doctor.objects.create(
-            full_name="Dr. Boss", department=self.department, is_head=True, user=self.head_user,
+            is_head=True,
         )
 
         self.patient = PatientCard.objects.create(
@@ -44,7 +38,7 @@ class CareApiTests(TestCase):
             birth_date='1980-01-01',
             admission_date=timezone.now(),
             department=self.department,
-            attending_doctor=self.doctor,
+            attending_doctor=self.doctor_user,
         )
 
         self.doctor_client = APIClient()
@@ -83,7 +77,7 @@ class CareApiTests(TestCase):
 
         referral = Referral.objects.get(pk=resp.data['id'])
         self.assertEqual(referral.created_by, self.doctor_user)
-        self.assertEqual(referral.referring_doctor, self.doctor)
+        self.assertEqual(referral.referring_doctor, self.doctor_user)
 
         self.assertTrue(ConsultationRequest.objects.filter(patient_card=self.patient, specialty='cardiology').exists())
 

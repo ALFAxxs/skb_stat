@@ -22,7 +22,7 @@ from .forms import PatientCardForm, DeathCauseForm, SurgicalOperationFormSet, Re
 from .models import (
     PatientCard, ICD10Code, DischargeConclusion,
     Region, District, City, Village, Country, OperationType,
-    Department, Doctor, InitialExamination, EpisodeDiagnosis,
+    Department, InitialExamination, EpisodeDiagnosis,
     MedicalExamination, DoctorNotification,
     TreatmentProcedure, ProcedureExecutionLog,
     LabTestAssignment, LabTestResultLog,
@@ -35,11 +35,11 @@ from apps.users.models import CustomUser
 
 
 def _notify_doctor(doctor, patient, message):
-    """Doctor obyektiga bog'langan foydalanuvchiga bildirishnoma yuboradi."""
-    if not doctor or not doctor.user_id:
+    """Shifokor (CustomUser)ga bildirishnoma yuboradi."""
+    if not doctor:
         return
     DoctorNotification.objects.create(
-        recipient=doctor.user,
+        recipient=doctor,
         patient_card=patient,
         message=message,
     )
@@ -62,7 +62,7 @@ def _notify_new_admission(patient):
             f"Sizga yangi bemor biriktirildi: {patient.full_name} ({patient.medical_record_number})"
         )
     head = patient.department_head or (
-        Doctor.objects.filter(department=patient.department, is_head=True, is_active=True).first()
+        CustomUser.objects.filter(department=patient.department, role__in=('doctor', 'old'), is_head=True, is_active=True).first()
         if patient.department_id else None
     )
     if head and (not patient.attending_doctor_id or head.pk != patient.attending_doctor_id):
@@ -347,8 +347,9 @@ def medical_examination_page(request, patient_id, exam_pk=None):
     if exam and exam.department_head_name:
         dept_head_default = exam.department_head_name
     else:
-        dept_head_obj = Doctor.objects.filter(
+        dept_head_obj = CustomUser.objects.filter(
             department=patient.department,
+            role__in=('doctor', 'old'),
             is_head=True,
             is_active=True
         ).first()
@@ -383,9 +384,9 @@ def medical_examination_page(request, patient_id, exam_pk=None):
         'visible_fields':       visible_fields,
         'is_epicrisis':         is_epicrisis,
         'dept_head_default':    dept_head_default,
-        'dept_heads':           Doctor.objects.filter(is_head=True, is_active=True)
+        'dept_heads':           CustomUser.objects.filter(role__in=('doctor', 'old'), is_head=True, is_active=True)
                                               .select_related('department')
-                                              .order_by('department__name', 'full_name'),
+                                              .order_by('department__name', 'first_name'),
         'now':                  timezone.localtime(),
         'diag_type_choices':    EpisodeDiagnosis.DIAGNOSIS_TYPE_CHOICES,
         'diag_role_choices':    EpisodeDiagnosis.DIAGNOSIS_ROLE_CHOICES,
@@ -491,7 +492,7 @@ def patient_list(request):
     # (bo'lim filteridan ko'ra aniqroq — o'tkazilgan bemorlarni ham qamrab oladi)
     doctor_profile = None
     if request.user.role == 'doctor' and not request.user.is_superuser:
-        doctor_profile = getattr(request.user, 'doctor_profile', None)
+        doctor_profile = request.user
 
     if doctor_profile and doctor_profile.is_general_practitioner:
         pass  # Terapevt — barcha ro'yxatga olingan bemorlarni (bo'limidan qat'iy nazar) ko'radi
@@ -515,12 +516,15 @@ def patient_list(request):
             Q(passport_serial__icontains=query)
         )
 
-    # Status filteri — yakunlangan faqat aniq filter qilinganda chiqadi
+    # Status filteri — yakunlangan/chiqarilgan faqat aniq filter qilinganda chiqadi
     status = request.GET.get('status', '')
-    if status:
+    if status == 'discharged':
+        # "Chiqarilgan" — bazada bu holat status='completed' sifatida saqlanadi
+        qs = qs.filter(status='completed')
+    elif status:
         qs = qs.filter(status=status)
     else:
-        qs = qs.exclude(status='discharged')
+        qs = qs.exclude(status='completed')
 
     # Yakun filteri
     outcome = request.GET.get('outcome', '')
@@ -552,23 +556,25 @@ def patient_list(request):
     if category_filter:
         qs = qs.filter(patient_category=category_filter)
 
-    # Sana filteri
+    # Sana filteri — "Chiqarilgan/Yakunlangan" status tanlanganda chiqish sanasi,
+    # aks holda registratsiya (qabul) sanasi bo'yicha filtrlanadi
     date_from = request.GET.get('date_from', '')
     date_to   = request.GET.get('date_to', '')
+    date_field = 'discharge_date' if (status in ('discharged', 'completed') or outcome) else 'admission_date'
     if date_from:
-        qs = qs.filter(admission_date__date__gte=date_from)
+        qs = qs.filter(**{f'{date_field}__date__gte': date_from})
     if date_to:
-        qs = qs.filter(admission_date__date__lte=date_to)
+        qs = qs.filter(**{f'{date_field}__date__lte': date_to})
 
     # Filter uchun ro'yxatlar
-    from .models import Department, Doctor
+    from .models import Department
     if request.user.is_superuser or request.user.role in ('admin', 'reception', 'statistician'):
         departments = Department.objects.filter(is_active=True)
     else:
         dept_ids = request.user.get_all_department_ids()
         departments = Department.objects.filter(pk__in=dept_ids) if dept_ids else Department.objects.none()
 
-    doctors = Doctor.objects.filter(is_active=True).select_related('department')
+    doctors = CustomUser.objects.filter(role__in=('doctor', 'old'), is_active=True).select_related('department')
     if not request.user.is_superuser and request.user.role not in ('admin', 'reception', 'statistician'):
         dept_ids = request.user.get_all_department_ids()
         if dept_ids:
@@ -729,8 +735,8 @@ def patient_detail(request, pk):
         'grand_total': grand_total,
         'prev_visits': prev_visits,
         'departments': Department.objects.filter(is_active=True).order_by('name'),
-        'doctors':     Doctor.objects.filter(is_active=True).select_related('department').order_by('department__name', 'full_name'),
-        'dept_heads':  Doctor.objects.filter(is_active=True, is_head=True).order_by('full_name'),
+        'doctors':     CustomUser.objects.filter(role__in=('doctor', 'old'), is_active=True).select_related('department').order_by('department__name', 'first_name'),
+        'dept_heads':  CustomUser.objects.filter(role__in=('doctor', 'old'), is_active=True, is_head=True).order_by('first_name'),
         'today':       timezone.localdate(),
         'now':         timezone.localtime(),
         'transfers':   transfers,
@@ -748,13 +754,17 @@ def get_doctors(request):
     if not department_id:
         return JsonResponse([], safe=False)
 
-    from .models import Doctor
-    doctors = Doctor.objects.filter(
+    doctors = CustomUser.objects.filter(
+        role__in=('doctor', 'old'),
         department_id=department_id,
         is_active=True
-    ).values('id', 'full_name', 'is_head').order_by('-is_head', 'full_name')
+    ).values('id', 'first_name', 'last_name', 'is_head').order_by('-is_head', 'first_name')
 
-    return JsonResponse(list(doctors), safe=False)
+    result = [
+        {'id': d['id'], 'full_name': f"{d['first_name']} {d['last_name']}".strip(), 'is_head': d['is_head']}
+        for d in doctors
+    ]
+    return JsonResponse(result, safe=False)
 
 @login_required
 @role_required('admin', 'doctor', 'statistician')
@@ -859,7 +869,6 @@ def patient_card_edit(request, pk):
                 return redirect(next_url)
 
         if request.POST.get('_discharge'):
-            from apps.patients.models import Doctor as PatientDoctor
             patient.outcome = request.POST.get('outcome', '')
             patient.status  = 'completed'
             patient.final_diagnosis = request.POST.get('final_diagnosis', '')
@@ -874,9 +883,9 @@ def patient_card_edit(request, pk):
             doc_id  = request.POST.get('attending_doctor')
             head_id = request.POST.get('department_head')
             if doc_id:
-                patient.attending_doctor = PatientDoctor.objects.filter(pk=doc_id).first()
+                patient.attending_doctor = CustomUser.objects.filter(pk=doc_id).first()
             if head_id:
-                patient.department_head = PatientDoctor.objects.filter(pk=head_id).first()
+                patient.department_head = CustomUser.objects.filter(pk=head_id).first()
             days_str = request.POST.get('days_in_hospital', '')
             if days_str:
                 try:
@@ -977,7 +986,7 @@ def patient_card_edit(request, pk):
         'surgery_formset': surgery_formset,
         'title': f"Tahrirlash: {patient.full_name}",
         'patient': patient,
-        'doctors': Doctor.objects.filter(is_active=True).select_related('department').order_by('department__name', 'full_name'),
+        'doctors': CustomUser.objects.filter(role__in=('doctor', 'old'), is_active=True).select_related('department').order_by('department__name', 'first_name'),
     })
 
 
@@ -1608,7 +1617,7 @@ def ambulatory_create(request):
 @require_POST
 def patient_transfer(request, pk):
     """Bemorni boshqa bo'limga ko'chirish"""
-    from apps.patients.models import PatientTransfer, Department, Doctor
+    from apps.patients.models import PatientTransfer, Department
 
     patient      = get_object_or_404(PatientCard, pk=pk)
 
@@ -1640,8 +1649,8 @@ def patient_transfer(request, pk):
         from_doctor     = patient.attending_doctor,
         from_dept_head  = patient.department_head,
         to_department   = Department.objects.filter(pk=to_dept_id).first(),
-        to_doctor       = Doctor.objects.filter(pk=to_doc_id).first() if to_doc_id else None,
-        to_dept_head    = Doctor.objects.filter(pk=to_head_id).first() if to_head_id else None,
+        to_doctor       = CustomUser.objects.filter(pk=to_doc_id).first() if to_doc_id else None,
+        to_dept_head    = CustomUser.objects.filter(pk=to_head_id).first() if to_head_id else None,
         reason          = reason,
         transfer_date   = transfer_date,
         transferred_by  = request.user,
@@ -1650,10 +1659,10 @@ def patient_transfer(request, pk):
     update_fields = ['department']
     patient.department = Department.objects.filter(pk=to_dept_id).first()
     if to_doc_id:
-        patient.attending_doctor = Doctor.objects.filter(pk=to_doc_id).first()
+        patient.attending_doctor = CustomUser.objects.filter(pk=to_doc_id).first()
         update_fields.append('attending_doctor')
     if to_head_id:
-        patient.department_head = Doctor.objects.filter(pk=to_head_id).first()
+        patient.department_head = CustomUser.objects.filter(pk=to_head_id).first()
         update_fields.append('department_head')
     patient.save(update_fields=update_fields)
 
@@ -1664,7 +1673,10 @@ def patient_transfer(request, pk):
 # ==================== SHIFOKOR KABINETI ====================
 
 def _get_doctor_profile(user):
-    return getattr(user, 'doctor_profile', None)
+    """Shifokor sifatida ishlay oladigan foydalanuvchini qaytaradi."""
+    if getattr(user, 'role', None) in ('doctor', 'old'):
+        return user
+    return None
 
 
 def _doctor_scope(doctor):
@@ -1713,7 +1725,7 @@ def doctor_dashboard(request):
     }
 
     if doctor.is_head and doctor.department_id:
-        stats['doctors_count'] = Doctor.objects.filter(department_id=doctor.department_id, is_active=True).count()
+        stats['doctors_count'] = CustomUser.objects.filter(role__in=('doctor', 'old'), department_id=doctor.department_id, is_active=True).count()
         stats['unassigned'] = scope.filter(visit_type='inpatient').exclude(status='completed').filter(
             Q(attending_doctor__isnull=True) | Q(attending_doctor_confirmed=False)
         ).count()
@@ -1795,7 +1807,7 @@ def doctor_assign_patients(request):
         patient_id = request.POST.get('patient_id')
         doctor_id  = request.POST.get('doctor_id')
         patient = get_object_or_404(PatientCard, pk=patient_id, department_id=doctor.department_id)
-        target_doctor = get_object_or_404(Doctor, pk=doctor_id, department_id=doctor.department_id, is_active=True)
+        target_doctor = get_object_or_404(CustomUser, pk=doctor_id, role__in=('doctor', 'old'), department_id=doctor.department_id, is_active=True)
         previous_doctor = patient.attending_doctor
         previous_doctor_id = patient.attending_doctor_id
         patient.attending_doctor = target_doctor
@@ -1830,11 +1842,11 @@ def doctor_assign_patients(request):
         'attending_doctor_id', '-admission_date'
     )
 
-    dept_doctors = Doctor.objects.filter(
-        department_id=doctor.department_id, is_active=True
+    dept_doctors = CustomUser.objects.filter(
+        role__in=('doctor', 'old'), department_id=doctor.department_id, is_active=True
     ).exclude(pk=doctor.pk).annotate(
         workload=Count('attending_cards', filter=Q(attending_cards__status__in=['registered', 'admitted']))
-    ).order_by('full_name')
+    ).order_by('first_name')
 
     history = PatientCard.objects.filter(
         department_id=doctor.department_id,
@@ -2170,7 +2182,7 @@ def doctor_patient_card(request, pk):
         'medicines_total': medicines_total,
         'grand_total': grand_total,
         'ambulatory_consultation': getattr(patient, 'ambulatory_consultation', None),
-        'doctors':              Doctor.objects.filter(is_active=True).select_related('department').order_by('department__name', 'full_name'),
+        'doctors':              CustomUser.objects.filter(role__in=('doctor', 'old'), is_active=True).select_related('department').order_by('department__name', 'first_name'),
         'discharge_conclusions': DischargeConclusion.objects.filter(is_active=True).order_by('name'),
         'outcome_choices':      PatientCard.OUTCOME_CHOICES,
         'today':                timezone.localdate(),
@@ -2556,7 +2568,7 @@ def _doctor_card_access(doctor, patient):
     """Shifokor ushbu bemor kartasini ko'rishi mumkinmi."""
     if doctor.is_general_practitioner:
         return True
-    if doctor.user_id and doctor.user.role == 'old' and patient.department_id == doctor.department_id:
+    if doctor.role == 'old' and patient.department_id == doctor.department_id:
         return True
     if doctor.is_head and patient.department_id == doctor.department_id:
         return True
@@ -2950,7 +2962,7 @@ def assign_services(request, pk):
             _create_schedule_occurrences(occurrence_times, treatment_procedure=obj)
             created_proc.append(obj)
 
-        if chosen_doctor and chosen_doctor.user_id:
+        if chosen_doctor:
             extra = f" — {notes}" if notes else ''
             _notify_doctor(chosen_doctor, patient, f"Sizga {service.name} bo'yicha bemor biriktirildi: {patient.full_name}{extra}")
 

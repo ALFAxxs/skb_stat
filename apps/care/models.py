@@ -35,12 +35,12 @@ class Referral(models.Model):
         related_name='referrals', verbose_name=_("Bemor kartasi")
     )
     referring_doctor = models.ForeignKey(
-        'patients.Doctor', on_delete=models.SET_NULL,
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='sent_referrals',
         verbose_name=_("Yo'llanma bergan shifokor")
     )
     target_doctor = models.ForeignKey(
-        'patients.Doctor', on_delete=models.SET_NULL,
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='received_referrals',
         verbose_name=_("Tanlangan shifokor")
     )
@@ -115,7 +115,7 @@ class MedicationOrder(models.Model):
         related_name='medication_orders', verbose_name=_("Bemor kartasi")
     )
     prescribed_by = models.ForeignKey(
-        'patients.Doctor', on_delete=models.SET_NULL,
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='prescribed_medications',
         verbose_name=_("Tayinlagan shifokor")
     )

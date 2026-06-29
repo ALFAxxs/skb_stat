@@ -92,8 +92,7 @@ def user_edit(request, pk):
             }
             labels = {'department': "Asosiy bo'lim"}
 
-    doctor_profile = getattr(user, 'doctor_profile', None)
-    initial = {'is_department_head': doctor_profile.is_head if doctor_profile else False}
+    initial = {'is_department_head': user.is_head}
     form = EditForm(request.POST or None, instance=user, initial=initial)
     if request.method == 'POST' and form.is_valid():
         saved_user = form.save()

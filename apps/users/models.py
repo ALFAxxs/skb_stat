@@ -35,6 +35,16 @@ class CustomUser(AbstractUser):
     )
     phone = models.CharField(max_length=20, blank=True)
 
+    # Shifokor kabineti uchun
+    is_head = models.BooleanField(default=False, verbose_name=_("Bo'lim mudiri"))
+    is_general_practitioner = models.BooleanField(
+        default=False, verbose_name=_("Terapevt (barcha bemorlarga dastlabki ko'rik)")
+    )
+
+    @property
+    def full_name(self):
+        return self.get_full_name() or self.username
+
     def get_all_department_ids(self):
         """Asosiy + qo'shimcha barcha bo'lim IDlari."""
         ids = set(self.departments.values_list('pk', flat=True))

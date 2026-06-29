@@ -62,7 +62,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         from apps.patients.models import (
-            PatientCard, Organization, Department, Doctor
+            PatientCard, Organization, Department
         )
         from apps.services.models import (
             Service, PatientService, Medicine, PatientMedicine
@@ -74,7 +74,7 @@ class Command(BaseCommand):
         # Bazaviy ob'ektlarni olish
         orgs = list(Organization.objects.all()[:20])
         depts = list(Department.objects.filter(is_active=True)[:5])
-        doctors = list(Doctor.objects.filter(is_active=True)[:10])
+        doctors = list(CustomUser.objects.filter(role__in=('doctor', 'old'), is_active=True)[:10])
         services = list(Service.objects.filter(is_active=True)[:30])
         medicines = list(Medicine.objects.filter(is_active=True)[:20])
         admin_user = CustomUser.objects.filter(is_superuser=True).first() or \

@@ -13,7 +13,6 @@ from django.utils import timezone
 
 from apps.patients.models import (
     ConsultationRequest, DiagnosticAssignment, LabTestAssignment, TreatmentProcedure,
-    Doctor,
 )
 
 from .models import (
@@ -138,9 +137,9 @@ def process_referral(referral, request_user):
         # Broker (Redis/Celery) mavjud bo'lmasa ham yo'llanma yaratilishi to'xtamasin
         pass
 
-    if referral.target_doctor_id and referral.target_doctor.user_id:
+    if referral.target_doctor_id:
         Notification.objects.create(
-            recipient=referral.target_doctor.user,
+            recipient=referral.target_doctor,
             patient_card=patient,
             notification_type='referral',
             title="Yangi yo'llanma",
@@ -261,8 +260,8 @@ def get_emergency_recipients(patient_card):
     User = get_user_model()
     doctors = set()
 
-    if patient_card.attending_doctor_id and patient_card.attending_doctor.user_id:
-        doctors.add(patient_card.attending_doctor.user)
+    if patient_card.attending_doctor_id:
+        doctors.add(patient_card.attending_doctor)
 
     if not doctors and patient_card.department_id:
         dept_doctors = User.objects.filter(role='doctor').filter(
@@ -273,11 +272,11 @@ def get_emergency_recipients(patient_card):
 
     heads = []
     if patient_card.department_id:
-        head_doctors = Doctor.objects.filter(
+        heads = list(User.objects.filter(
+            role__in=('doctor', 'old'),
             department_id=patient_card.department_id,
-            is_head=True, is_active=True, user__isnull=False,
-        ).select_related('user')
-        heads = [d.user for d in head_doctors]
+            is_head=True, is_active=True,
+        ))
 
     return list(doctors), heads
 

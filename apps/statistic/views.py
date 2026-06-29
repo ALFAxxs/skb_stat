@@ -5,9 +5,10 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Avg, Q
 from django.db.models.functions import TruncMonth
 from apps.patients.models import (
-    PatientCard, Department, Doctor,
+    PatientCard, Department,
     Organization, HospitalType
 )
+from apps.users.models import CustomUser
 from apps.users.decorators import role_required
 import json
 
@@ -51,9 +52,13 @@ def statistics_dashboard(request):
     if resident_status:  qs = qs.filter(resident_status=resident_status)
     if referral_type:    qs = qs.filter(referral_type=referral_type)
     if org_id:           qs = qs.filter(workplace_org_id=org_id)
-    if date_from:        qs = qs.filter(admission_date__date__gte=date_from)
-    if date_to:          qs = qs.filter(admission_date__date__lte=date_to)
     if visit_type:       qs = qs.filter(visit_type=visit_type)
+
+    # Sana filteri — "Yakunlangan" status yoki yakun (outcome) tanlanganda
+    # chiqish sanasi bo'yicha, aks holda registratsiya (qabul) sanasi bo'yicha
+    date_field = 'discharge_date' if (status == 'completed' or outcome) else 'admission_date'
+    if date_from:        qs = qs.filter(**{f'{date_field}__date__gte': date_from})
+    if date_to:          qs = qs.filter(**{f'{date_field}__date__lte': date_to})
 
     from datetime import date as _date
     from dateutil.relativedelta import relativedelta as _rd
@@ -113,9 +118,13 @@ def statistics_dashboard(request):
 
     # ==================== SHIFOKOR BO'YICHA ====================
     doctor_stats = [
-        item for item in
-        qs.values('attending_doctor__full_name').annotate(count=Count('id')).order_by('-count')[:10]
-        if item['attending_doctor__full_name']
+        {
+            'attending_doctor__full_name': f"{item['attending_doctor__first_name']} {item['attending_doctor__last_name']}".strip(),
+            'count': item['count'],
+        }
+        for item in
+        qs.values('attending_doctor__first_name', 'attending_doctor__last_name').annotate(count=Count('id')).order_by('-count')[:10]
+        if item['attending_doctor__first_name'] or item['attending_doctor__last_name']
     ]
 
     # ==================== KATEGORIYA BO'YICHA ====================
@@ -252,13 +261,13 @@ def statistics_dashboard(request):
 
     if request.user.is_superuser or request.user.role == 'admin':
         departments = Department.objects.filter(is_active=True)
-        doctors = Doctor.objects.filter(is_active=True).select_related('department')
+        doctors = CustomUser.objects.filter(role__in=('doctor', 'old'), is_active=True).select_related('department')
     else:
         dept_ids = request.user.get_all_department_ids()
         departments = Department.objects.filter(pk__in=dept_ids) if dept_ids else Department.objects.none()
-        doctors = Doctor.objects.filter(
-            is_active=True, department_id__in=dept_ids
-        ) if dept_ids else Doctor.objects.none()
+        doctors = CustomUser.objects.filter(
+            role__in=('doctor', 'old'), is_active=True, department_id__in=dept_ids
+        ) if dept_ids else CustomUser.objects.none()
 
     # Joriy filter parametrlarini saqlash (Excel uchun)
     current_filters = request.GET.urlencode()

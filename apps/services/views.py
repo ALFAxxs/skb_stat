@@ -19,7 +19,8 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from apps.users.decorators import role_required
-from apps.patients.models import PatientCard, Doctor
+from apps.users.models import CustomUser
+from apps.patients.models import PatientCard
 from .models import ServiceCategory, Service, PatientService
 from .forms import PatientServiceForm, ServiceResultForm
 
@@ -75,7 +76,7 @@ def service_search(request):
 def service_doctors(request, pk):
     """AJAX — ushbu xizmatga (masalan, konsultatsiya turiga) biriktirilgan faol shifokorlar."""
     service = get_object_or_404(Service, pk=pk)
-    doctors = service.assigned_doctors.filter(is_active=True).select_related('department').order_by('department__name', 'full_name')
+    doctors = service.assigned_doctors.filter(is_active=True).select_related('department').order_by('department__name', 'first_name')
     data = [{
         'id':         d.pk,
         'full_name':  d.full_name,
@@ -137,9 +138,9 @@ def patient_services(request, patient_pk):
     ).order_by('-total')
 
     # Barcha aktiv shifokorlar (bo'lim bo'yicha guruhlab)
-    doctors = Doctor.objects.filter(
-        is_active=True
-    ).select_related('department').order_by('department__name', '-is_head', 'full_name')
+    doctors = CustomUser.objects.filter(
+        role__in=('doctor', 'old'), is_active=True
+    ).select_related('department').order_by('department__name', '-is_head', 'first_name')
 
     from .models import PatientMedicine
     medicines = PatientMedicine.objects.filter(
@@ -191,13 +192,13 @@ def add_service(request, patient_pk):
             # davolovchi shifokor sifatida biriktiriladi, shunda bemor uning
             # kabinetida (Mening kabinetim) ko'rinadi.
             if ordered_by_id and patient.visit_type == 'ambulatory' and not patient.attending_doctor_id:
-                ordering_doctor = Doctor.objects.filter(pk=ordered_by_id, is_active=True).first()
+                ordering_doctor = CustomUser.objects.filter(pk=ordered_by_id, is_active=True).first()
                 if ordering_doctor:
                     patient.attending_doctor = ordering_doctor
                     patient.attending_doctor_confirmed = True
                     if not patient.department_head_id and ordering_doctor.department_id:
-                        patient.department_head = Doctor.objects.filter(
-                            department_id=ordering_doctor.department_id, is_head=True, is_active=True
+                        patient.department_head = CustomUser.objects.filter(
+                            department_id=ordering_doctor.department_id, role__in=('doctor', 'old'), is_head=True, is_active=True
                         ).first()
                     patient.save(update_fields=['attending_doctor', 'attending_doctor_confirmed', 'department_head'])
 

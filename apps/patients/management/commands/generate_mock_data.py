@@ -4,11 +4,13 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from datetime import datetime, timedelta
 import random
+import re
 import uuid
 from apps.patients.models import (
-    PatientCard, Organization, Department, Doctor,
+    PatientCard, Organization, Department,
     Country, Region, District, City, DeathCause, SurgicalOperation
 )
+from apps.users.models import CustomUser
 
 
 class Command(BaseCommand):
@@ -66,13 +68,19 @@ class Command(BaseCommand):
         doctor_objects = []
         head_doctors = []
         for full_name, is_head in doctors_data:
-            obj, _ = Doctor.objects.get_or_create(
-                full_name=full_name,
+            username = re.sub(r'[^a-z0-9]+', '', full_name.lower())[:20] or 'doctor'
+            obj, created = CustomUser.objects.get_or_create(
+                username=username,
                 defaults={
+                    'first_name': full_name,
+                    'role': 'doctor',
                     'department': random.choice(dept_objects),
-                    'is_head': is_head
+                    'is_head': is_head,
                 }
             )
+            if created:
+                obj.set_unusable_password()
+                obj.save()
             doctor_objects.append(obj)
             if is_head:
                 head_doctors.append(obj)

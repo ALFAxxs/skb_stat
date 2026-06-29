@@ -38,7 +38,7 @@ class CustomUserCreationForm(UserCreationForm):
         })
     )
 
-    # Faqat role='doctor' bo'lganda ko'rinadi — Doctor profiliga ko'chiriladi
+    # Faqat role='doctor'/'old' bo'lganda ma'noli — is_head maydoniga saqlanadi
     is_department_head = forms.BooleanField(
         label="Bo'lim mudiri",
         required=False,
@@ -83,18 +83,9 @@ class CustomUserCreationForm(UserCreationForm):
 
 
 def _sync_doctor_profile(user, is_head):
-    """role='doctor' yoki 'old' bo'lsa — Doctor yozuvini yaratadi/yangilaydi va foydalanuvchiga bog'laydi.
-    'old' rolida Doctor profili shart — bemor kartasiga kirish va xizmat qo'shish shu profil orqali tekshiriladi."""
-    from apps.patients.models import Doctor
-
+    """role='doctor' yoki 'old' bo'lsa — 'Bo'lim mudiri' belgisini saqlaydi."""
     if user.role not in ('doctor', 'old'):
         return
-
-    doctor = getattr(user, 'doctor_profile', None)
-    if doctor is None:
-        doctor = Doctor(user=user)
-    doctor.full_name = user.get_full_name() or user.username
-    doctor.department = user.department
-    doctor.is_head = is_head
-    doctor.is_active = user.is_active
-    doctor.save()
+    if user.is_head != is_head:
+        user.is_head = is_head
+        user.save(update_fields=['is_head'])

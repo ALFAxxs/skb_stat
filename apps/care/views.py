@@ -14,8 +14,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.patients.models import (
-    ConsultationRequest, DiagnosticAssignment, Doctor, LabTestAssignment, PatientCard,
+    ConsultationRequest, DiagnosticAssignment, LabTestAssignment, PatientCard,
 )
+from apps.users.models import CustomUser
 
 from .filters import AuditLogFilter, EmergencyEventFilter, NurseTaskFilter, ReferralFilter
 from .models import AuditLog, EmergencyEvent, MedicationOrder, NurseTask, Notification, Referral
@@ -265,7 +266,7 @@ class PatientCareOverviewView(APIView):
 
 class DoctorListView(generics.ListAPIView):
     """GET /api/care/doctors/ — yo'llanma uchun shifokorlar ro'yxati."""
-    queryset = Doctor.objects.filter(is_active=True).select_related('department').order_by('full_name')
+    queryset = CustomUser.objects.filter(role__in=('doctor', 'old'), is_active=True).select_related('department').order_by('first_name')
     serializer_class = DoctorSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend]

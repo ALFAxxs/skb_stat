@@ -69,6 +69,11 @@ class PatientCardForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        from apps.users.models import CustomUser
+        doctor_qs = CustomUser.objects.filter(role__in=('doctor', 'old'), is_active=True).order_by('first_name')
+        self.fields['attending_doctor'].queryset = doctor_qs
+        self.fields['department_head'].queryset = doctor_qs
+
         # Majburiy maydonlar
         self.fields['attending_doctor'].required = True
         self.fields['department_head'].required = True
@@ -324,7 +329,8 @@ class ReceptionForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        from .models import Doctor, Department, HospitalType
+        from .models import Department, HospitalType
+        from apps.users.models import CustomUser
 
         self.fields['hospital_type'].queryset = HospitalType.objects.filter(is_active=True)
         self.fields['hospital_type'].empty_label = "— Tanlang —"
@@ -332,8 +338,11 @@ class ReceptionForm(forms.ModelForm):
         self.fields['department'].empty_label = "— Tanlang —"
 
         # Shifokorlar — majburiy emas
+        doctor_qs = CustomUser.objects.filter(role__in=('doctor', 'old'), is_active=True).order_by('first_name')
+        self.fields['attending_doctor'].queryset = doctor_qs
         self.fields['attending_doctor'].required = False
         self.fields['attending_doctor'].empty_label = "— Tanlang —"
+        self.fields['department_head'].queryset = doctor_qs
         self.fields['department_head'].required = False
         self.fields['department_head'].empty_label = "— Tanlang —"
 

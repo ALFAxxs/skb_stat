@@ -58,10 +58,14 @@ def get_filtered_queryset(request):
         qs = qs.filter(resident_status=resident_status)
     if referral_type:
         qs = qs.filter(referral_type=referral_type)
+
+    # Sana filteri — "Yakunlangan" status yoki yakun (outcome) tanlanganda
+    # chiqish sanasi bo'yicha, aks holda registratsiya (qabul) sanasi bo'yicha
+    date_field = 'discharge_date' if (status == 'completed' or outcome) else 'admission_date'
     if date_from:
-        qs = qs.filter(admission_date__date__gte=date_from)
+        qs = qs.filter(**{f'{date_field}__date__gte': date_from})
     if date_to:
-        qs = qs.filter(admission_date__date__lte=date_to)
+        qs = qs.filter(**{f'{date_field}__date__lte': date_to})
 
     from datetime import date as dt_date, timedelta
     age_group = request.GET.get('age_group', '')

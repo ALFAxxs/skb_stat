@@ -3,7 +3,7 @@
 from django.contrib import admin
 from .models import (
     PatientCard, DeathCause, SurgicalOperation,
-    Organization, Department, Doctor, DischargeConclusion,
+    Organization, Department, DischargeConclusion,
     Country, Region, District, City, Village,
     HospitalType, OperationType, ICD10Code,
     InitialExamination, EpisodeDiagnosis,
@@ -145,13 +145,6 @@ class OrganizationAdmin(admin.ModelAdmin):
 class DepartmentAdmin(admin.ModelAdmin):
     list_display = ['name', 'is_active']
     search_fields = ['name']
-
-
-@admin.register(Doctor)
-class DoctorAdmin(admin.ModelAdmin):
-    list_display = ['full_name', 'department', 'is_head', 'is_general_practitioner', 'is_active']
-    list_filter = ['department', 'is_head', 'is_general_practitioner', 'is_active']
-    search_fields = ['full_name']
 
 
 @admin.register(Country)

@@ -7,19 +7,19 @@ from .models import CustomUser
 
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
-    list_display  = ['username', 'get_full_name', 'role', 'get_departments', 'phone', 'is_active']
-    list_filter   = ['role', 'departments', 'is_active']
+    list_display  = ['username', 'get_full_name', 'role', 'get_departments', 'phone', 'is_head', 'is_general_practitioner', 'is_active']
+    list_filter   = ['role', 'departments', 'is_head', 'is_general_practitioner', 'is_active']
     search_fields = ['username', 'first_name', 'last_name', 'phone']
 
     fieldsets = UserAdmin.fieldsets + (
         ("Qo'shimcha ma'lumotlar", {
-            'fields': ('role', 'departments', 'phone')
+            'fields': ('role', 'department', 'departments', 'phone', 'is_head', 'is_general_practitioner')
         }),
     )
 
     add_fieldsets = UserAdmin.add_fieldsets + (
         ("Qo'shimcha ma'lumotlar", {
-            'fields': ('role', 'departments', 'phone')
+            'fields': ('role', 'department', 'departments', 'phone', 'is_head', 'is_general_practitioner')
         }),
     )
 

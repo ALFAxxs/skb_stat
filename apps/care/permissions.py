@@ -2,8 +2,6 @@
 
 from rest_framework.permissions import BasePermission
 
-from apps.patients.models import Doctor
-
 
 class IsDoctorOrAdmin(BasePermission):
     """Yo'llanma / dori-muolaja tayinlash — faqat shifokor yoki admin."""
@@ -22,7 +20,7 @@ class IsNurseOrAdmin(BasePermission):
 
 
 class IsDeptHeadOrAdmin(BasePermission):
-    """Bo'lim mudiri (Doctor.is_head) yoki admin."""
+    """Bo'lim mudiri (CustomUser.is_head) yoki admin."""
 
     def has_permission(self, request, view):
         user = request.user
@@ -30,7 +28,7 @@ class IsDeptHeadOrAdmin(BasePermission):
             return False
         if user.is_superuser or user.role == 'admin':
             return True
-        return Doctor.objects.filter(user=user, is_head=True, is_active=True).exists()
+        return user.role in ('doctor', 'old') and user.is_head and user.is_active
 
 
 def scope_to_user_departments(qs, user, path='patient_card__department_id'):

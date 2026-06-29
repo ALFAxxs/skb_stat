@@ -3,8 +3,9 @@
 from rest_framework import serializers
 
 from apps.patients.models import (
-    ConsultationRequest, DiagnosticAssignment, Doctor, LabTestAssignment,
+    ConsultationRequest, DiagnosticAssignment, LabTestAssignment,
 )
+from apps.users.models import CustomUser
 
 from .models import (
     AuditLog, EmergencyEvent, MedicationOrder, NurseTask, Notification, Referral,
@@ -19,7 +20,7 @@ class DoctorSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(source='department.name', read_only=True, default=None)
 
     class Meta:
-        model = Doctor
+        model = CustomUser
         fields = ['id', 'full_name', 'department', 'department_name', 'is_head']
 
 
@@ -53,10 +54,8 @@ class ReferralSerializer(serializers.ModelSerializer):
         request = self.context['request']
         validated_data['created_by'] = request.user
 
-        if not validated_data.get('referring_doctor'):
-            doctor_profile = getattr(request.user, 'doctor_profile', None)
-            if doctor_profile:
-                validated_data['referring_doctor'] = doctor_profile
+        if not validated_data.get('referring_doctor') and request.user.role in ('doctor', 'old'):
+            validated_data['referring_doctor'] = request.user
 
         referral = super().create(validated_data)
         process_referral(referral, request.user)
@@ -121,10 +120,8 @@ class MedicationOrderSerializer(serializers.ModelSerializer):
         request = self.context['request']
         validated_data['created_by'] = request.user
 
-        if not validated_data.get('prescribed_by'):
-            doctor_profile = getattr(request.user, 'doctor_profile', None)
-            if doctor_profile:
-                validated_data['prescribed_by'] = doctor_profile
+        if not validated_data.get('prescribed_by') and request.user.role in ('doctor', 'old'):
+            validated_data['prescribed_by'] = request.user
 
         order = super().create(validated_data)
         process_medication_order(order)

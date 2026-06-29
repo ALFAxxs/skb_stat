@@ -145,28 +145,6 @@ class OperationType(models.Model):
         ordering = ['name']
 
 
-class Doctor(models.Model):
-    full_name = models.CharField(max_length=255)
-    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True)
-    is_head = models.BooleanField(default=False, verbose_name=_("Bo'lim mudiri"))
-    is_general_practitioner = models.BooleanField(default=False, verbose_name=_("Terapevt (barcha bemorlarga dastlabki ko'rik)"))
-    is_active = models.BooleanField(default=True)
-    user = models.OneToOneField(
-        'users.CustomUser',
-        on_delete=models.SET_NULL,
-        null=True, blank=True,
-        related_name='doctor_profile',
-        verbose_name=_("Tizim foydalanuvchisi")
-    )
-
-    def __str__(self):
-        return self.full_name
-
-    class Meta:
-        verbose_name = _("Shifokor")
-        verbose_name_plural = _("Shifokorlar")
-
-
 class DischargeConclusion(models.Model):
     name = models.CharField(max_length=100)
     is_active = models.BooleanField(default=True)
@@ -443,7 +421,7 @@ class PatientCard(models.Model):
 
     # --- Shifokorlar ---
     attending_doctor = models.ForeignKey(
-        Doctor, on_delete=models.SET_NULL, null=True, blank=True,
+        'users.CustomUser', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='attending_cards'
     )
     # Registratsiyada tanlangan davolovchi shifokor faqat ma'lumot sifatida saqlanadi.
@@ -453,7 +431,7 @@ class PatientCard(models.Model):
         verbose_name=_("Davolovchi shifokor tasdiqlangan")
     )
     department_head = models.ForeignKey(
-        Doctor, on_delete=models.SET_NULL, null=True, blank=True,
+        'users.CustomUser', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='head_cards'
     )
 
@@ -598,12 +576,12 @@ class PatientTransfer(models.Model):
         verbose_name=_("Avvalgi bo'lim")
     )
     from_doctor = models.ForeignKey(
-        'Doctor', on_delete=models.SET_NULL,
+        'users.CustomUser', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='patient_transfers_from_doctor',
         verbose_name=_("Avvalgi shifokor")
     )
     from_dept_head = models.ForeignKey(
-        'Doctor', on_delete=models.SET_NULL,
+        'users.CustomUser', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='patient_transfers_from_head',
         verbose_name=_("Avvalgi bo'lim mudiri")
     )
@@ -613,12 +591,12 @@ class PatientTransfer(models.Model):
         verbose_name=_("Yangi bo'lim")
     )
     to_doctor = models.ForeignKey(
-        'Doctor', on_delete=models.SET_NULL,
+        'users.CustomUser', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='patient_transfers_to_doctor',
         verbose_name=_("Yangi shifokor")
     )
     to_dept_head = models.ForeignKey(
-        'Doctor', on_delete=models.SET_NULL,
+        'users.CustomUser', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='patient_transfers_to_head',
         verbose_name=_("Yangi bo'lim mudiri")
     )
@@ -696,7 +674,7 @@ class AmbulatoryConsultation(models.Model):
     ]
 
     patient_card = models.OneToOneField(PatientCard, on_delete=models.CASCADE, related_name='ambulatory_consultation')
-    doctor       = models.ForeignKey(Doctor, on_delete=models.SET_NULL, null=True, related_name='ambulatory_consultations')
+    doctor       = models.ForeignKey('users.CustomUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='ambulatory_consultations')
 
     result         = models.TextField(blank=True, verbose_name=_("Qabul natijasi"))
     recommendation = models.TextField(blank=True, verbose_name=_("Tavsiyalar"))
@@ -732,7 +710,7 @@ class DoctorTextTemplate(models.Model):
         ('drug_justification',        _('Dori vositalari uchun asoslar')),
     ]
 
-    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='text_templates')
+    doctor = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, null=True, blank=True, related_name='text_templates')
     kind   = models.CharField(max_length=32, choices=KIND_CHOICES, verbose_name=_("Turi"))
     title  = models.CharField(max_length=150, verbose_name=_("Nomi"))
     body   = models.TextField(verbose_name=_("Matn"))
@@ -852,7 +830,7 @@ class TreatmentProcedure(models.Model):
     ]
 
     patient_card  = models.ForeignKey(PatientCard, on_delete=models.CASCADE, related_name='treatment_procedures', verbose_name=_("Bemor kartasi"))
-    assigned_by   = models.ForeignKey(Doctor, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_procedures', verbose_name=_("Tayinlagan shifokor"))
+    assigned_by   = models.ForeignKey('users.CustomUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_procedures', verbose_name=_("Tayinlagan shifokor"))
     service       = models.ForeignKey('services.Service', on_delete=models.SET_NULL, null=True, blank=True, related_name='treatment_procedures', verbose_name=_("Xizmat (katalogdan)"))
     patient_service = models.OneToOneField('services.PatientService', on_delete=models.SET_NULL, null=True, blank=True, related_name='treatment_procedure', verbose_name=_("Hisob-faktura yozuvi"))
 
@@ -901,7 +879,7 @@ class Prescription(models.Model):
     ]
 
     patient_card  = models.ForeignKey(PatientCard, on_delete=models.CASCADE, related_name='prescriptions', verbose_name=_("Bemor kartasi"))
-    doctor        = models.ForeignKey(Doctor, on_delete=models.SET_NULL, null=True, blank=True, related_name='prescriptions', verbose_name=_("Yozgan shifokor"))
+    doctor        = models.ForeignKey('users.CustomUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='prescriptions', verbose_name=_("Yozgan shifokor"))
     treatment_procedure = models.OneToOneField(TreatmentProcedure, on_delete=models.SET_NULL, null=True, blank=True, related_name='prescription', verbose_name=_("Bog'langan muolaja (hamshira reja)"))
 
     drug_name      = models.CharField(max_length=255, verbose_name=_("Dori nomi"))
@@ -942,7 +920,7 @@ class LabTestAssignment(models.Model):
     ]
 
     patient_card = models.ForeignKey(PatientCard, on_delete=models.CASCADE, related_name='lab_test_assignments', verbose_name=_("Bemor kartasi"))
-    assigned_by  = models.ForeignKey(Doctor, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_lab_tests', verbose_name=_("Tayinlagan shifokor"))
+    assigned_by  = models.ForeignKey('users.CustomUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_lab_tests', verbose_name=_("Tayinlagan shifokor"))
     service      = models.ForeignKey('services.Service', on_delete=models.SET_NULL, null=True, blank=True, related_name='lab_test_assignments', verbose_name=_("Xizmat (katalogdan)"))
     patient_service = models.OneToOneField('services.PatientService', on_delete=models.SET_NULL, null=True, blank=True, related_name='lab_test_assignment', verbose_name=_("Hisob-faktura yozuvi"))
 
@@ -999,7 +977,7 @@ class DiagnosticAssignment(models.Model):
     ]
 
     patient_card = models.ForeignKey(PatientCard, on_delete=models.CASCADE, related_name='diagnostic_assignments', verbose_name=_("Bemor kartasi"))
-    assigned_by  = models.ForeignKey(Doctor, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_diagnostics', verbose_name=_("Tayinlagan shifokor"))
+    assigned_by  = models.ForeignKey('users.CustomUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_diagnostics', verbose_name=_("Tayinlagan shifokor"))
     service      = models.ForeignKey('services.Service', on_delete=models.SET_NULL, null=True, blank=True, related_name='diagnostic_assignments', verbose_name=_("Xizmat (katalogdan)"))
     patient_service = models.OneToOneField('services.PatientService', on_delete=models.SET_NULL, null=True, blank=True, related_name='diagnostic_assignment', verbose_name=_("Hisob-faktura yozuvi"))
 
@@ -1055,8 +1033,8 @@ class ConsultationRequest(models.Model):
     ]
 
     patient_card = models.ForeignKey(PatientCard, on_delete=models.CASCADE, related_name='consultation_requests', verbose_name=_("Bemor kartasi"))
-    requested_by = models.ForeignKey(Doctor, on_delete=models.SET_NULL, null=True, blank=True, related_name='requested_consultations', verbose_name=_("So'rov yuborgan shifokor"))
-    consultants  = models.ManyToManyField(Doctor, blank=True, related_name='consultation_invites', verbose_name=_("Taklif qilingan mutaxassislar"))
+    requested_by = models.ForeignKey('users.CustomUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='requested_consultations', verbose_name=_("So'rov yuborgan shifokor"))
+    consultants  = models.ManyToManyField('users.CustomUser', blank=True, related_name='consultation_invites', verbose_name=_("Taklif qilingan mutaxassislar"))
     service      = models.ForeignKey('services.Service', on_delete=models.SET_NULL, null=True, blank=True, related_name='consultation_requests', verbose_name=_("Konsultatsiya xizmati (katalogdan)"))
     patient_service = models.OneToOneField('services.PatientService', on_delete=models.SET_NULL, null=True, blank=True, related_name='consultation_request', verbose_name=_("Hisob-faktura yozuvi"))
 
