@@ -83,10 +83,11 @@ class CustomUserCreationForm(UserCreationForm):
 
 
 def _sync_doctor_profile(user, is_head):
-    """role='doctor' bo'lsa — Doctor yozuvini yaratadi/yangilaydi va foydalanuvchiga bog'laydi."""
+    """role='doctor' yoki 'old' bo'lsa — Doctor yozuvini yaratadi/yangilaydi va foydalanuvchiga bog'laydi.
+    'old' rolida Doctor profili shart — bemor kartasiga kirish va xizmat qo'shish shu profil orqali tekshiriladi."""
     from apps.patients.models import Doctor
 
-    if user.role != 'doctor':
+    if user.role not in ('doctor', 'old'):
         return
 
     doctor = getattr(user, 'doctor_profile', None)

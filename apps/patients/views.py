@@ -1604,7 +1604,7 @@ def ambulatory_create(request):
     })
 
 @login_required
-@role_required('admin', 'doctor', 'statistician')
+@role_required('admin', 'doctor', 'statistician', 'old')
 @require_POST
 def patient_transfer(request, pk):
     """Bemorni boshqa bo'limga ko'chirish"""
