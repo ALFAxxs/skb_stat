@@ -2546,7 +2546,12 @@ def nurse_dashboard(request):
         except ValueError:
             selected_date = timezone.localdate()
 
-        dept_patients = PatientCard.objects.filter(status='admitted')
+        # status='admitted' talab qilinmaydi — shifokor rasman "biriktirish"
+        # bosqichidan o'tmasdan ham (masalan, bo'lim mudiri sifatida) bemorga
+        # muolaja/tahlil tayinlashi mumkin, va bunday bemor hali ham
+        # status='registered' bo'lib qolishi mumkin. Shu sabab bu yerda
+        # statsionar va hali chiqarilmagan barcha bemorlar olinadi.
+        dept_patients = PatientCard.objects.filter(visit_type='inpatient').exclude(status='completed')
         if request.user.department_id:
             dept_patients = dept_patients.filter(department_id=request.user.department_id)
         if query:
