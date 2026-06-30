@@ -1400,13 +1400,16 @@ def patient_card_excel(request, pk):
 def organization_search(request):
     """AJAX — ish joyi qidirish (temir yo'lchilar uchun)"""
     q = request.GET.get('q', '').strip()
+    org_id = request.GET.get('id', '').strip()
 
     from .models import Organization
     from django.db.models import Q
 
     qs = Organization.objects.filter(is_active=True)
 
-    if q:
+    if org_id:
+        qs = qs.filter(pk=org_id)
+    elif q:
         qs = qs.filter(
             Q(enterprise_name__icontains=q) |
             Q(branch_name__icontains=q) |
@@ -2011,7 +2014,8 @@ def doctor_patient_card(request, pk):
     patient = get_object_or_404(
         PatientCard.objects.select_related(
             'department', 'attending_doctor', 'department_head',
-            'discharge_conclusion', 'registered_by'
+            'discharge_conclusion', 'registered_by', 'referral_organization',
+            'country', 'region', 'district', 'city'
         ),
         pk=pk
     )

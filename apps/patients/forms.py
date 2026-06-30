@@ -26,6 +26,18 @@ def validate_mkb10(value):
     return value.upper()
 
 
+def normalize_phone(value):
+    """Telefon raqamini +998 XX XXX XX XX formatiga keltiradi (Telegram bot qidiruvi bilan mos)."""
+    digits = re.sub(r'\D', '', value or '')
+    if digits.startswith('998'):
+        digits = digits[3:]
+    digits = digits[:9]
+    if not digits:
+        return ''
+    parts = [digits[0:2], digits[2:5], digits[5:7], digits[7:9]]
+    return '+998 ' + ' '.join(p for p in parts if p)
+
+
 # ==================== ASOSIY FORMA ====================
 
 class PatientCardForm(forms.ModelForm):
@@ -89,14 +101,14 @@ class PatientCardForm(forms.ModelForm):
             self.fields['patient_category'].required = False
     class Meta:
         model = PatientCard
-        fields = '__all__'
+        exclude = ['workplace', 'workplace_org']
         widgets = {
-            'birth_date': forms.DateInput(attrs={'type': 'date'}),
-            'admission_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
-            'discharge_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'birth_date': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'admission_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
+            'discharge_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
             'resident_status': forms.RadioSelect,
-            'aids_test_date': forms.DateInput(attrs={'type': 'date'}),
-            'wp_test_date': forms.DateInput(attrs={'type': 'date'}),
+            'aids_test_date': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'wp_test_date': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'referring_diagnosis': forms.Textarea(attrs={'rows': 2}),
             'admission_diagnosis': forms.Textarea(attrs={'rows': 2}),
             'clinical_main_diagnosis_text': forms.Textarea(attrs={'rows': 2}),
@@ -144,22 +156,6 @@ class PatientCardForm(forms.ModelForm):
             'department_head': "Bo'lim mudiri",
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        # Bu maydonlar formda ko'rsatilmaydi — required=False va initial bor
-        if 'status' in self.fields:
-            self.fields['status'].required = False
-            self.fields['status'].widget = forms.HiddenInput()  # ← yashirin
-
-        if 'patient_category' in self.fields:
-            self.fields['patient_category'].required = False
-            # Formda ko'rsatiladi yoki yashirin
-
-        if 'registered_by' in self.fields:
-            self.fields['registered_by'].required = False
-            self.fields['registered_by'].widget = forms.HiddenInput()
-
     def clean_is_emergency(self):
         value = self.cleaned_data.get('is_emergency')
         if not value:
@@ -186,6 +182,9 @@ class PatientCardForm(forms.ModelForm):
 
     def clean_passport_serial(self):
         return self.cleaned_data.get('passport_serial', '').upper()
+
+    def clean_phone(self):
+        return normalize_phone(self.cleaned_data.get('phone', ''))
 
     def clean(self):
         cleaned_data = super().clean()
@@ -294,7 +293,7 @@ class ReceptionForm(forms.ModelForm):
                 attrs={'type': 'datetime-local'},
                 format='%Y-%m-%dT%H:%M'
             ),
-            'birth_date': forms.DateInput(attrs={'type': 'date'}),
+            'birth_date': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'case_sheet_number': forms.TextInput(attrs={'placeholder': '№', 'maxlength': '50'}),
             'resident_status': forms.RadioSelect,
             'admission_diagnosis': forms.Textarea(attrs={'rows': 2}),
@@ -382,6 +381,9 @@ class ReceptionForm(forms.ModelForm):
     def clean_passport_serial(self):
         return self.cleaned_data.get('passport_serial', '').upper()
 
+    def clean_phone(self):
+        return normalize_phone(self.cleaned_data.get('phone', ''))
+
 
 # ==================== JARROHLIK FORMASI ====================
 
@@ -390,7 +392,7 @@ class SurgicalOperationForm(forms.ModelForm):
         model = SurgicalOperation
         exclude = ['patient_card']
         widgets = {
-            'operation_date': forms.DateInput(attrs={'type': 'date'}),
+            'operation_date': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'complication': forms.Textarea(attrs={'rows': 2}),
             'operation_name': forms.TextInput(attrs={
                 'placeholder': "Qo'lda kiriting yoki yuqoridan tanlang"

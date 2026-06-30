@@ -124,6 +124,30 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Telefon raqamini avtomatik +998 XX XXX XX XX formatiga keltiradi
+document.addEventListener('DOMContentLoaded', function () {
+    function formatPhone(raw) {
+        let digits = (raw || '').replace(/\D/g, '');
+        if (digits.startsWith('998')) digits = digits.slice(3);
+        digits = digits.slice(0, 9);
+        let out = '+998';
+        if (digits.length > 0) out += ' ' + digits.slice(0, 2);
+        if (digits.length > 2) out += ' ' + digits.slice(2, 5);
+        if (digits.length > 5) out += ' ' + digits.slice(5, 7);
+        if (digits.length > 7) out += ' ' + digits.slice(7, 9);
+        return out;
+    }
+    document.querySelectorAll('input[name="phone"]').forEach(function (input) {
+        input.value = formatPhone(input.value);
+        input.setAttribute('placeholder', '+998 90 123 45 67');
+        input.setAttribute('maxlength', '17');
+        input.addEventListener('input', function () {
+            this.value = formatPhone(this.value);
+        });
+    });
+});
+</script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

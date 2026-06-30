@@ -115,43 +115,6 @@
                         {{ form.social_status }}
                         <div class="text-danger small">{{ form.social_status.errors }}</div>
                     </div>
-                    <!-- Ish joyi — temir yo'lchilar uchun dropdown -->
-                    <div class="col-md-6 mb-3" id="workplace-field">
-                        <label class="form-label fw-bold">
-                            {% trans "Ish joyi" %}
-                            <span class="badge bg-primary ms-1 small" id="railway-badge" style="display:none;">
-                                🚂 {% trans "Temir yo'lchi" %}
-                            </span>
-                        </label>
-                        <!-- Temir yo'lchi uchun AJAX qidiruv -->
-                        <div id="org-search-block" style="display:none;">
-                            <div class="position-relative">
-                                <input type="text" id="org-search-input"
-                                       class="form-control"
-                                       placeholder="{% trans '🔍 Korxona kodi, INN, nomi yoki filial bo\'yicha qidiring...' %}"
-                                       autocomplete="off">
-                                <div id="org-dropdown"
-                                     style="display:none; position:absolute; top:100%; left:0; right:0;
-                                            z-index:1050; background:#fff; border:1px solid #dee2e6;
-                                            border-radius:8px; max-height:300px; overflow-y:auto;
-                                            box-shadow:0 4px 16px rgba(0,0,0,.12);">
-                                </div>
-                            </div>
-                            <input type="hidden" name="workplace_org" id="workplace_org_id"
-                                   value="{{ form.instance.workplace_org_id|default:'' }}">
-                            <div id="org-selected" class="mt-2" style="display:none;">
-                                <div class="alert alert-success py-2 mb-0 d-flex justify-content-between align-items-start">
-                                    <div id="org-selected-info" class="small"></div>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary ms-2"
-                                            id="org-clear">✕</button>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Boshqa kategoriyalar uchun oddiy input -->
-                        <div id="workplace-text-block">
-                            {{ form.workplace }}
-                        </div>
-                    </div>
                     <div class="col-md-3 mb-3" id="position-field">
                         <label class="form-label">{{ form.position.label }}</label>
                         {{ form.position }}
@@ -878,173 +841,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ==================== IJTIMOIY HOLAT ====================
     const socialStatus  = document.getElementById('id_social_status');
-    const workplaceField = document.getElementById('workplace-field');
-    const positionField  = document.getElementById('position-field');
+    const positionField = document.getElementById('position-field');
 
-    // ==================== ISH JOYI — TEMIR YO'LCHI ====================
-    const ORG_SEARCH_URL  = "{% url 'organization_search' %}";
-    const orgSearchInput  = document.getElementById('org-search-input');
-    const orgDropdown     = document.getElementById('org-dropdown');
-    const orgSearchBlock  = document.getElementById('org-search-block');
-    const orgTextBlock    = document.getElementById('workplace-text-block');
-    const orgSelected     = document.getElementById('org-selected');
-    const orgSelectedInfo = document.getElementById('org-selected-info');
-    const orgIdInput      = document.getElementById('workplace_org_id');
-    const railwayBadge    = document.getElementById('railway-badge');
-    const catSelect       = document.getElementById('id_patient_category');
-
-    // Barcha ish joyi ko'rsatish logikasi bir joyda
-    function updateWorkplaceBlock() {
-        if (!socialStatus || !catSelect) return;
-
-        const social    = socialStatus.value;
-        const category  = catSelect.value;
-        const isRailway = category === 'railway';
-        const isWorking = ['employed', 'student_higher', 'student_school'].includes(social);
-
-        // Ish joyi maydoni — faqat ishlaydi/o'qiydi bo'lganda
-        const showWorkplace = isWorking;
-        const showPosition  = social === 'employed';
-        const showDropdown  = isRailway && isWorking;
-
-        if (workplaceField) workplaceField.style.display = showWorkplace ? 'block' : 'none';
-        if (positionField)  positionField.style.display  = showPosition  ? 'block' : 'none';
-
-        // Dropdown vs oddiy input
-        if (orgSearchBlock) orgSearchBlock.style.display = showDropdown ? 'block' : 'none';
-        if (orgTextBlock)   orgTextBlock.style.display   = showDropdown ? 'none'  : 'block';
-        if (railwayBadge)   railwayBadge.style.display   = showDropdown ? 'inline-block' : 'none';
-    }
-
-    function toggleWorkplace() {
-        updateWorkplaceBlock();
+    function updatePositionVisibility() {
+        if (!socialStatus) return;
+        if (positionField) positionField.style.display = socialStatus.value === 'employed' ? 'block' : 'none';
     }
 
     if (socialStatus) {
-        socialStatus.addEventListener('change', updateWorkplaceBlock);
+        socialStatus.addEventListener('change', updatePositionVisibility);
     }
-    if (catSelect) {
-        catSelect.addEventListener('change', updateWorkplaceBlock);
-    }
-
-    // Sahifa yuklanganda
-    updateWorkplaceBlock();
-
-    // Mavjud qiymat bo'lsa ko'rsatish
-    const existingOrgId = orgIdInput ? orgIdInput.value : '';
-    if (existingOrgId) {
-        fetch(`${ORG_SEARCH_URL}?q=`)
-            .then(r => r.json())
-            .then(data => {
-                // id bo'yicha topish
-                fetch(`${ORG_SEARCH_URL}?id=${existingOrgId}`)
-                    .then(r => r.json())
-                    .then(orgs => {
-                        if (orgs.length > 0) showOrgSelected(orgs[0]);
-                    }).catch(() => {});
-            }).catch(() => {});
-    }
-
-    function fetchOrgs(q) {
-        const url = `${ORG_SEARCH_URL}?q=${encodeURIComponent(q)}`;
-        orgDropdown.innerHTML = '<div style="padding:10px;color:#888;">⏳ Qidirilmoqda...</div>';
-        orgDropdown.style.display = 'block';
-
-        fetch(url)
-            .then(r => r.json())
-            .then(data => {
-                if (!data.length) {
-                    orgDropdown.innerHTML = '<div style="padding:10px;color:#888;">Topilmadi</div>';
-                    return;
-                }
-                orgDropdown.innerHTML = data.map(org => `
-                    <div class="org-item" data-id="${org.id}"
-                         data-name="${org.enterprise_name.replace(/"/g,'&quot;')}"
-                         data-branch="${(org.branch_name||'').replace(/"/g,'&quot;')}"
-                         data-code="${org.enterprise_code}"
-                         data-inn="${org.enterprise_inn}"
-                         data-bcode="${org.branch_code}"
-                         style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #f1f1f1;">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <div class="fw-semibold small">${org.enterprise_name}</div>
-                                ${org.branch_name ? `<div class="text-muted small">↳ ${org.branch_name}</div>` : ''}
-                            </div>
-                            <div class="text-end text-muted small ms-2">
-                                ${org.enterprise_code ? `<span class="badge bg-light text-dark border">${org.enterprise_code}</span>` : ''}
-                                ${org.branch_code ? `<span class="badge bg-light text-dark border ms-1">${org.branch_code}</span>` : ''}
-                                ${org.enterprise_inn ? `<div>INN: ${org.enterprise_inn}</div>` : ''}
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
-
-                orgDropdown.querySelectorAll('.org-item').forEach(item => {
-                    item.addEventListener('mouseenter', () => item.style.background = '#e8f4fd');
-                    item.addEventListener('mouseleave', () => item.style.background = '');
-                    item.addEventListener('click', () => showOrgSelected({
-                        id: item.dataset.id,
-                        enterprise_name: item.dataset.name,
-                        branch_name: item.dataset.branch,
-                        enterprise_code: item.dataset.code,
-                        enterprise_inn: item.dataset.inn,
-                        branch_code: item.dataset.bcode,
-                    }));
-                });
-            })
-            .catch(() => {
-                orgDropdown.innerHTML = '<div style="padding:10px;color:red;">❌ Xato</div>';
-            });
-    }
-
-    function showOrgSelected(org) {
-        if (orgIdInput) orgIdInput.value = org.id;
-        if (orgSearchInput) orgSearchInput.value = '';
-        if (orgDropdown) orgDropdown.style.display = 'none';
-        if (orgSelected) orgSelected.style.display = 'block';
-        if (orgSelectedInfo) {
-            let html = `<strong>${org.enterprise_name}</strong>`;
-            if (org.branch_name) html += `<br><span class="text-muted">↳ ${org.branch_name}</span>`;
-            const badges = [];
-            if (org.enterprise_code) badges.push(`Kod: ${org.enterprise_code}`);
-            if (org.branch_code)     badges.push(`Filial kodi: ${org.branch_code}`);
-            if (org.enterprise_inn)  badges.push(`INN: ${org.enterprise_inn}`);
-            if (badges.length) html += `<br><small class="text-muted">${badges.join(' | ')}</small>`;
-            orgSelectedInfo.innerHTML = html;
-        }
-        // workplace text ni ham to'ldirish
-        const workplaceInput = document.getElementById('id_workplace');
-        if (workplaceInput && !workplaceInput.value) {
-            workplaceInput.value = org.branch_name
-                ? `${org.enterprise_name} — ${org.branch_name}`
-                : org.enterprise_name;
-        }
-    }
-
-    function clearOrgSelected() {
-        if (orgIdInput) orgIdInput.value = '';
-        if (orgSelected) orgSelected.style.display = 'none';
-        if (orgSelectedInfo) orgSelectedInfo.innerHTML = '';
-        if (orgSearchInput) { orgSearchInput.value = ''; orgSearchInput.focus(); }
-    }
-
-    if (orgSearchInput) {
-        orgSearchInput.addEventListener('input', function() {
-            fetchOrgs(this.value);
-        });
-        orgSearchInput.addEventListener('focus', function() {
-            fetchOrgs(this.value);
-        });
-    }
-
-    document.addEventListener('click', e => {
-        if (orgDropdown && !orgDropdown.contains(e.target) && e.target !== orgSearchInput) {
-            orgDropdown.style.display = 'none';
-        }
-    });
-
-    const orgClearBtn = document.getElementById('org-clear');
-    if (orgClearBtn) orgClearBtn.addEventListener('click', clearOrgSelected);
+    updatePositionVisibility();
 
     // ==================== OUTCOME (VAFOT) ====================
     const outcomeField = document.getElementById('id_outcome');
@@ -1484,12 +1291,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Mavjud referral_organization ni ko'rsatish (tahrirlash uchun)
     (function(){
-        const idInput = document.getElementById('ref_org_id');
-        const selInfo = document.getElementById('ref-org-selected-info');
-        const selDiv  = document.getElementById('ref-org-selected');
+        const idInput  = document.getElementById('ref_org_id');
+        const selInfo  = document.getElementById('ref-org-selected-info');
+        const selDiv   = document.getElementById('ref-org-selected');
+        const refInput = document.getElementById('ref-org-search-input');
         if (idInput && idInput.value && selInfo && selDiv) {
-            selDiv.style.display = 'block';
-            selInfo.textContent  = 'Tanlangan muassasa (ID: ' + idInput.value + ')';
+            fetch('/patients/ajax/organizations/?id=' + encodeURIComponent(idInput.value))
+                .then(r => r.json())
+                .then(function(orgs){
+                    if (!orgs.length) return;
+                    const org = orgs[0];
+                    const label = org.enterprise_name + (org.branch_name ? ' — ' + org.branch_name : '');
+                    const meta  = [];
+                    if (org.enterprise_code) meta.push('Kod: ' + org.enterprise_code);
+                    if (org.enterprise_inn)  meta.push('INN: ' + org.enterprise_inn);
+                    selInfo.innerHTML = '<strong>' + label + '</strong>'
+                                      + (meta.length ? '<br><span class="text-muted">' + meta.join(' | ') + '</span>' : '');
+                    selDiv.style.display = 'block';
+                    if (refInput) refInput.value = label;
+                })
+                .catch(() => {});
         }
     })();
 

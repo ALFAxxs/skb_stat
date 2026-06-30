@@ -125,6 +125,35 @@
                         <div class="info-row"><div class="label">{% trans "Registratsiya qilgan" %}</div><div class="value">{{ patient.registered_by.get_full_name|default:'—' }}</div></div>
                     </div>
                 </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="section-title">{% trans "Qo'shimcha ma'lumotlar" %}</div>
+                        <div class="info-row"><div class="label">{% trans "Rezident holati" %}</div><div class="value">{{ patient.get_resident_status_display }}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Ijtimoiy holat" %}</div><div class="value">{{ patient.get_social_status_display|default:'—' }}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Ish/o'quv joyi" %}</div><div class="value">{{ patient.workplace|default:'—' }}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Kim olib kelgan" %}</div><div class="value">{{ patient.get_referral_type_display|default:'—' }}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Yo'llagan muassasa" %}</div><div class="value">{{ patient.referral_organization|default:'—' }}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Yo'llagan muassasa tashxisi" %}</div><div class="value">{{ patient.referring_diagnosis|default:'—' }}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Kasallik varaqasi №" %}</div><div class="value">{{ patient.case_sheet_number|default:'—' }}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Kasallanishdan keyin" %}</div><div class="value">{{ patient.get_hours_after_illness_display|default:'—' }}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Necha martalik yotqizilish" %}</div><div class="value">{{ patient.get_admission_count_display|default:'—' }}</div></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="section-title">&nbsp;</div>
+                        <div class="info-row"><div class="label">{% trans "Shoshilinch" %}</div><div class="value"><span class="badge {% if patient.is_emergency %}bg-danger{% else %}bg-secondary{% endif %}">{% if patient.is_emergency %}{% trans "Ha" %}{% else %}{% trans "Yo'q" %}{% endif %}</span></div></div>
+                        <div class="info-row"><div class="label">{% trans "Pullik" %}</div><div class="value"><span class="badge {% if patient.is_paid %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{% if patient.is_paid %}{% trans "Ha" %}{% else %}{% trans "Yo'q" %}{% endif %}</span></div></div>
+                        <div class="info-row"><div class="label">{% trans "Urush qatnashchisi" %}</div><div class="value"><span class="badge {% if patient.is_war_veteran %}bg-danger{% else %}bg-secondary{% endif %}">{% if patient.is_war_veteran %}{% trans "Ha" %}{% else %}{% trans "Yo'q" %}{% endif %}</span></div></div>
+                        <div class="info-row"><div class="label">{% trans "Yotgan kunlar" %}</div><div class="value">{{ patient.days_in_hospital|default:0 }}</div></div>
+                        <div class="info-row"><div class="label">{% trans "OIV tahlili" %}</div><div class="value">{{ patient.aids_test_date|date:"d.m.Y"|default:'—' }} {{ patient.aids_test_result|default:'' }}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Vasserman tahlili" %}</div><div class="value">{{ patient.wp_test_date|date:"d.m.Y"|default:'—' }} {{ patient.wp_test_result|default:'' }}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Klinik asosiy tashxis" %}</div><div class="value">{% if patient.clinical_main_diagnosis %}<span class="badge bg-primary">{{ patient.clinical_main_diagnosis }}</span> {{ patient.clinical_main_diagnosis_text }}{% else %}—{% endif %}</div></div>
+                        <div class="info-row"><div class="label">{% trans "Yo'ldosh kasalliklar" %}</div><div class="value">{{ patient.clinical_comorbidities|default:'—' }}</div></div>
+                        {% if patient.outcome == 'deceased' %}
+                        <div class="info-row"><div class="label">{% trans "Patologoanatomik tashxis" %}</div><div class="value">{% if patient.pathological_main_diagnosis %}<span class="badge bg-danger">{{ patient.pathological_main_diagnosis }}</span> {{ patient.pathological_main_diagnosis_text }}{% else %}—{% endif %}</div></div>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         </div>
     </div>
