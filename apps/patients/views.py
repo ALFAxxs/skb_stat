@@ -241,11 +241,11 @@ def initial_examination(request, patient_id):
 EXAM_FIELDS = [
     ('complaints',               _l("Ko'rik jarayonidagi shikoyatlar")),
     ('anamnesis_morbi',          _l('Kasallik tarixidan (Anamnesis morbi)')),
-    ('epidemiological_anamnesis',_l('Epidemiologik anamnez')),
     ('anamnesis_vitae',          _l('Hayot anamnezi (Anamnesis vitae)')),
     ('status_praesens',          _l("Ob'ektiv holat (Status praesens)")),
     ('neurological_status',      _l('Nevrologik holat')),
     ('status_localis',           _l('Mahalliy holat (Status localis)')),
+    ('epidemiological_anamnesis',_l('Epidemiologik anamnez')),
     ('lab_investigations',       _l('Laboratoriya va instrumental tadqiqotlar va maslahatlar')),
     ('specialist_consultations', _l('Turdosh mutaxassislar maslahatlari')),
     ('allergy_anamnesis',        _l('Allergoanamnesis')),
@@ -300,14 +300,19 @@ def medical_examination_page(request, patient_id, exam_pk=None):
             setattr(exam, fname, request.POST.get(fname, ''))
 
         # Laboratoriya/diagnostika natijalarini checkbox orqali tanlash
-        selected_lab_ids  = request.POST.getlist('selected_lab_ids')
-        selected_diag_ids = request.POST.getlist('selected_diag_ids')
+        selected_lab_ids       = request.POST.getlist('selected_lab_ids')
+        selected_diag_ids      = request.POST.getlist('selected_diag_ids')
+        selected_labresult_ids = request.POST.getlist('selected_labresult_ids')
         lab_qs = LabTestAssignment.objects.filter(
             patient_card=patient, status='done', pk__in=selected_lab_ids
         ).prefetch_related('result_logs')
         diag_qs = DiagnosticAssignment.objects.filter(
             patient_card=patient, status='done', pk__in=selected_diag_ids
         ).prefetch_related('result_logs')
+        from apps.laboratory.models import LabResult
+        labresult_qs = LabResult.objects.filter(
+            patient_card=patient, status__in=('done', 'verified', 'printed'), pk__in=selected_labresult_ids
+        ).select_related('template').prefetch_related('values__parameter')
 
         parts = []
         for lab in lab_qs:
@@ -326,11 +331,20 @@ def medical_examination_page(request, patient_id, exam_pk=None):
             if log and log.recommendation:
                 text += f"\n{_('Tavsiya')}: {log.recommendation}"
             parts.append(text)
+        for res in labresult_qs:
+            text = f"🧪 {res.template.name}"
+            values = [f"{v.parameter.name}: {v.value}" for v in res.values.all() if v.value]
+            if values:
+                text += " — " + "; ".join(values)
+            if res.conclusion:
+                text += f"\n{_('Xulosa')}: {res.conclusion}"
+            parts.append(text)
         exam.lab_investigations = '\n\n'.join(parts)
 
         exam.save()
         exam.selected_lab_tests.set(lab_qs)
         exam.selected_diagnostics.set(diag_qs)
+        exam.selected_lab_results.set(labresult_qs)
         messages.success(request, _("✅ Ko'rik saqlandi."))
         return redirect(next_url)
 
@@ -371,8 +385,12 @@ def medical_examination_page(request, patient_id, exam_pk=None):
 
     available_lab_results = patient.lab_test_assignments.filter(status='done').prefetch_related('result_logs')
     available_diag_results = patient.diagnostic_assignments.filter(status='done').prefetch_related('result_logs')
+    available_labresult_results = patient.lab_results.filter(
+        status__in=('done', 'verified', 'printed')
+    ).select_related('template').prefetch_related('values__parameter')
     selected_lab_ids  = set(exam.selected_lab_tests.values_list('pk', flat=True)) if exam else set()
     selected_diag_ids = set(exam.selected_diagnostics.values_list('pk', flat=True)) if exam else set()
+    selected_labresult_ids = set(exam.selected_lab_results.values_list('pk', flat=True)) if exam else set()
 
     return render(request, 'patients/examination_form.html', {
         'visible_fields_with_templates': visible_fields_with_templates,
@@ -394,8 +412,10 @@ def medical_examination_page(request, patient_id, exam_pk=None):
         'existing_diagnoses':   patient.episode_diagnoses.select_related('icd10_code').all(),
         'available_lab_results':  available_lab_results,
         'available_diag_results': available_diag_results,
+        'available_labresult_results': available_labresult_results,
         'selected_lab_ids':  selected_lab_ids,
         'selected_diag_ids': selected_diag_ids,
+        'selected_labresult_ids': selected_labresult_ids,
     })
 
 

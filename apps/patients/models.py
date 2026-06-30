@@ -649,6 +649,7 @@ class MedicalExamination(models.Model):
     lab_investigations       = models.TextField(blank=True, verbose_name=_("Lab tekshiruvlari"))
     selected_lab_tests   = models.ManyToManyField('LabTestAssignment', blank=True, related_name='cited_in_examinations', verbose_name=_("Tanlangan laboratoriya natijalari"))
     selected_diagnostics = models.ManyToManyField('DiagnosticAssignment', blank=True, related_name='cited_in_examinations', verbose_name=_("Tanlangan diagnostika natijalari"))
+    selected_lab_results = models.ManyToManyField('laboratory.LabResult', blank=True, related_name='cited_in_examinations', verbose_name=_("Tanlangan laboratoriya natijalari (yangi tizim)"))
     specialist_consultations = models.TextField(blank=True, verbose_name=_("Turdosh mutaxassislar maslahatlari"))
     conclusion               = models.TextField(blank=True, verbose_name=_("Xulosa / Tavsiya"))
     drug_justification       = models.TextField(blank=True, verbose_name=_("Dori vositalari uchun asoslar"))

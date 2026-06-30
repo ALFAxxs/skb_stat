@@ -134,7 +134,7 @@
     <div class="exam-breadcrumb">
       <a href="{% url 'patient_list' %}">{% trans "Bemorlar" %}</a>
       <span>›</span>
-      <a href="{% url 'patient_detail' patient.pk %}">{{ patient.full_name }}</a>
+      <a href="{{ next_url }}">{{ patient.full_name }}</a>
       <span>›</span>
       <strong style="color:#111827;">{{ exam_type_display }}</strong>
     </div>
@@ -306,7 +306,21 @@
         </label>
         {% endwith %}
         {% endfor %}
-        {% if not available_lab_results and not available_diag_results %}
+        {% for item in available_labresult_results %}
+        <label class="lab-inv-item">
+          <input type="checkbox" name="selected_labresult_ids" value="{{ item.pk }}"
+                 {% if item.pk in selected_labresult_ids %}checked{% endif %}>
+          <div>
+            <span class="lab-inv-title">🧪 {{ item.template.name }}</span>
+            <span class="lab-inv-date">{{ item.created_at|date:"d.m.Y" }}</span>
+            {% for v in item.values.all %}
+              {% if v.value %}<div class="lab-inv-text">{{ v.parameter.name }}: {{ v.value }}</div>{% endif %}
+            {% endfor %}
+            {% if item.conclusion %}<div class="lab-inv-reco">{% trans "Xulosa" %}: {{ item.conclusion }}</div>{% endif %}
+          </div>
+        </label>
+        {% endfor %}
+        {% if not available_lab_results and not available_diag_results and not available_labresult_results %}
         <div class="lab-inv-empty">{% trans "Tayyor natijalar yo'q" %}</div>
         {% endif %}
       </div>
