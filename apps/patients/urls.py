@@ -69,6 +69,7 @@ urlpatterns = [
     path('<int:patient_id>/examination/new/', views.medical_examination_page, name='examination_new'),
     path('<int:patient_id>/examination/<int:exam_pk>/edit/', views.medical_examination_page, name='examination_edit'),
     path('<int:patient_id>/examination/<int:exam_pk>/chop-etish/', views.medical_examination_print, name='examination_print'),
+    path('<int:patient_id>/examination/chop-etish/oldindan/', views.medical_examination_print_preview, name='examination_print_preview'),
     path('ajax/episode-diagnosis/<int:pk>/delete/', views.episode_diagnosis_delete, name='episode_diagnosis_delete'),
     path('ajax/initial-examination/<int:patient_id>/', views.initial_examination, name='initial_examination'),
     path('ajax/regions/', views.get_regions, name='get_regions'),

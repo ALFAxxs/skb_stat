@@ -1,0 +1,374 @@
+{% load i18n %}
+<!-- Qayta ishlatiladigan "Yozuv qo'shish" modal — xizmat tanlash, shifokor biriktirish, reja sanasi -->
+<div class="modal fade" id="assignModal" tabindex="-1">
+    <div class="modal-dialog modal-fullscreen-lg-down" style="max-width:1300px;">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">➕ {% trans "Yozuv qo'shish" %}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex flex-wrap gap-2 mb-3" id="assign-cat-btns">
+                    <button type="button" class="btn btn-primary assign-cat-btn rounded-pill py-1 px-3" data-cat="">{% trans "Barchasi" %}</button>
+                    <button type="button" class="btn btn-outline-warning assign-cat-btn rounded-pill py-1 px-3" data-cat="__my_packages__">⭐ {% trans "Mening paketim" %}</button>
+                    <button type="button" class="btn btn-outline-primary assign-cat-btn rounded-pill py-1 px-3" data-cat="surgery">🛏️ {% trans "Operatsiya" %}</button>
+                    <button type="button" class="btn btn-outline-primary assign-cat-btn rounded-pill py-1 px-3" data-cat="radiology">🔬 {% trans "Diagnostika" %}</button>
+                    <button type="button" class="btn btn-outline-primary assign-cat-btn rounded-pill py-1 px-3" data-cat="consultation">🩺 {% trans "Konsultatsiya" %}</button>
+                    <button type="button" class="btn btn-outline-primary assign-cat-btn rounded-pill py-1 px-3" data-cat="lab">🧪 {% trans "Laboratoriya" %}</button>
+                    <button type="button" class="btn btn-outline-primary assign-cat-btn rounded-pill py-1 px-3" data-cat="physio">🚹 {% trans "Fizioterapiya" %}</button>
+                    <button type="button" class="btn btn-outline-primary assign-cat-btn rounded-pill py-1 px-3" data-cat="other">⚕️ {% trans "Boshqa xizmatlar" %}</button>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 mb-3" id="assign-subcat-btns" style="display:none;"></div>
+
+                {{ service_categories|json_script:"service-categories-data" }}
+
+                <div class="mb-3 position-relative">
+                    <input type="text" id="assign-search" class="form-control" placeholder="🔍 {% trans "Xizmat nomi yoki kodi bo'yicha qidirish..." %}" autocomplete="off">
+                </div>
+
+                <div id="assign-grid" class="row g-2" style="max-height:50vh; overflow-y:auto;"></div>
+                <div id="assign-grid-empty" class="text-center text-muted py-5" style="display:none;">🔍 {% trans "Xizmat topilmadi" %}</div>
+
+                <div id="assign-error" class="alert alert-danger mt-3" style="display:none;"></div>
+            </div>
+            <div class="modal-footer d-flex justify-content-between">
+                <span class="text-muted small">{% trans "Tanlandi:" %} <strong id="assign-count">0</strong> {% trans "ta xizmat" %}</span>
+                <div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Bekor" %}</button>
+                    <button type="button" class="btn btn-primary px-4" id="btn-assign-save" disabled>✅ {% trans "Saqlash" %} (<span id="assign-save-count">0</span> {% trans "ta" %})</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+const SERVICE_SEARCH_URL  = '{% url "service_search" %}';
+const PACKAGES_URL        = '/services/packages/';
+const TOGGLE_PACKAGE_URL  = '{% url "package_toggle_service" %}';
+const ASSIGN_URL          = '{% url "assign_services" patient.pk %}';
+const PATIENT_ID          = {{ patient.pk }};
+const CSRF                = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '{{ csrf_token }}';
+
+const SERVICE_CATEGORIES = JSON.parse(document.getElementById('service-categories-data').textContent);
+
+let assignCat      = '';       // '' = barchasi, '__my_packages__' = mening paketim, yoki category_type
+let assignSubCatId = '';       // aniq ServiceCategory id (2-qator tanlovi)
+let assignCart  = {};          // { [serviceId]: {id, name, category, price, doctor_id, comment} }
+let starredIds  = new Set();
+let myPackages  = [];
+let lastServices = [];         // oxirgi render qilingan xizmatlar ro'yxati (qidiruv/kategoriya natijasi)
+
+window.openAssignModal = function () {
+    assignCat      = '';
+    assignSubCatId = '';
+    assignCart = {};
+    document.querySelectorAll('.assign-cat-btn').forEach(b => {
+        const active = b.dataset.cat === '';
+        b.classList.toggle('btn-primary', active);
+        b.classList.toggle('btn-outline-primary', !active && b.dataset.cat !== '__my_packages__');
+        b.classList.toggle('btn-outline-warning', b.dataset.cat === '__my_packages__');
+        b.classList.remove('btn-warning');
+    });
+    renderSubCategories();
+    document.getElementById('assign-search').value = '';
+    document.getElementById('assign-error').style.display = 'none';
+    renderAssignSummary();
+    loadMyPackages();
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('assignModal'));
+    modal.show();
+    setTimeout(() => fetchAssignServices(''), 150);
+};
+
+function loadMyPackages() {
+    fetch(`${PACKAGES_URL}?patient_id=${PATIENT_ID}`)
+        .then(r => r.json())
+        .then(data => {
+            myPackages = data;
+            starredIds.clear();
+            data.forEach(pkg => pkg.items.forEach(item => starredIds.add(String(item.service_id))));
+        });
+}
+
+function renderSubCategories() {
+    const wrap = document.getElementById('assign-subcat-btns');
+    const subcats = SERVICE_CATEGORIES.filter(c => c.category_type === assignCat);
+    if (assignCat === '' || assignCat === '__my_packages__' || !subcats.length) {
+        wrap.style.display = 'none';
+        wrap.innerHTML = '';
+        return;
+    }
+    wrap.innerHTML = subcats.map(c => `
+        <button type="button" class="btn ${assignSubCatId === String(c.id) ? 'btn-success' : 'btn-outline-success'} assign-subcat-btn rounded-pill py-1 px-3" data-id="${c.id}">${c.icon || ''} ${c.name}</button>
+    `).join('');
+    wrap.style.display = '';
+    wrap.querySelectorAll('.assign-subcat-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const id = String(this.dataset.id);
+            assignSubCatId = (assignSubCatId === id) ? '' : id;
+            renderSubCategories();
+            fetchAssignServices(assignSearch.value);
+        });
+    });
+}
+
+document.querySelectorAll('.assign-cat-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+        assignCat      = this.dataset.cat;
+        assignSubCatId = '';
+        document.querySelectorAll('.assign-cat-btn').forEach(b => {
+            const active = b === this;
+            b.classList.remove('btn-primary', 'btn-outline-primary', 'btn-warning', 'btn-outline-warning');
+            if (b.dataset.cat === '__my_packages__') {
+                b.classList.add(active ? 'btn-warning' : 'btn-outline-warning');
+            } else {
+                b.classList.add(active ? 'btn-primary' : 'btn-outline-primary');
+            }
+        });
+        renderSubCategories();
+        document.getElementById('assign-search').value = '';
+        fetchAssignServices('');
+    });
+});
+
+const assignSearch = document.getElementById('assign-search');
+const assignGrid    = document.getElementById('assign-grid');
+const assignGridEmpty = document.getElementById('assign-grid-empty');
+let assignTimer;
+
+function fetchAssignServices(q) {
+    if (assignCat === '__my_packages__') {
+        const seen = new Set();
+        const items = [];
+        myPackages.forEach(pkg => pkg.items.forEach(item => {
+            if (seen.has(item.service_id)) return;
+            seen.add(item.service_id);
+            items.push({ id: item.service_id, name: item.service_name, category: item.category || '', price: item.price || 0 });
+        }));
+        const ql = (q || '').toLowerCase().trim();
+        const filtered = ql ? items.filter(s => s.name.toLowerCase().includes(ql)) : items;
+        renderAssignGrid(filtered);
+        return;
+    }
+    const catParam = assignSubCatId ? `&category=${assignSubCatId}` : '';
+    const url = `${SERVICE_SEARCH_URL}?q=${encodeURIComponent(q)}&category_type=${assignCat}${catParam}&patient_id=${PATIENT_ID}`;
+    assignGrid.innerHTML = '<div class="p-3 text-muted">⏳ Qidirilmoqda...</div>';
+    assignGridEmpty.style.display = 'none';
+    fetch(url).then(r => r.json()).then(renderAssignGrid);
+}
+
+function renderAssignGrid(data) {
+    lastServices = data;
+    if (!data.length) {
+        assignGrid.innerHTML = '';
+        assignGridEmpty.style.display = '';
+        return;
+    }
+    assignGridEmpty.style.display = 'none';
+    assignGrid.innerHTML = data.map(s => assignRowHTML(s)).join('');
+    bindAssignGridEvents();
+}
+
+function assignRowHTML(s) {
+    const id      = String(s.id);
+    const checked = !!assignCart[id];
+    const starred = starredIds.has(id);
+    return `
+    <div class="col-md-6">
+        <div class="assign-svc-row ${checked ? 'checked' : ''}" data-id="${id}" data-name="${s.name.replace(/"/g, '&quot;')}" data-category="${s.category || ''}" data-price="${s.price || 0}">
+            <div class="d-flex align-items-center gap-2">
+                <input type="checkbox" class="form-check-input assign-svc-cb" ${checked ? 'checked' : ''}>
+                <span class="assign-svc-star" data-id="${id}" title="Mening paketimga qo'shish/o'chirish">${starred ? '⭐' : '☆'}</span>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="assign-svc-name">${s.name}</div>
+                    <div class="assign-svc-cat">${s.category || ''}</div>
+                </div>
+                <span class="badge bg-success">${Number(s.price || 0).toLocaleString()} so'm</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary assign-row-toggle" title="Biriktirilgan shifokorlar / izoh">▼</button>
+            </div>
+            <div class="assign-row-detail" style="display:none;">
+                <div class="small text-muted mb-1">Biriktirilgan shifokorlar:</div>
+                <div class="assign-row-doctors small text-muted">⏳ Yuklanmoqda...</div>
+                <textarea class="form-control form-control-sm mt-2 assign-row-comment" rows="2" placeholder="Izoh / kommentariya..."></textarea>
+                <div class="row g-2 mt-2 align-items-end">
+                    <div class="col-4">
+                        <label class="form-label small mb-1">📅 Sana</label>
+                        <input type="date" class="form-control form-control-sm assign-row-date">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label small mb-1">🕐 Vaqt</label>
+                        <input type="time" class="form-control form-control-sm assign-row-time" value="09:00">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label small mb-1">Necha kun</label>
+                        <input type="number" min="1" max="60" value="1" class="form-control form-control-sm assign-row-days">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>`;
+}
+
+function bindAssignGridEvents() {
+    assignGrid.querySelectorAll('.assign-svc-row').forEach(row => {
+        const id = row.dataset.id;
+        const cb = row.querySelector('.assign-svc-cb');
+
+        cb.addEventListener('change', function () {
+            if (this.checked) {
+                assignCart[id] = assignCart[id] || {
+                    id, name: row.dataset.name, category: row.dataset.category,
+                    price: parseFloat(row.dataset.price) || 0, doctor_id: null, comment: '',
+                    scheduled_date: '', scheduled_time: '09:00', repeat_days: 1,
+                };
+                row.classList.add('checked');
+            } else {
+                delete assignCart[id];
+                row.classList.remove('checked');
+            }
+            renderAssignSummary();
+        });
+
+        row.querySelector('.assign-svc-star').addEventListener('click', function (e) {
+            e.stopPropagation();
+            toggleStar(id, this);
+        });
+
+        const toggleBtn = row.querySelector('.assign-row-toggle');
+        const detail     = row.querySelector('.assign-row-detail');
+        let loaded = false;
+        toggleBtn.addEventListener('click', function () {
+            const open = detail.style.display !== 'none';
+            detail.style.display = open ? 'none' : '';
+            this.classList.toggle('open', !open);
+            if (!open && !loaded) {
+                loaded = true;
+                loadRowDoctors(row, id);
+            }
+        });
+
+        const commentEl = row.querySelector('.assign-row-comment');
+        commentEl.addEventListener('input', function () {
+            if (assignCart[id]) assignCart[id].comment = this.value;
+        });
+
+        const dateEl = row.querySelector('.assign-row-date');
+        const timeEl = row.querySelector('.assign-row-time');
+        const daysEl = row.querySelector('.assign-row-days');
+        dateEl.addEventListener('input', function () { if (assignCart[id]) assignCart[id].scheduled_date = this.value; });
+        timeEl.addEventListener('input', function () { if (assignCart[id]) assignCart[id].scheduled_time = this.value; });
+        daysEl.addEventListener('input', function () { if (assignCart[id]) assignCart[id].repeat_days = parseInt(this.value) || 1; });
+    });
+}
+
+function loadRowDoctors(row, serviceId) {
+    const box = row.querySelector('.assign-row-doctors');
+    fetch(`/services/${serviceId}/doctors/`)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.length) {
+                box.innerHTML = '<span class="text-muted">Bu xizmatga shifokor biriktirilmagan</span>';
+                return;
+            }
+            box.innerHTML = data.map(d => `
+                <div class="form-check assign-doctor-pick">
+                    <input class="form-check-input assign-doctor-radio" type="radio" name="assign-doc-${serviceId}" value="${d.id}" id="assign-doc-${serviceId}-${d.id}">
+                    <label class="form-check-label" for="assign-doc-${serviceId}-${d.id}">${d.full_name}${d.department ? ' — ' + d.department : ''}</label>
+                </div>
+            `).join('');
+            box.querySelectorAll('.assign-doctor-radio').forEach(radio => {
+                radio.addEventListener('change', function () {
+                    const id = String(serviceId);
+                    if (!assignCart[id]) {
+                        row.querySelector('.assign-svc-cb').checked = true;
+                        row.querySelector('.assign-svc-cb').dispatchEvent(new Event('change'));
+                    }
+                    assignCart[id].doctor_id = this.value;
+                });
+            });
+        });
+}
+
+function toggleStar(id, starEl) {
+    const wasStarred = starredIds.has(id);
+    if (wasStarred) { starredIds.delete(id); starEl.textContent = '☆'; }
+    else            { starredIds.add(id);    starEl.textContent = '⭐'; }
+    fetch(TOGGLE_PACKAGE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ service_id: id }),
+    })
+    .then(r => r.json())
+    .then(() => loadMyPackages());
+}
+
+function renderAssignSummary() {
+    const count = Object.keys(assignCart).length;
+    document.getElementById('assign-count').textContent = count;
+    document.getElementById('assign-save-count').textContent = count;
+    document.getElementById('btn-assign-save').disabled = count === 0;
+}
+
+assignSearch.addEventListener('input', function () {
+    clearTimeout(assignTimer);
+    assignTimer = setTimeout(() => fetchAssignServices(this.value), 250);
+});
+
+document.getElementById('btn-assign-save').addEventListener('click', function () {
+    const items = Object.values(assignCart);
+    if (!items.length) return;
+    const btn    = this;
+    const errDiv = document.getElementById('assign-error');
+    errDiv.style.display = 'none';
+    btn.disabled  = true;
+    btn.innerHTML = '⏳ Saqlanmoqda...';
+
+    fetch(ASSIGN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({
+            items: items.map(c => ({
+                service_id: parseInt(c.id),
+                doctor_id:  c.doctor_id ? parseInt(c.doctor_id) : null,
+                notes:      c.comment || '',
+                scheduled_date: c.scheduled_date || '',
+                scheduled_time: c.scheduled_time || '',
+                repeat_days:    c.repeat_days || 1,
+            })),
+        }),
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (!data.success) {
+            errDiv.textContent   = data.error || 'Xato yuz berdi';
+            errDiv.style.display = 'block';
+            btn.disabled         = false;
+            btn.innerHTML        = `✅ Saqlash (<span id="assign-save-count">${items.length}</span> ta)`;
+            return;
+        }
+        if (typeof window.onServicesAssigned === 'function') {
+            window.onServicesAssigned(data);
+            btn.disabled  = false;
+            btn.innerHTML = `✅ Saqlash (<span id="assign-save-count">0</span> ta)`;
+            assignCart = {};
+            renderAssignSummary();
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('assignModal'));
+            modal.hide();
+        } else {
+            window.location.reload();
+        }
+    })
+    .catch(() => {
+        errDiv.textContent   = "Tarmoq xatosi. Qayta urinib ko'ring.";
+        errDiv.style.display = 'block';
+        btn.disabled         = false;
+        btn.innerHTML        = `✅ Saqlash (<span id="assign-save-count">${items.length}</span> ta)`;
+    });
+});
+
+})();
+</script>

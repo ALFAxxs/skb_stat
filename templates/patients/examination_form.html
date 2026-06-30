@@ -251,8 +251,8 @@
       </div>
       <div class="exam-card-body" id="body-spec" style="display:none;">
         <div id="spec-rows">
-          {% if exam and exam.specialist_consultations %}
-            {% for line in exam.specialist_consultations.splitlines %}
+          {% if prefill and prefill.specialist_consultations %}
+            {% for line in prefill.specialist_consultations.splitlines %}
             <div class="spec-row">
               <textarea class="form-control spec-input" rows="2">{{ line }}</textarea>
               <button type="button" class="btn btn-sm btn-outline-danger mt-1"
@@ -270,6 +270,9 @@
         </div>
         <input type="hidden" name="specialist_consultations" id="spec-hidden">
         <button type="button" class="btn-add-spec mt-2" onclick="addSpecRow()">＋ {% trans "Qo'shish" %}</button>
+        <button type="button" class="btn-add-spec mt-2 ms-2" data-bs-toggle="modal" data-bs-target="#consultRequestModal">
+          🤝 {% trans "Konsultatsiya so'rash" %}
+        </button>
       </div>
     </div>
 
@@ -344,25 +347,9 @@
 
         <!-- Yangi tahlil/tekshiruv tayinlash -->
         <div class="lab-order-box mt-3">
-          <div class="lab-order-title">＋ {% trans "Yangi tahlil/tekshiruv buyurtma qilish" %}</div>
-          <div class="d-flex gap-2 flex-wrap align-items-start mt-2">
-            <select id="lab-order-service" class="form-select form-select-sm" style="max-width:280px;">
-              <option value="">— {% trans "Xizmatni tanlang" %} —</option>
-              {% regroup orderable_services by category as service_groups %}
-              {% for group in service_groups %}
-              <optgroup label="{{ group.grouper.display_name }}">
-                {% for s in group.list %}
-                <option value="{{ s.pk }}">{{ s.name }}</option>
-                {% endfor %}
-              </optgroup>
-              {% endfor %}
-            </select>
-            <input type="text" id="lab-order-notes" class="form-control form-control-sm"
-                   placeholder="{% trans "Izoh (ixtiyoriy)" %}" style="max-width:240px;">
-            <button type="button" class="btn btn-sm btn-primary" onclick="orderLabService()">
-              {% trans "Tayinlash" %}
-            </button>
-          </div>
+          <button type="button" class="btn btn-sm btn-primary" onclick="openAssignModal()">
+            ＋ {% trans "Yangi tahlil/tekshiruv tayinlash" %}
+          </button>
           <div id="lab-order-msg" class="small mt-1"></div>
         </div>
       </div>
@@ -381,7 +368,7 @@
         <span id="icon-{{ fname }}" style="color:#9ca3af;font-size:18px;">＋</span>
       </div>
       <div class="exam-card-body" id="body-{{ fname }}" style="display:none;">
-        <textarea name="{{ fname }}" id="examfield-{{ fname }}" placeholder="{% trans "Yozing..." %}">{% if exam %}{% if fname == 'complaints' %}{{ exam.complaints }}{% elif fname == 'anamnesis_morbi' %}{{ exam.anamnesis_morbi }}{% elif fname == 'epidemiological_anamnesis' %}{{ exam.epidemiological_anamnesis }}{% elif fname == 'anamnesis_vitae' %}{{ exam.anamnesis_vitae }}{% elif fname == 'status_praesens' %}{{ exam.status_praesens }}{% elif fname == 'neurological_status' %}{{ exam.neurological_status }}{% elif fname == 'status_localis' %}{{ exam.status_localis }}{% elif fname == 'allergy_anamnesis' %}{{ exam.allergy_anamnesis }}{% elif fname == 'conclusion' %}{{ exam.conclusion }}{% elif fname == 'drug_justification' %}{{ exam.drug_justification }}{% endif %}{% endif %}</textarea>
+        <textarea name="{{ fname }}" id="examfield-{{ fname }}" placeholder="{% trans "Yozing..." %}">{% if prefill %}{% if fname == 'complaints' %}{{ prefill.complaints }}{% elif fname == 'anamnesis_morbi' %}{{ prefill.anamnesis_morbi }}{% elif fname == 'epidemiological_anamnesis' %}{{ prefill.epidemiological_anamnesis }}{% elif fname == 'anamnesis_vitae' %}{{ prefill.anamnesis_vitae }}{% elif fname == 'status_praesens' %}{{ prefill.status_praesens }}{% elif fname == 'neurological_status' %}{{ prefill.neurological_status }}{% elif fname == 'status_localis' %}{{ prefill.status_localis }}{% elif fname == 'allergy_anamnesis' %}{{ prefill.allergy_anamnesis }}{% elif fname == 'conclusion' %}{{ prefill.conclusion }}{% elif fname == 'drug_justification' %}{{ prefill.drug_justification }}{% endif %}{% endif %}</textarea>
       </div>
     </div>
     {% endif %}
@@ -496,16 +483,15 @@
 <!-- STICKY FOOTER -->
 <div class="exam-sticky-footer">
   <button type="button" class="btn-cancel-red"
-          onclick="if(confirm('{% trans "Bekor qilinsinmi?" %}')) window.location='{% url 'patient_detail' patient.pk %}'">
+          onclick="if(confirm('{% trans "Bekor qilinsinmi?" %}')) window.location='{{ next_url }}'">
     {% trans "Qabulga yozuvni bekor qilish" %}
   </button>
   <div class="ms-auto d-flex gap-2">
-    {% if exam %}
-    <a href="{% url 'examination_print' patient.pk exam.pk %}" class="btn-outline-action text-decoration-none" target="_blank">🖨 {% trans "Chop etish" %}</a>
-    {% else %}
-    <button type="button" class="btn-outline-action" disabled title="{% trans "Avval ko'rikni saqlang" %}">🖨 {% trans "Chop etish" %}</button>
-    {% endif %}
-    <a href="{% url 'patient_detail' patient.pk %}" class="btn-outline-action text-decoration-none">
+    <button type="submit" form="exam-main-form" formaction="{% url 'examination_print_preview' patient.pk %}" formtarget="_blank"
+            class="btn-outline-action">
+      🖨 {% trans "Chop etish" %}
+    </button>
+    <a href="{{ next_url }}" class="btn-outline-action text-decoration-none">
       {% trans "Bekor qilish" %}
     </a>
     <button type="submit" form="exam-main-form" class="btn-finish" id="btn-submit-exam">
@@ -549,6 +535,23 @@
   </div>
 </div>
 
+{% include 'patients/_service_assign_modal.html' %}
+
+<!-- Konsultatsiya so'rash modali -->
+<div class="modal fade" id="consultRequestModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">🤝 {% trans "Konsultatsiya so'rash" %}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        {% include 'patients/_consultation_request_form.html' with widget_id='exam' %}
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -556,7 +559,6 @@
 const PATIENT_ID   = {{ patient.pk }};
 const DIAG_URL     = `/patients/ajax/episode-diagnoses/${PATIENT_ID}/`;
 const ICD10_URL    = `/patients/ajax/icd10-search/`;
-const ASSIGN_URL   = "{% url 'assign_services' patient.pk %}";
 const CSRF         = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
 let   activeField  = null;
 const TXT_SPEC_PLACEHOLDER = "{% trans "Mutaxassis va xulosa..." %}";
@@ -568,40 +570,14 @@ const MSG_DIAGNOSIS_ADDED = "✅ {% trans "Tashxis qo'shildi" %}";
 const MSG_ERROR_PREFIX = "❌ ";
 const MSG_ERROR = "{% trans 'Xato' %}";
 
-// ===== ACCORDION TOGGLE =====
-async function orderLabService() {
-  const sel    = document.getElementById('lab-order-service');
-  const notes  = document.getElementById('lab-order-notes');
-  const msgEl  = document.getElementById('lab-order-msg');
-  const serviceId = sel.value;
-  if (!serviceId) {
-    msgEl.className = 'small mt-1 text-danger';
-    msgEl.textContent = "{% trans 'Xizmatni tanlang' %}";
-    return;
+// ===== Yangi tahlil/tekshiruv tayinlash modali yopilgach — sahifani qayta yuklamasdan xabar berish =====
+window.onServicesAssigned = function (data) {
+  const msgEl = document.getElementById('lab-order-msg');
+  if (msgEl) {
+    msgEl.className = 'small mt-1 text-success';
+    msgEl.textContent = "✅ {% trans 'Tayinlandi. Natija tayyor bo\'lgach yuqoridagi ro\'yxatda paydo bo\'ladi.' %}";
   }
-  msgEl.className = 'small mt-1 text-muted';
-  msgEl.textContent = MSG_SAVING;
-  try {
-    const resp = await fetch(ASSIGN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-      body: JSON.stringify({ items: [{ service_id: serviceId, notes: notes.value.trim() }] }),
-    });
-    const data = await resp.json();
-    if (data.success) {
-      msgEl.className = 'small mt-1 text-success';
-      msgEl.textContent = "✅ {% trans 'Tayinlandi. Natija tayyor bo\'lgach shu ro\'yxatda paydo bo\'ladi.' %}";
-      sel.value = '';
-      notes.value = '';
-    } else {
-      msgEl.className = 'small mt-1 text-danger';
-      msgEl.textContent = MSG_ERROR_PREFIX + (data.error || MSG_ERROR);
-    }
-  } catch (e) {
-    msgEl.className = 'small mt-1 text-danger';
-    msgEl.textContent = MSG_ERROR_PREFIX + MSG_ERROR;
-  }
-}
+};
 
 function toggleCard(bodyId, iconId) {
   const body = document.getElementById(bodyId);
@@ -667,6 +643,21 @@ function addSpecRow() {
   rows?.appendChild(div);
 }
 
+// Konsultatsiya so'rovi modal orqali yuborilgach — sahifa qayta yuklanmasdan
+// "Turdosh mutaxassislar maslahatlari" ro'yxatiga qator sifatida qo'shamiz
+window.onConsultationRequested = function (data) {
+  const rows = document.getElementById('spec-rows');
+  const div  = document.createElement('div');
+  div.className = 'spec-row';
+  div.innerHTML = `<textarea class="form-control spec-input" rows="2">🤝 ${data.label} — so'rov yuborildi</textarea>
+    <button type="button" class="btn btn-sm btn-outline-danger mt-1"
+            onclick="this.closest('.spec-row').remove()">✕</button>`;
+  rows?.appendChild(div);
+  setTimeout(() => {
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('consultRequestModal')).hide();
+  }, 800);
+};
+
 // Before submit — collect spec rows
 document.getElementById('exam-main-form')?.addEventListener('submit', function(e) {
   // Collect specialist rows
@@ -675,9 +666,9 @@ document.getElementById('exam-main-form')?.addEventListener('submit', function(e
   const specHidden = document.getElementById('spec-hidden');
   if (specHidden) specHidden.value = specVal;
 
-  // Submit protection
+  // Submit protection — faqat haqiqatda "Saqlash" tugmasi bosilganda
   const btn = document.getElementById('btn-submit-exam');
-  if (btn) { btn.disabled = true; btn.textContent = MSG_SAVING; }
+  if (btn && e.submitter === btn) { btn.disabled = true; btn.textContent = MSG_SAVING; }
 });
 
 // ===== SHABLON =====

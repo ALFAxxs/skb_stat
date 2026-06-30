@@ -103,6 +103,12 @@
     {% if header_b64 %}<img src="data:image/png;base64,{{ header_b64 }}" alt="header">{% endif %}
   </div>
 
+  {% if is_preview %}
+  <div style="text-align:center; color:#b91c1c; font-weight:bold; font-size:11pt; border:1px dashed #b91c1c; padding:4px; margin-bottom:6px;">
+    {% trans "QORALAMA — hali saqlanmagan" %}
+  </div>
+  {% endif %}
+
   <!-- Sarlavha -->
   <div class="result-title">
     <h2>{{ exam_type_display }}</h2>

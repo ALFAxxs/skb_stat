@@ -1,0 +1,159 @@
+{% load i18n %}
+<!-- Qayta ishlatiladigan "Konsultatsiya so'rash" forma -->
+<form method="post" action="{% url 'consultation_request_create' patient.pk %}" id="consult-form-{{ widget_id }}">
+    {% csrf_token %}
+    <div class="row g-2">
+        <div class="col-md-6">
+            <label class="form-label small">{% trans "Konsultatsiya xizmati" %} *</label>
+            <div class="position-relative">
+                <input type="text" id="consult-svc-search-{{ widget_id }}" class="form-control form-control-sm"
+                       placeholder="🔍 {% trans "Konsultatsiya turini qidirish..." %}" autocomplete="off">
+                <div id="consult-svc-dropdown-{{ widget_id }}" style="display:none; position:absolute; top:100%; left:0; right:0;
+                     z-index:1050; background:#fff; border:1px solid #dee2e6; border-radius:6px;
+                     max-height:240px; overflow-y:auto; box-shadow:0 4px 12px rgba(0,0,0,.12);"></div>
+            </div>
+            <input type="hidden" name="service_id" id="consult-svc-id-{{ widget_id }}">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label small">{% trans "So'rov sababi / klinik savol" %}</label>
+            <input type="text" name="reason" class="form-control form-control-sm" placeholder="{% trans "ixtiyoriy" %}">
+        </div>
+    </div>
+    <div class="mt-2" id="consult-doctors-block-{{ widget_id }}" style="display:none;">
+        <label class="form-label small">{% trans "Shu konsultatsiyani ko'radigan shifokor(lar)ni tanlang" %} *</label>
+        <div class="border rounded p-2" id="consult-doctors-list-{{ widget_id }}" style="max-height:180px; overflow-y:auto;">
+        </div>
+    </div>
+    <div class="mt-2 d-flex justify-content-between align-items-center">
+        <div id="consult-msg-{{ widget_id }}" class="small"></div>
+        <button type="submit" class="btn btn-primary btn-sm" id="consult-submit-btn-{{ widget_id }}" disabled>🤝 {% trans "So'rov yuborish" %}</button>
+    </div>
+</form>
+
+<script>
+(function () {
+'use strict';
+
+const WIDGET_ID = '{{ widget_id }}';
+const CONSULT_SERVICE_SEARCH_URL = '{% url "service_search" %}';
+const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '{{ csrf_token }}';
+
+const consultSearch        = document.getElementById('consult-svc-search-' + WIDGET_ID);
+const consultDropdown      = document.getElementById('consult-svc-dropdown-' + WIDGET_ID);
+const consultSvcId         = document.getElementById('consult-svc-id-' + WIDGET_ID);
+const consultDoctorsBlock  = document.getElementById('consult-doctors-block-' + WIDGET_ID);
+const consultDoctorsList   = document.getElementById('consult-doctors-list-' + WIDGET_ID);
+const consultSubmitBtn     = document.getElementById('consult-submit-btn-' + WIDGET_ID);
+const consultMsg           = document.getElementById('consult-msg-' + WIDGET_ID);
+const consultForm          = document.getElementById('consult-form-' + WIDGET_ID);
+let consultTimer;
+
+function fetchConsultServices(q) {
+    fetch(`${CONSULT_SERVICE_SEARCH_URL}?q=${encodeURIComponent(q)}&category_type=consultation`)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.length) {
+                consultDropdown.innerHTML = '<div class="p-2 text-muted small">Topilmadi</div>';
+                consultDropdown.style.display = 'block';
+                return;
+            }
+            consultDropdown.innerHTML = data.map(s =>
+                `<div class="px-3 py-2 border-bottom consult-svc-item" style="cursor:pointer;" data-id="${s.id}" data-name="${s.name.replace(/"/g, '&quot;')}">${s.name}</div>`
+            ).join('');
+            consultDropdown.style.display = 'block';
+            consultDropdown.querySelectorAll('.consult-svc-item').forEach(item => {
+                item.addEventListener('mousedown', function (e) {
+                    e.preventDefault();
+                    consultSvcId.value = this.dataset.id;
+                    consultSearch.value = this.dataset.name;
+                    consultDropdown.style.display = 'none';
+                    loadConsultDoctors(this.dataset.id);
+                });
+            });
+        });
+}
+
+function loadConsultDoctors(serviceId) {
+    consultDoctorsBlock.style.display = 'none';
+    consultSubmitBtn.disabled = true;
+    fetch(`/services/${serviceId}/doctors/`)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.length) {
+                consultDoctorsList.innerHTML = '<div class="text-muted small p-2">Bu xizmatga hali shifokor biriktirilmagan. Administratorga murojaat qiling.</div>';
+                consultDoctorsBlock.style.display = '';
+                consultSubmitBtn.disabled = true;
+                return;
+            }
+            consultDoctorsList.innerHTML = data.map(d => `
+                <div class="form-check">
+                    <input class="form-check-input consult-doctor-cb" type="checkbox" name="consultants" value="${d.id}" id="consult-doc-${WIDGET_ID}-${d.id}">
+                    <label class="form-check-label small" for="consult-doc-${WIDGET_ID}-${d.id}">${d.full_name}${d.department ? ' — ' + d.department : ''}</label>
+                </div>
+            `).join('');
+            consultDoctorsBlock.style.display = '';
+            consultSubmitBtn.disabled = false;
+        });
+}
+
+consultSearch.addEventListener('input', function () {
+    clearTimeout(consultTimer);
+    consultSvcId.value = '';
+    consultDoctorsBlock.style.display = 'none';
+    consultSubmitBtn.disabled = true;
+    const q = this.value.trim();
+    consultTimer = setTimeout(() => fetchConsultServices(q), 200);
+});
+consultSearch.addEventListener('focus', function () {
+    fetchConsultServices(this.value.trim());
+});
+document.addEventListener('click', function (e) {
+    if (!e.target.closest('#consult-svc-search-' + WIDGET_ID) && !e.target.closest('#consult-svc-dropdown-' + WIDGET_ID)) {
+        consultDropdown.style.display = 'none';
+    }
+});
+
+consultForm.addEventListener('submit', function (e) {
+    const checked = this.querySelectorAll('.consult-doctor-cb:checked');
+    if (!checked.length) {
+        e.preventDefault();
+        alert("Kamida bitta shifokorni tanlang.");
+        return;
+    }
+    if (typeof window.onConsultationRequested !== 'function') return;
+    // Ko'rik sahifasida — AJAX orqali yuboramiz, sahifa qayta yuklanmaydi
+    e.preventDefault();
+    const btn = consultSubmitBtn;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ ...';
+    fetch(consultForm.action, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
+        body: new FormData(consultForm),
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = '🤝 {% trans "So\'rov yuborish" %}';
+        if (data.success) {
+            consultMsg.className = 'small text-success';
+            consultMsg.textContent = '✅ ' + data.label;
+            window.onConsultationRequested(data);
+            consultForm.reset();
+            consultDoctorsBlock.style.display = 'none';
+            consultSubmitBtn.disabled = true;
+        } else {
+            consultMsg.className = 'small text-danger';
+            consultMsg.textContent = '❌ ' + (data.error || 'Xato');
+        }
+    })
+    .catch(() => {
+        btn.disabled = false;
+        btn.innerHTML = '🤝 {% trans "So\'rov yuborish" %}';
+        consultMsg.className = 'small text-danger';
+        consultMsg.textContent = "❌ Tarmoq xatosi";
+    });
+});
+
+})();
+</script>

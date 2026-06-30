@@ -392,10 +392,16 @@ def medical_examination_page(request, patient_id, exam_pk=None):
     selected_diag_ids = set(exam.selected_diagnostics.values_list('pk', flat=True)) if exam else set()
     selected_labresult_ids = set(exam.selected_lab_results.values_list('pk', flat=True)) if exam else set()
 
-    from apps.services.models import Service
-    orderable_services = Service.objects.filter(
-        category__category_type__in=('lab', 'radiology'), is_active=True
-    ).select_related('category').order_by('category__category_type', 'category_id', 'name')
+    from apps.services.models import ServiceCategory
+    service_categories = list(
+        ServiceCategory.objects.filter(is_active=True).order_by('name').values(
+            'id', 'name', 'category_type', 'icon',
+        )
+    )
+
+    # Yangi ko'rik yozilayotganda — oldingi ko'rikdagi matn maydonlarini ko'rsatish uchun
+    # (MKB-10/tashxis bunga kirmaydi, u alohida episode_diagnoses orqali boshqariladi)
+    prefill = exam or patient.medical_examinations.order_by('-examination_datetime', '-created_at').first()
 
     return render(request, 'patients/examination_form.html', {
         'visible_fields_with_templates': visible_fields_with_templates,
@@ -421,8 +427,23 @@ def medical_examination_page(request, patient_id, exam_pk=None):
         'selected_lab_ids':  selected_lab_ids,
         'selected_diag_ids': selected_diag_ids,
         'selected_labresult_ids': selected_labresult_ids,
-        'orderable_services': orderable_services,
+        'service_categories': service_categories,
+        'prefill': prefill,
     })
+
+
+def _hospital_header_b64():
+    import base64
+    from django.conf import settings as dj_settings
+    import os as _os
+    for header_path in [
+        _os.path.join(dj_settings.STATIC_ROOT, 'img', 'hospital_header.png'),
+        _os.path.join(dj_settings.BASE_DIR, 'static', 'img', 'hospital_header.png'),
+    ]:
+        if _os.path.exists(header_path):
+            with open(header_path, 'rb') as f:
+                return base64.b64encode(f.read()).decode()
+    return ''
 
 
 @login_required
@@ -445,20 +466,6 @@ def medical_examination_print(request, patient_id, exam_pk):
     diag_results      = exam.selected_diagnostics.prefetch_related('result_logs').all()
     lab_result_rows = exam.selected_lab_results.select_related('template').prefetch_related('values__parameter').all()
 
-    import base64
-    from django.conf import settings as dj_settings
-    import os as _os
-
-    header_b64 = ''
-    for header_path in [
-        _os.path.join(dj_settings.STATIC_ROOT, 'img', 'hospital_header.png'),
-        _os.path.join(dj_settings.BASE_DIR, 'static', 'img', 'hospital_header.png'),
-    ]:
-        if _os.path.exists(header_path):
-            with open(header_path, 'rb') as f:
-                header_b64 = base64.b64encode(f.read()).decode()
-            break
-
     return render(request, 'patients/examination_print.html', {
         'patient':           patient,
         'exam':              exam,
@@ -468,8 +475,64 @@ def medical_examination_print(request, patient_id, exam_pk):
         'diag_results':      diag_results,
         'lab_result_rows':   lab_result_rows,
         'diagnoses':         patient.episode_diagnoses.select_related('icd10_code').all(),
-        'header_b64':        header_b64,
+        'header_b64':        _hospital_header_b64(),
         'print_date':        timezone.now(),
+    })
+
+
+@login_required
+@require_POST
+def medical_examination_print_preview(request, patient_id):
+    """Saqlamasdan turib, joriy formada yozilayotgan ko'rikni chop etish uchun ko'rinish (preview)."""
+    patient = get_object_or_404(PatientCard, pk=patient_id)
+    valid_exam_types = dict(MedicalExamination.EXAM_TYPE_CHOICES)
+    exam_type = request.POST.get('examination_type', '')
+    hidden = EPICRISIS_HIDDEN.get(exam_type, set())
+    show_drug = exam_type not in CHECKUP_TYPES
+
+    preview = MedicalExamination(patient_card=patient, examination_type=exam_type)
+    from django.utils.dateparse import parse_datetime
+    exam_dt = request.POST.get('examination_datetime') or None
+    preview.examination_datetime = parse_datetime(exam_dt) if exam_dt else None
+    preview.department_head_name = request.POST.get('department_head_name', '')
+    preview.created_at = timezone.now()
+    for fname, _label in EXAM_FIELDS:
+        if fname == 'lab_investigations':
+            continue
+        setattr(preview, fname, request.POST.get(fname, ''))
+
+    fields = [
+        (label, getattr(preview, fname))
+        for fname, label in EXAM_FIELDS
+        if fname not in hidden and (fname != 'drug_justification' or show_drug) and fname != 'lab_investigations'
+    ]
+
+    selected_lab_ids       = request.POST.getlist('selected_lab_ids')
+    selected_diag_ids      = request.POST.getlist('selected_diag_ids')
+    selected_labresult_ids = request.POST.getlist('selected_labresult_ids')
+    lab_test_results = LabTestAssignment.objects.filter(
+        patient_card=patient, status='done', pk__in=selected_lab_ids
+    ).prefetch_related('result_logs')
+    diag_results = DiagnosticAssignment.objects.filter(
+        patient_card=patient, status='done', pk__in=selected_diag_ids
+    ).prefetch_related('result_logs')
+    from apps.laboratory.models import LabResult
+    lab_result_rows = LabResult.objects.filter(
+        patient_card=patient, status__in=('done', 'verified', 'printed'), pk__in=selected_labresult_ids
+    ).select_related('template').prefetch_related('values__parameter')
+
+    return render(request, 'patients/examination_print.html', {
+        'patient':           patient,
+        'exam':              preview,
+        'exam_type_display': valid_exam_types.get(exam_type, ''),
+        'fields':            fields,
+        'lab_test_results':  lab_test_results,
+        'diag_results':      diag_results,
+        'lab_result_rows':   lab_result_rows,
+        'diagnoses':         patient.episode_diagnoses.select_related('icd10_code').all(),
+        'header_b64':        _hospital_header_b64(),
+        'print_date':        timezone.now(),
+        'is_preview':        True,
     })
 
 
@@ -3355,26 +3418,32 @@ def consultation_request_create(request, pk):
     """Shifokor — xizmatlar katalogidagi konsultatsiya xizmatini va unga biriktirilgan mutaxassis(lar)ni tanlab so'rov yuboradi."""
     from apps.services.models import Service
 
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+    def _fail(message):
+        if is_ajax:
+            return JsonResponse({'success': False, 'error': message}, status=400)
+        messages.error(request, message)
+        return redirect('doctor_patient_card', pk=pk)
+
     doctor = _get_doctor_profile(request.user)
     if not doctor:
-        return redirect('access_denied')
+        return JsonResponse({'success': False, 'error': _("Ruxsat yo'q")}, status=403) if is_ajax else redirect('access_denied')
     patient = get_object_or_404(PatientCard, pk=pk)
     if not _doctor_card_access(doctor, patient):
-        return redirect('access_denied')
+        return JsonResponse({'success': False, 'error': _("Ruxsat yo'q")}, status=403) if is_ajax else redirect('access_denied')
 
     service = Service.objects.filter(
         pk=request.POST.get('service_id'), is_active=True, category__category_type='consultation',
     ).first()
     if not service:
-        messages.error(request, _("Konsultatsiya xizmatini tanlang."))
-        return redirect('doctor_patient_card', pk=pk)
+        return _fail(_("Konsultatsiya xizmatini tanlang."))
 
     consultant_ids = request.POST.getlist('consultants')
     # Faqat shu xizmatga biriktirilgan faol shifokorlar orasidan tanlash mumkin
     consultants = list(service.assigned_doctors.filter(pk__in=consultant_ids, is_active=True))
     if not consultants:
-        messages.error(request, _("Kamida bitta mutaxassisni tanlang."))
-        return redirect('doctor_patient_card', pk=pk)
+        return _fail(_("Kamida bitta mutaxassisni tanlang."))
 
     consultation = ConsultationRequest.objects.create(
         patient_card=patient, requested_by=doctor, service=service,
@@ -3383,6 +3452,9 @@ def consultation_request_create(request, pk):
     consultation.consultants.set(consultants)
     for consultant in consultants:
         _notify_doctor(consultant, patient, f"Sizga konsultatsiya so'rovi yuborildi: {patient.full_name} — {consultation.display_label}")
+
+    if is_ajax:
+        return JsonResponse({'success': True, 'label': consultation.display_label})
     messages.success(request, _("✅ Konsultatsiya so'rovi yuborildi: %(label)s") % {'label': consultation.display_label})
     return redirect('doctor_patient_card', pk=pk)
 
