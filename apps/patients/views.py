@@ -1943,7 +1943,7 @@ def doctor_assign_patients(request):
 
     dept_doctors = CustomUser.objects.filter(
         role__in=('doctor', 'old'), department_id=doctor.department_id, is_active=True
-    ).exclude(pk=doctor.pk).annotate(
+    ).annotate(
         workload=Count('attending_cards', filter=Q(attending_cards__status__in=['registered', 'admitted']))
     ).order_by('first_name')
 
