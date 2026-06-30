@@ -148,6 +148,67 @@
   <div class="field-line"><span class="field-label">{{ label }}:</span> {{ value|default:'—' }}</div>
   {% endfor %}
 
+  <!-- Laboratoriya va instrumental tadqiqotlar -->
+  {% if lab_result_rows or lab_test_results or diag_results %}
+  <div class="section-title">{% trans "Laboratoriya va instrumental tadqiqotlar:" %}</div>
+  <table class="diag-table">
+    <thead>
+      <tr>
+        <th>{% trans "Tekshiruv" %}</th>
+        <th>{% trans "Parametr" %}</th>
+        <th>{% trans "Qiymat" %}</th>
+        <th>{% trans "Holat" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for res in lab_result_rows %}
+        {% for v in res.values.all %}
+          {% if v.value %}
+          <tr>
+            <td>{% if forloop.first %}🧪 {{ res.template.name }}{% endif %}</td>
+            <td>{{ v.parameter.name }}</td>
+            <td>{{ v.value }}</td>
+            <td>{{ v.get_value_status_display }}</td>
+          </tr>
+          {% endif %}
+        {% endfor %}
+        {% if res.conclusion %}
+        <tr>
+          <td></td>
+          <td colspan="3"><em>{% trans "Xulosa" %}: {{ res.conclusion }}</em></td>
+        </tr>
+        {% endif %}
+      {% endfor %}
+      {% for lab in lab_test_results %}
+        {% with log=lab.result_logs.first %}
+        <tr>
+          <td>🧪 {{ lab.test_name }}</td>
+          <td>—</td>
+          <td>{{ log.result_text|default:'—' }}</td>
+          <td>—</td>
+        </tr>
+        {% if log.recommendation %}
+        <tr><td></td><td colspan="3"><em>{% trans "Tavsiya" %}: {{ log.recommendation }}</em></td></tr>
+        {% endif %}
+        {% endwith %}
+      {% endfor %}
+      {% for diag in diag_results %}
+        {% with log=diag.result_logs.first %}
+        <tr>
+          <td>🔬 {{ diag.get_diagnostic_type_display }}</td>
+          <td>—</td>
+          <td>{{ log.conclusion|default:'—' }}</td>
+          <td>—</td>
+        </tr>
+        {% if log.recommendation %}
+        <tr><td></td><td colspan="3"><em>{% trans "Tavsiya" %}: {{ log.recommendation }}</em></td></tr>
+        {% endif %}
+        {% endwith %}
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
   <!-- Tashxislar -->
   {% if diagnoses %}
   <div class="section-title">{% trans "Tashxislar (ICD-10):" %}</div>

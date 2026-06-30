@@ -392,6 +392,11 @@ def medical_examination_page(request, patient_id, exam_pk=None):
     selected_diag_ids = set(exam.selected_diagnostics.values_list('pk', flat=True)) if exam else set()
     selected_labresult_ids = set(exam.selected_lab_results.values_list('pk', flat=True)) if exam else set()
 
+    from apps.services.models import Service
+    orderable_services = Service.objects.filter(
+        category__category_type__in=('lab', 'radiology'), is_active=True
+    ).select_related('category').order_by('category__category_type', 'category_id', 'name')
+
     return render(request, 'patients/examination_form.html', {
         'visible_fields_with_templates': visible_fields_with_templates,
         'patient':              patient,
@@ -416,6 +421,7 @@ def medical_examination_page(request, patient_id, exam_pk=None):
         'selected_lab_ids':  selected_lab_ids,
         'selected_diag_ids': selected_diag_ids,
         'selected_labresult_ids': selected_labresult_ids,
+        'orderable_services': orderable_services,
     })
 
 
@@ -432,8 +438,12 @@ def medical_examination_print(request, patient_id, exam_pk):
     fields = [
         (label, getattr(exam, fname))
         for fname, label in EXAM_FIELDS
-        if fname not in hidden and (fname != 'drug_justification' or show_drug)
+        if fname not in hidden and (fname != 'drug_justification' or show_drug) and fname != 'lab_investigations'
     ]
+
+    lab_test_results = exam.selected_lab_tests.prefetch_related('result_logs').all()
+    diag_results      = exam.selected_diagnostics.prefetch_related('result_logs').all()
+    lab_result_rows = exam.selected_lab_results.select_related('template').prefetch_related('values__parameter').all()
 
     import base64
     from django.conf import settings as dj_settings
@@ -454,6 +464,9 @@ def medical_examination_print(request, patient_id, exam_pk):
         'exam':              exam,
         'exam_type_display': valid_exam_types.get(exam.examination_type, ''),
         'fields':            fields,
+        'lab_test_results':  lab_test_results,
+        'diag_results':      diag_results,
+        'lab_result_rows':   lab_result_rows,
         'diagnoses':         patient.episode_diagnoses.select_related('icd10_code').all(),
         'header_b64':        header_b64,
         'print_date':        timezone.now(),

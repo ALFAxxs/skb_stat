@@ -86,6 +86,13 @@
   .lab-inv-item .lab-inv-text { font-size:13px; color:#374151; margin-top:4px; }
   .lab-inv-item .lab-inv-reco { font-size:12px; color:#6b7280; margin-top:2px; }
   .lab-inv-empty { color:#9ca3af; font-size:13px; padding:8px 0; }
+  table.lab-inv-table { width:100%; border-collapse:collapse; font-size:13px; }
+  table.lab-inv-table th, table.lab-inv-table td { border:1px solid #e5e7eb; padding:6px 8px; text-align:left; vertical-align:top; }
+  table.lab-inv-table th { background:#f9fafb; font-size:12px; color:#6b7280; }
+  table.lab-inv-table tr.lab-inv-group-row td { background:#fafafa; }
+  table.lab-inv-table input[type=checkbox] { margin:0; }
+  .lab-order-box { border-top:1px dashed #e5e7eb; padding-top:10px; }
+  .lab-order-title { font-weight:600; font-size:13px; color:#374151; }
 
   /* Diagnosis section */
   .diag-section { background:#fff; border:1px solid #e5e7eb; border-radius:12px; margin-bottom:12px; }
@@ -274,55 +281,90 @@
         <span id="icon-labinv" style="color:#9ca3af;font-size:18px;">＋</span>
       </div>
       <div class="exam-card-body" id="body-labinv" style="display:none;">
-        {% for item in available_lab_results %}
-        {% with log=item.result_logs.first %}
-        <label class="lab-inv-item">
-          <input type="checkbox" name="selected_lab_ids" value="{{ item.pk }}"
-                 {% if item.pk in selected_lab_ids %}checked{% endif %}>
-          <div>
-            <span class="lab-inv-title">🧪 {{ item.test_name }}</span>
-            <span class="lab-inv-date">{{ item.created_at|date:"d.m.Y" }}</span>
-            {% if log %}
-              {% if log.result_text %}<div class="lab-inv-text">{{ log.result_text }}</div>{% endif %}
-              {% if log.recommendation %}<div class="lab-inv-reco">{% trans "Tavsiya" %}: {{ log.recommendation }}</div>{% endif %}
-            {% endif %}
-          </div>
-        </label>
-        {% endwith %}
-        {% endfor %}
-        {% for item in available_diag_results %}
-        {% with log=item.result_logs.first %}
-        <label class="lab-inv-item">
-          <input type="checkbox" name="selected_diag_ids" value="{{ item.pk }}"
-                 {% if item.pk in selected_diag_ids %}checked{% endif %}>
-          <div>
-            <span class="lab-inv-title">🔬 {{ item.get_diagnostic_type_display }}</span>
-            <span class="lab-inv-date">{{ item.created_at|date:"d.m.Y" }}</span>
-            {% if log %}
-              {% if log.conclusion %}<div class="lab-inv-text">{{ log.conclusion }}</div>{% endif %}
-              {% if log.recommendation %}<div class="lab-inv-reco">{% trans "Tavsiya" %}: {{ log.recommendation }}</div>{% endif %}
-            {% endif %}
-          </div>
-        </label>
-        {% endwith %}
-        {% endfor %}
-        {% for item in available_labresult_results %}
-        <label class="lab-inv-item">
-          <input type="checkbox" name="selected_labresult_ids" value="{{ item.pk }}"
-                 {% if item.pk in selected_labresult_ids %}checked{% endif %}>
-          <div>
-            <span class="lab-inv-title">🧪 {{ item.template.name }}</span>
-            <span class="lab-inv-date">{{ item.created_at|date:"d.m.Y" }}</span>
-            {% for v in item.values.all %}
-              {% if v.value %}<div class="lab-inv-text">{{ v.parameter.name }}: {{ v.value }}</div>{% endif %}
+        {% if available_lab_results or available_diag_results or available_labresult_results %}
+        <table class="lab-inv-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>{% trans "Tekshiruv" %}</th>
+              <th>{% trans "Parametr" %}</th>
+              <th>{% trans "Qiymat" %}</th>
+              <th>{% trans "Sana" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in available_lab_results %}
+            {% with log=item.result_logs.first %}
+            <tr>
+              <td><input type="checkbox" name="selected_lab_ids" value="{{ item.pk }}" {% if item.pk in selected_lab_ids %}checked{% endif %}></td>
+              <td>🧪 {{ item.test_name }}</td>
+              <td>—</td>
+              <td>{{ log.result_text|default:'—' }}{% if log.recommendation %}<br><small>{% trans "Tavsiya" %}: {{ log.recommendation }}</small>{% endif %}</td>
+              <td>{{ item.created_at|date:"d.m.Y" }}</td>
+            </tr>
+            {% endwith %}
             {% endfor %}
-            {% if item.conclusion %}<div class="lab-inv-reco">{% trans "Xulosa" %}: {{ item.conclusion }}</div>{% endif %}
-          </div>
-        </label>
-        {% endfor %}
-        {% if not available_lab_results and not available_diag_results and not available_labresult_results %}
+            {% for item in available_diag_results %}
+            {% with log=item.result_logs.first %}
+            <tr>
+              <td><input type="checkbox" name="selected_diag_ids" value="{{ item.pk }}" {% if item.pk in selected_diag_ids %}checked{% endif %}></td>
+              <td>🔬 {{ item.get_diagnostic_type_display }}</td>
+              <td>—</td>
+              <td>{{ log.conclusion|default:'—' }}{% if log.recommendation %}<br><small>{% trans "Tavsiya" %}: {{ log.recommendation }}</small>{% endif %}</td>
+              <td>{{ item.created_at|date:"d.m.Y" }}</td>
+            </tr>
+            {% endwith %}
+            {% endfor %}
+            {% for item in available_labresult_results %}
+            <tr class="lab-inv-group-row">
+              <td><input type="checkbox" name="selected_labresult_ids" value="{{ item.pk }}" {% if item.pk in selected_labresult_ids %}checked{% endif %}></td>
+              <td colspan="3"><strong>🧪 {{ item.template.name }}</strong></td>
+              <td>{{ item.created_at|date:"d.m.Y" }}</td>
+            </tr>
+            {% for v in item.values.all %}
+              {% if v.value %}
+              <tr>
+                <td></td>
+                <td></td>
+                <td>{{ v.parameter.name }}</td>
+                <td>{{ v.value }} <small class="text-muted">({{ v.get_value_status_display }})</small></td>
+                <td></td>
+              </tr>
+              {% endif %}
+            {% endfor %}
+            {% if item.conclusion %}
+            <tr><td></td><td colspan="3"><em>{% trans "Xulosa" %}: {{ item.conclusion }}</em></td><td></td></tr>
+            {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
         <div class="lab-inv-empty">{% trans "Tayyor natijalar yo'q" %}</div>
         {% endif %}
+
+        <!-- Yangi tahlil/tekshiruv tayinlash -->
+        <div class="lab-order-box mt-3">
+          <div class="lab-order-title">＋ {% trans "Yangi tahlil/tekshiruv buyurtma qilish" %}</div>
+          <div class="d-flex gap-2 flex-wrap align-items-start mt-2">
+            <select id="lab-order-service" class="form-select form-select-sm" style="max-width:280px;">
+              <option value="">— {% trans "Xizmatni tanlang" %} —</option>
+              {% regroup orderable_services by category as service_groups %}
+              {% for group in service_groups %}
+              <optgroup label="{{ group.grouper.display_name }}">
+                {% for s in group.list %}
+                <option value="{{ s.pk }}">{{ s.name }}</option>
+                {% endfor %}
+              </optgroup>
+              {% endfor %}
+            </select>
+            <input type="text" id="lab-order-notes" class="form-control form-control-sm"
+                   placeholder="{% trans "Izoh (ixtiyoriy)" %}" style="max-width:240px;">
+            <button type="button" class="btn btn-sm btn-primary" onclick="orderLabService()">
+              {% trans "Tayinlash" %}
+            </button>
+          </div>
+          <div id="lab-order-msg" class="small mt-1"></div>
+        </div>
       </div>
     </div>
 
@@ -514,6 +556,7 @@
 const PATIENT_ID   = {{ patient.pk }};
 const DIAG_URL     = `/patients/ajax/episode-diagnoses/${PATIENT_ID}/`;
 const ICD10_URL    = `/patients/ajax/icd10-search/`;
+const ASSIGN_URL   = "{% url 'assign_services' patient.pk %}";
 const CSRF         = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
 let   activeField  = null;
 const TXT_SPEC_PLACEHOLDER = "{% trans "Mutaxassis va xulosa..." %}";
@@ -526,6 +569,40 @@ const MSG_ERROR_PREFIX = "❌ ";
 const MSG_ERROR = "{% trans 'Xato' %}";
 
 // ===== ACCORDION TOGGLE =====
+async function orderLabService() {
+  const sel    = document.getElementById('lab-order-service');
+  const notes  = document.getElementById('lab-order-notes');
+  const msgEl  = document.getElementById('lab-order-msg');
+  const serviceId = sel.value;
+  if (!serviceId) {
+    msgEl.className = 'small mt-1 text-danger';
+    msgEl.textContent = "{% trans 'Xizmatni tanlang' %}";
+    return;
+  }
+  msgEl.className = 'small mt-1 text-muted';
+  msgEl.textContent = MSG_SAVING;
+  try {
+    const resp = await fetch(ASSIGN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ items: [{ service_id: serviceId, notes: notes.value.trim() }] }),
+    });
+    const data = await resp.json();
+    if (data.success) {
+      msgEl.className = 'small mt-1 text-success';
+      msgEl.textContent = "✅ {% trans 'Tayinlandi. Natija tayyor bo\'lgach shu ro\'yxatda paydo bo\'ladi.' %}";
+      sel.value = '';
+      notes.value = '';
+    } else {
+      msgEl.className = 'small mt-1 text-danger';
+      msgEl.textContent = MSG_ERROR_PREFIX + (data.error || MSG_ERROR);
+    }
+  } catch (e) {
+    msgEl.className = 'small mt-1 text-danger';
+    msgEl.textContent = MSG_ERROR_PREFIX + MSG_ERROR;
+  }
+}
+
 function toggleCard(bodyId, iconId) {
   const body = document.getElementById(bodyId);
   const icon = document.getElementById(iconId);
