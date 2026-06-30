@@ -2558,7 +2558,12 @@ def nurse_dashboard(request):
             Q(lab_test_assignment__patient_card__in=dept_patients) |
             Q(diagnostic_assignment__patient_card__in=dept_patients) |
             Q(consultation_request__patient_card__in=dept_patients),
-            scheduled_at__date__gte=selected_date,
+        ).filter(
+            # Tanlangan sanadan boshlab bo'lgan barcha bandlar, shu bilan birga
+            # muddati o'tgan, lekin hamon "pending" qolib ketgan bandlar ham
+            # (aks holda hamshira o'sha kuni belgilamasa, band butunlay
+            # ko'rinmas bo'lib qoladi).
+            Q(scheduled_at__date__gte=selected_date) | Q(status='pending'),
         ).select_related(
             'treatment_procedure__patient_card', 'lab_test_assignment__patient_card',
             'diagnostic_assignment__patient_card', 'consultation_request__patient_card',
