@@ -2488,34 +2488,7 @@ def nurse_dashboard(request):
 
     is_head_nurse = request.user.role == 'head_nurse'
 
-    view_mode = request.GET.get('view', 'service')
-    if view_mode not in ('service', 'patient'):
-        view_mode = 'service'
-
-    qs = TreatmentProcedure.objects.select_related(
-        'patient_card', 'assigned_by'
-    ).prefetch_related('execution_logs__performed_by', 'schedule_occurrences')
-
-    if request.user.department_id:
-        qs = qs.filter(patient_card__department_id=request.user.department_id)
-
-    status = request.GET.get('status', '')
-    if status:
-        qs = qs.filter(status=status)
-    else:
-        qs = qs.exclude(status__in=['done', 'cancelled'])
-
     query = request.GET.get('q', '')
-    if query:
-        qs = qs.filter(
-            Q(patient_card__full_name__icontains=query) |
-            Q(medicine_name__icontains=query)
-        )
-
-    qs = qs.order_by('-created_at')
-
-    paginator = Paginator(qs, 20)
-    page_obj = paginator.get_page(request.GET.get('page'))
 
     notifications = DoctorNotification.objects.filter(recipient=request.user).order_by('-created_at')[:8]
 
@@ -2524,75 +2497,60 @@ def nurse_dashboard(request):
     except ValueError:
         highlight_patient_id = None
 
+    date_str = request.GET.get('date', '')
+    try:
+        selected_date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else timezone.localdate()
+    except ValueError:
+        selected_date = timezone.localdate()
+
+    # status='admitted' talab qilinmaydi — shifokor rasman "biriktirish"
+    # bosqichidan o'tmasdan ham (masalan, bo'lim mudiri sifatida) bemorga
+    # muolaja/tahlil tayinlashi mumkin, va bunday bemor hali ham
+    # status='registered' bo'lib qolishi mumkin. Shu sabab bu yerda
+    # statsionar va hali chiqarilmagan barcha bemorlar olinadi.
+    dept_patients = PatientCard.objects.filter(visit_type='inpatient').exclude(status='completed')
+    if request.user.department_id:
+        dept_patients = dept_patients.filter(department_id=request.user.department_id)
+    if query:
+        dept_patients = dept_patients.filter(full_name__icontains=query)
+    dept_patients = list(dept_patients.order_by('full_name'))
+
+    occ_qs = ServiceSchedule.objects.filter(
+        Q(treatment_procedure__patient_card__in=dept_patients) |
+        Q(lab_test_assignment__patient_card__in=dept_patients) |
+        Q(diagnostic_assignment__patient_card__in=dept_patients) |
+        Q(consultation_request__patient_card__in=dept_patients),
+    ).filter(
+        Q(scheduled_at__date__gte=selected_date) | Q(status='pending'),
+    ).select_related(
+        'treatment_procedure__patient_card', 'lab_test_assignment__patient_card',
+        'diagnostic_assignment__patient_card', 'consultation_request__patient_card',
+    ).order_by('scheduled_at')
+
+    by_patient = {}
+    for occ in occ_qs:
+        patient = occ.patient_card
+        if patient:
+            by_patient.setdefault(patient.pk, []).append(occ)
+
+    patient_rows = []
+    for p in dept_patients:
+        occs = by_patient.get(p.pk, [])
+        days = {}
+        for occ in occs:
+            d = timezone.localtime(occ.scheduled_at).date()
+            days.setdefault(d, []).append(occ)
+        day_groups = [{'date': d, 'occurrences': days[d]} for d in sorted(days.keys())]
+        patient_rows.append({'patient': p, 'day_groups': day_groups, 'total': len(occs)})
+
     context = {
-        'page_obj': page_obj,
-        'status': status,
         'query': query,
-        'status_choices': TreatmentProcedure.STATUS_CHOICES,
         'notifications': notifications,
         'is_head_nurse': is_head_nurse,
-        'view_mode': view_mode,
         'highlight_patient_id': highlight_patient_id,
-        'pending_count': TreatmentProcedure.objects.filter(
-            patient_card__department_id=request.user.department_id, status='assigned'
-        ).count() if request.user.department_id else 0,
+        'selected_date': selected_date,
+        'patient_rows': patient_rows,
     }
-
-    if view_mode == 'patient':
-        date_str = request.GET.get('date', '')
-        try:
-            selected_date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else timezone.localdate()
-        except ValueError:
-            selected_date = timezone.localdate()
-
-        # status='admitted' talab qilinmaydi — shifokor rasman "biriktirish"
-        # bosqichidan o'tmasdan ham (masalan, bo'lim mudiri sifatida) bemorga
-        # muolaja/tahlil tayinlashi mumkin, va bunday bemor hali ham
-        # status='registered' bo'lib qolishi mumkin. Shu sabab bu yerda
-        # statsionar va hali chiqarilmagan barcha bemorlar olinadi.
-        dept_patients = PatientCard.objects.filter(visit_type='inpatient').exclude(status='completed')
-        if request.user.department_id:
-            dept_patients = dept_patients.filter(department_id=request.user.department_id)
-        if query:
-            dept_patients = dept_patients.filter(full_name__icontains=query)
-        dept_patients = list(dept_patients.order_by('full_name'))
-
-        occ_qs = ServiceSchedule.objects.filter(
-            Q(treatment_procedure__patient_card__in=dept_patients) |
-            Q(lab_test_assignment__patient_card__in=dept_patients) |
-            Q(diagnostic_assignment__patient_card__in=dept_patients) |
-            Q(consultation_request__patient_card__in=dept_patients),
-        ).filter(
-            # Tanlangan sanadan boshlab bo'lgan barcha bandlar, shu bilan birga
-            # muddati o'tgan, lekin hamon "pending" qolib ketgan bandlar ham
-            # (aks holda hamshira o'sha kuni belgilamasa, band butunlay
-            # ko'rinmas bo'lib qoladi).
-            Q(scheduled_at__date__gte=selected_date) | Q(status='pending'),
-        ).select_related(
-            'treatment_procedure__patient_card', 'lab_test_assignment__patient_card',
-            'diagnostic_assignment__patient_card', 'consultation_request__patient_card',
-        ).order_by('scheduled_at')
-
-        by_patient = {}
-        for occ in occ_qs:
-            patient = occ.patient_card
-            if patient:
-                by_patient.setdefault(patient.pk, []).append(occ)
-
-        patient_rows = []
-        for p in dept_patients:
-            occs = by_patient.get(p.pk, [])
-            days = {}
-            for occ in occs:
-                d = timezone.localtime(occ.scheduled_at).date()
-                days.setdefault(d, []).append(occ)
-            day_groups = [{'date': d, 'occurrences': days[d]} for d in sorted(days.keys())]
-            patient_rows.append({'patient': p, 'day_groups': day_groups, 'total': len(occs)})
-
-        context.update({
-            'selected_date': selected_date,
-            'patient_rows': patient_rows,
-        })
 
     if is_head_nurse and request.user.department_id:
         today_start = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
