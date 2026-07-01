@@ -96,6 +96,10 @@
                 </button>
             </div>
             <div class="d-flex align-items-center gap-3">
+                <div class="live-clock">
+                    <span class="live-clock__time" id="liveClock"></span>
+                    <span class="live-clock__date" id="liveDate"></span>
+                </div>
                 {% include 'partials/_language_switcher.html' %}
                 {% if request.user.department %}
                 <span class="dept-badge"><i class="bi bi-building"></i> {{ request.user.department.name }}</span>
@@ -107,6 +111,10 @@
         <div class="topbar-new">
             <div class="fw-bold"><i class="bi bi-hospital"></i> {% trans "Shifoxona Statistikasi" %}</div>
             <div class="d-flex align-items-center gap-3">
+                <div class="live-clock">
+                    <span class="live-clock__time" id="liveClock"></span>
+                    <span class="live-clock__date" id="liveDate"></span>
+                </div>
                 {% include 'partials/_language_switcher.html' %}
                 <a href="{% url 'login' %}" class="btn btn-primary btn-sm">{% trans "Kirish" %}</a>
             </div>
@@ -141,6 +149,22 @@
         const collapsed = shell.classList.toggle('sidebar-collapsed');
         localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0');
     });
+})();
+</script>
+<script>
+(function () {
+    var lang = '{{ LANGUAGE_CODE }}';
+    var locale = lang === 'ru' ? 'ru-RU' : 'uz-UZ';
+    var timeEl = document.getElementById('liveClock');
+    var dateEl = document.getElementById('liveDate');
+    if (!timeEl || !dateEl) return;
+    function tick() {
+        var now = new Date();
+        timeEl.textContent = now.toLocaleTimeString(locale, {hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false});
+        dateEl.textContent = now.toLocaleDateString(locale, {weekday: 'short', day: '2-digit', month: 'short', year: 'numeric'});
+    }
+    tick();
+    setInterval(tick, 1000);
 })();
 </script>
 <script>
