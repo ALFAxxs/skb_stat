@@ -741,7 +741,7 @@
             <div class="col-md-6">
               <label class="form-label fw-bold">{% trans "Chiqish sanasi" %} *</label>
               <input type="date" name="discharge_date" class="form-control"
-                     value="{{ today }}" required>
+                     value="{{ today|date:"Y-m-d" }}" required>
             </div>
 
             <!-- Kasallanish yakuni -->

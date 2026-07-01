@@ -75,7 +75,7 @@
             <div class="col-md-6">
               <label class="form-label fw-bold">{% trans "Chiqish sanasi" %} *</label>
               <input type="date" name="discharge_date" class="form-control"
-                     value="{{ today }}" required>
+                     value="{{ today|date:"Y-m-d" }}" required>
             </div>
 
             <!-- Kasallanish yakuni -->
@@ -182,7 +182,7 @@
             <div class="col-md-6 mb-2">
               <label class="form-label fw-bold">{% trans "Ko'chirish sanasi" %} *</label>
               <input type="date" name="transfer_date" class="form-control"
-                     value="{{ today }}" required>
+                     value="{{ today|date:"Y-m-d" }}" required>
             </div>
             <div class="col-md-6 mb-2">
               <label class="form-label fw-bold">{% trans "Yangi bo'lim" %} *</label>

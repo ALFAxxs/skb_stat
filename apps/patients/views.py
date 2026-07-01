@@ -1975,8 +1975,7 @@ def _schedule_recipients(occ):
     if occ.diagnostic_assignment_id:
         return CustomUser.objects.filter(role='diagnostician', is_active=True)
     if occ.consultation_request_id:
-        user_ids = [c.user_id for c in occ.consultation_request.consultants.all() if c.user_id]
-        return CustomUser.objects.filter(pk__in=user_ids)
+        return occ.consultation_request.consultants.filter(is_active=True)
     return CustomUser.objects.none()
 
 

@@ -20,22 +20,6 @@ logger = logging.getLogger(__name__)
 
 FINANCE_ROLES = ('admin', 'statistician', 'reception')
 
-# PatientService.service.category.category_type -> bo'lim nomi
-SECTION_BY_CATEGORY_TYPE = {
-    'lab':          'laboratory',
-    'radiology':    'diagnostics',
-    'physio':       'procedures',
-    'surgery':      'services',
-    'consultation': 'services',
-    'other':        'services',
-}
-SECTION_LABELS = {
-    'services':    "Tibbiy xizmatlar",
-    'laboratory':  "Laboratoriya tahlillari",
-    'diagnostics': "Diagnostika",
-    'procedures':  "Tibbiy muolajalar",
-}
-
 
 def _bounded_decimal(value, max_digits, decimal_places):
     """Decimal'ga o'giradi va maydon max_digits/decimal_places chegarasini tekshiradi."""
@@ -72,18 +56,27 @@ def _gather_billing_data(patient):
         .order_by('service__category__name', 'service__name')
     )
 
-    sections = defaultdict(list)
+    # Narxlar ro'yxatidagi haqiqiy kategoriyalar bo'yicha guruhlash
+    sections_by_cat = defaultdict(list)
+    cat_objects = {}
     for s in all_services:
-        section_key = SECTION_BY_CATEGORY_TYPE.get(s.service.category.category_type, 'services')
-        sections[section_key].append(s)
+        cat = s.service.category if s.service_id and s.service.category_id else None
+        key = cat.pk if cat else 0
+        sections_by_cat[key].append(s)
+        if cat:
+            cat_objects[cat.pk] = cat
 
+    # Kategoriyalarni nom bo'yicha tartiblab section_list yasash
     section_list = []
-    for key in ('services', 'laboratory', 'diagnostics', 'procedures'):
-        items = sections.get(key, [])
+    for cat_pk, items in sorted(
+        sections_by_cat.items(),
+        key=lambda x: cat_objects[x[0]].name if x[0] else 'я'
+    ):
+        label = cat_objects[cat_pk].name if cat_pk else _("Boshqa xizmatlar")
         subtotal = sum((s.price * s.quantity for s in items), Decimal('0'))
         section_list.append({
-            'key': key,
-            'label': SECTION_LABELS[key],
+            'key': f'cat_{cat_pk}',
+            'label': label,
             'items': items,
             'subtotal': subtotal,
         })

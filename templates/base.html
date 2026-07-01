@@ -90,7 +90,11 @@
     <div class="main-new">
         {% if request.user.is_authenticated %}
         <div class="topbar-new">
-            <div></div>
+            <div>
+                <button id="sidebarToggle" class="sidebar-toggle" title="Menyuni yopish/ochish">
+                    <i class="bi bi-list"></i>
+                </button>
+            </div>
             <div class="d-flex align-items-center gap-3">
                 {% include 'partials/_language_switcher.html' %}
                 {% if request.user.department %}
@@ -124,6 +128,21 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function () {
+    const STORAGE_KEY = 'skb_sidebar_collapsed';
+    const shell  = document.querySelector('.app-shell');
+    const btn    = document.getElementById('sidebarToggle');
+    if (!shell || !btn) return;
+    if (localStorage.getItem(STORAGE_KEY) === '1') {
+        shell.classList.add('sidebar-collapsed');
+    }
+    btn.addEventListener('click', function () {
+        const collapsed = shell.classList.toggle('sidebar-collapsed');
+        localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0');
+    });
+})();
+</script>
 <script>
 // Telefon raqamini avtomatik +998 XX XXX XX XX formatiga keltiradi
 document.addEventListener('DOMContentLoaded', function () {

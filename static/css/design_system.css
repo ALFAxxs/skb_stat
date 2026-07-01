@@ -58,6 +58,15 @@ a{color:var(--primary);}
 .sidebar-footer .who{font-size:12px; font-weight:600; line-height:1.2; color:var(--ink);}
 .sidebar-footer .who small{display:block; color:var(--ink-faint); font-weight:500; font-size:10.5px;}
 
+.sidebar{ transition: width .22s ease, padding .22s ease; }
+.app-shell.sidebar-collapsed .sidebar{ width:0; min-width:0; padding:0; overflow:hidden; flex-shrink:1; }
+.sidebar-toggle{
+  background:none; border:none; font-size:20px; cursor:pointer;
+  color:var(--ink-soft); padding:6px 10px; border-radius:8px; line-height:1;
+  display:flex; align-items:center;
+}
+.sidebar-toggle:hover{ background:#F1F4FA; color:var(--ink); }
+
 .main-new{flex:1; min-width:0; display:flex; flex-direction:column;}
 .topbar-new{
   height:58px; background:var(--card); border-bottom:1px solid var(--border);
