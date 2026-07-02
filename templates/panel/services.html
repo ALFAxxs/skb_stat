@@ -100,8 +100,8 @@
                         data-code="{{ s.code }}"
                         data-cat="{{ s.category_id }}"
                         data-dept="{{ s.department_id|default:'' }}"
-                        data-price-n="{{ s.price_normal }}"
-                        data-price-r="{{ s.price_railway }}"
+                        data-pricen="{{ s.price_normal_raw }}"
+                        data-pricer="{{ s.price_railway_raw }}"
                         data-active="{% if s.is_active %}1{% else %}0{% endif %}"
                         data-op="{% if s.is_operation %}1{% else %}0{% endif %}"
                         data-doctors="{{ s.doc_pks_json }}">✏️</button>
@@ -185,8 +185,8 @@ document.getElementById('editModal').addEventListener('show.bs.modal', function(
     m.querySelector('[name=code]').value          = b.dataset.code || '';
     m.querySelector('[name=category_id]').value   = b.dataset.cat || '';
     m.querySelector('[name=department_id]').value = b.dataset.dept || '';
-    m.querySelector('[name=price_normal]').value  = b.dataset.priceN || '0';
-    m.querySelector('[name=price_railway]').value = b.dataset.priceR || '0';
+    m.querySelector('[name=price_normal]').value  = b.dataset.pricen  || '0';
+    m.querySelector('[name=price_railway]').value = b.dataset.pricer || '0';
     m.querySelector('[name=is_active]').value     = b.dataset.active || '1';
     m.querySelector('[name=is_operation]').value  = b.dataset.op || '0';
 

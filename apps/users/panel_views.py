@@ -150,12 +150,15 @@ def panel_services(request):
     services_list = list(qs)
     for s in services_list:
         docs = s.assigned_doctors.all()
-        s.doc_pks_json  = json.dumps([d.pk for d in docs])
-        s.doc_info_json = json.dumps([
+        s.doc_pks_json      = json.dumps([d.pk for d in docs])
+        s.doc_info_json     = json.dumps([
             {'pk': d.pk, 'name': d.get_full_name() or d.username,
              'dept': d.department.name if d.department_id else ''}
             for d in docs
         ])
+        # str() — lokalizatsiyasiz standart format: "50000.00"
+        s.price_normal_raw  = str(s.price_normal)
+        s.price_railway_raw = str(s.price_railway)
 
     categories  = ServiceCategory.objects.filter(is_active=True).order_by('name')
     departments = Department.objects.filter(is_active=True).order_by('name')
