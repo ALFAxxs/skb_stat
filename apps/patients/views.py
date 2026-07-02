@@ -2488,7 +2488,17 @@ def nurse_dashboard(request):
 
     is_head_nurse = request.user.role == 'head_nurse'
 
-    query = request.GET.get('q', '')
+    query = request.GET.get('q', '').strip()
+
+    # Saralash usuli — session orqali saqlanadi (har foydalanuvchi uchun alohida)
+    _VALID_SORTS = ('name', 'admission', 'procedure', 'recent')
+    if 'sort' in request.GET:
+        _sort = request.GET['sort']
+        if _sort in _VALID_SORTS:
+            request.session['nurse_sort'] = _sort
+    sort_by = request.session.get('nurse_sort', 'name')
+    if sort_by not in _VALID_SORTS:
+        sort_by = 'name'
 
     notifications = DoctorNotification.objects.filter(recipient=request.user).order_by('-created_at')[:8]
 
@@ -2511,9 +2521,24 @@ def nurse_dashboard(request):
     dept_patients = PatientCard.objects.filter(visit_type='inpatient').exclude(status='completed')
     if request.user.department_id:
         dept_patients = dept_patients.filter(department_id=request.user.department_id)
+
+    # Kengaytirilgan qidiruv: ism, tibbiy raqam, xona, tashxis, telefon
     if query:
-        dept_patients = dept_patients.filter(full_name__icontains=query)
-    dept_patients = list(dept_patients.order_by('full_name'))
+        dept_patients = dept_patients.filter(
+            Q(full_name__icontains=query) |
+            Q(medical_record_number__icontains=query) |
+            Q(room_number__icontains=query) |
+            Q(admission_diagnosis__icontains=query) |
+            Q(phone__icontains=query)
+        )
+
+    # DB darajasida saralash (muolaja vaqti bo'yicha — Python tomonida)
+    if sort_by == 'admission':
+        dept_patients = list(dept_patients.order_by('-admission_date'))
+    elif sort_by == 'recent':
+        dept_patients = list(dept_patients.order_by('-created_at'))
+    else:
+        dept_patients = list(dept_patients.order_by('full_name'))
 
     occ_qs = ServiceSchedule.objects.filter(
         Q(treatment_procedure__patient_card__in=dept_patients) |
@@ -2541,10 +2566,19 @@ def nurse_dashboard(request):
             d = timezone.localtime(occ.scheduled_at).date()
             days.setdefault(d, []).append(occ)
         day_groups = [{'date': d, 'occurrences': days[d]} for d in sorted(days.keys())]
-        patient_rows.append({'patient': p, 'day_groups': day_groups, 'total': len(occs)})
+        next_pending = min(
+            (occ.scheduled_at for occ in occs if occ.status == 'pending'),
+            default=None,
+        )
+        patient_rows.append({'patient': p, 'day_groups': day_groups, 'total': len(occs), 'next_pending': next_pending})
+
+    # Muolaja vaqti bo'yicha saralash — Python da (pending bo'lganlar birinchi)
+    if sort_by == 'procedure':
+        patient_rows.sort(key=lambda r: (r['next_pending'] is None, r['next_pending'] or timezone.now()))
 
     context = {
         'query': query,
+        'sort_by': sort_by,
         'notifications': notifications,
         'is_head_nurse': is_head_nurse,
         'highlight_patient_id': highlight_patient_id,

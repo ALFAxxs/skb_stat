@@ -82,18 +82,41 @@
 
 <div class="card border-0 shadow-sm mb-3">
     <div class="card-body">
-        <form method="get" class="row g-2 align-items-end">
-            <input type="hidden" name="view" value="patient">
-            <div class="col-md-3">
-                <label class="form-label small">{% trans "Sana" %}</label>
-                <input type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}" class="form-control form-control-sm">
+        <form method="get" id="nurseFilterForm">
+            <div class="row g-2 align-items-end mb-2">
+                <div class="col-md-5 col-12">
+                    <label class="form-label small fw-semibold">🔍 {% trans "Qidiruv" %}</label>
+                    <input type="text" name="q" value="{{ query }}" class="form-control form-control-sm"
+                           placeholder="{% trans "Ism, tibbiy raqam, xona, tashxis, telefon..." %}">
+                </div>
+                <div class="col-md-3 col-6">
+                    <label class="form-label small fw-semibold">📅 {% trans "Sana" %}</label>
+                    <input type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-2 col-6">
+                    <label class="form-label small fw-semibold d-block">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary btn-sm w-100">🔍 {% trans "Ko'rish" %}</button>
+                </div>
             </div>
-            <div class="col-md-4">
-                <label class="form-label small">{% trans "Qidiruv (bemor F.I.Sh.)" %}</label>
-                <input type="text" name="q" value="{{ query }}" class="form-control form-control-sm" placeholder="{% trans "Qidirish..." %}">
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary btn-sm w-100">🔍 {% trans "Ko'rish" %}</button>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <span class="small text-muted fw-semibold">{% trans "Saralash:" %}</span>
+                <input type="hidden" name="sort" id="sortInput" value="{{ sort_by }}">
+                <button type="submit" class="sort-btn {% if sort_by == 'name' %}sort-btn-active{% endif %}"
+                        onclick="document.getElementById('sortInput').value='name'">
+                    🔤 {% trans "Alifbet" %}
+                </button>
+                <button type="submit" class="sort-btn {% if sort_by == 'admission' %}sort-btn-active{% endif %}"
+                        onclick="document.getElementById('sortInput').value='admission'">
+                    🏥 {% trans "Kelgan vaqt" %}
+                </button>
+                <button type="submit" class="sort-btn {% if sort_by == 'procedure' %}sort-btn-active{% endif %}"
+                        onclick="document.getElementById('sortInput').value='procedure'">
+                    ⏰ {% trans "Yaqin muolaja" %}
+                </button>
+                <button type="submit" class="sort-btn {% if sort_by == 'recent' %}sort-btn-active{% endif %}"
+                        onclick="document.getElementById('sortInput').value='recent'">
+                    🆕 {% trans "Yangi qo'shilgan" %}
+                </button>
             </div>
         </form>
     </div>
@@ -111,6 +134,9 @@
                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#pat-{{ row.patient.pk }}">
                     <span class="flex-grow-1">{{ row.patient.full_name }}
                         <span class="text-muted small">— {{ row.patient.medical_record_number }}{% if row.patient.room_number %} · {% blocktrans with room=row.patient.room_number %}{{ room }}-xona{% endblocktrans %}{% endif %}</span>
+                        {% if sort_by == 'procedure' and row.next_pending %}
+                        <span class="badge bg-warning text-dark ms-1" style="font-size:.65rem;">⏰ {{ row.next_pending|date:"H:i" }}</span>
+                        {% endif %}
                     </span>
                     <span class="badge bg-info text-dark ms-2">{{ row.total }} {% trans "ta band" %}</span>
                 </button>
@@ -229,6 +255,14 @@
 .occ-btn-stop { color: #d97706; border-color: #fbe3bb; }
 .occ-tile-reason { font-size: .68rem; color: #94a3b8; margin-top: .35rem; line-height: 1.3; }
 .occ-tile-note { font-size: .68rem; color: #94a3b8; margin-top: .35rem; line-height: 1.3; }
+.sort-btn {
+    background: #f1f4fa; border: 1px solid #e7eaf3; border-radius: 20px;
+    padding: 3px 12px; font-size: .78rem; font-weight: 600; color: #475569;
+    cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.sort-btn:hover { background: #e2e8f0; border-color: #cbd5e1; }
+.sort-btn-active { background: #2563eb; border-color: #2563eb; color: #fff; }
+.sort-btn-active:hover { background: #1e40af; border-color: #1e40af; }
 </style>
 
 {% endblock %}
