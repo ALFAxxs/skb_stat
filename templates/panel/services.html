@@ -206,6 +206,9 @@ document.getElementById('editModal').addEventListener('show.bs.modal', function(
     });
 
     m.querySelector('form').action = '/panel/xizmatlar/' + b.dataset.pk + '/saqlash/';
+    // Filtrni saqlab qolish uchun joriy URLni next ga yozamiz
+    var nextInput = m.querySelector('[name=next]');
+    if (nextInput) nextInput.value = window.location.href;
 });
 
 // Add modal ochilganda barcha checkboxlarni tozalash

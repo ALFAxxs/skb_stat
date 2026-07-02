@@ -8,6 +8,7 @@
             </div>
             <form method="post" action="{% if action_url %}{% url action_url %}{% endif %}">
                 {% csrf_token %}
+                <input type="hidden" name="next" value="">
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-8">

@@ -205,7 +205,12 @@ def panel_service_save(request, pk=None):
         svc = Service.objects.create(**fields)
         svc.assigned_doctors.set(doctor_ids)
         messages.success(request, _("Xizmat qo'shildi."))
-    return redirect(request.POST.get('next') or 'panel_services')
+
+    next_url = request.POST.get('next', '')
+    # Faqat o'z saytimizga redirect (xavfsizlik)
+    if next_url and next_url.startswith('/'):
+        return redirect(next_url)
+    return redirect('panel_services')
 
 
 @_admin_only
