@@ -203,12 +203,11 @@ def add_service(request, patient_pk):
                     patient.save(update_fields=['attending_doctor', 'attending_doctor_confirmed', 'department_head'])
 
                     from apps.patients.models import DoctorNotification
-                    if ordering_doctor.user_id:
-                        DoctorNotification.objects.create(
-                            recipient=ordering_doctor.user,
-                            patient_card=patient,
-                            message=f"Sizga yangi ambulator bemor biriktirildi: {patient.full_name} ({patient.medical_record_number})"
-                        )
+                    DoctorNotification.objects.create(
+                        recipient=ordering_doctor,
+                        patient_card=patient,
+                        message=f"Sizga yangi ambulator bemor biriktirildi: {patient.full_name} ({patient.medical_record_number})"
+                    )
 
             # MRT xizmati bo'lsa navbat yaratish/olish
             queue_info = {}
