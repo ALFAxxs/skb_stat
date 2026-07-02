@@ -424,21 +424,9 @@
 
             <!-- 4. Shifokorlar -->
             <div class="form-section">
-                <h5>👨‍⚕️ Shifokorlar <span class="text-muted fw-normal small">(ixtiyoriy)</span></h5>
+                <h5>👨‍⚕️ Bo'lim mudiri <span class="text-muted fw-normal small">(ixtiyoriy)</span></h5>
+                <p class="text-muted small mb-2">Davolovchi shifokor bo'lim mudiri tomonidan biriktirish sahifasida belgilanadi.</p>
                 <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ form.attending_doctor.label }}</label>
-                        <select name="attending_doctor" id="id_attending_doctor" class="form-select">
-                            <option value="">— Tanlang —</option>
-                            {% for doc in form.attending_doctor.field.queryset %}
-                                <option value="{{ doc.pk }}"
-                                    {% if form.instance.attending_doctor_id == doc.pk %}selected{% endif %}>
-                                    {{ doc.full_name }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                        <div class="text-danger small">{{ form.attending_doctor.errors }}</div>
-                    </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">{{ form.department_head.label }}</label>
                         <select name="department_head" id="id_department_head" class="form-select">

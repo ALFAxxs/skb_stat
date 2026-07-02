@@ -1114,6 +1114,11 @@ def reception_create(request):
 
             patient = form.save(commit=False)
 
+            # Davolovchi shifokor registratsiya vaqtida saqlanmaydi —
+            # faqat bo'lim mudiri biriktirish sahifasi orqali belgilaydi.
+            patient.attending_doctor = None
+            patient.attending_doctor_confirmed = False
+
             # Bo'limni avtomatik qo'yish
             if not request.user.is_superuser and request.user.role != 'admin':
                 if request.user.department:

@@ -281,7 +281,7 @@ class ReceptionForm(forms.ModelForm):
             'referral_type', 'referral_organization', 'hours_after_illness',
             'is_emergency', 'is_paid',
             'is_war_veteran', 'is_pensioner',
-            'attending_doctor', 'department_head',
+            'department_head',
             # Yotish ma'lumotlari
             'room_number', 'mobility_type', 'transport_type',
             # Tibbiy ko'rsatkichlar
@@ -338,9 +338,6 @@ class ReceptionForm(forms.ModelForm):
 
         # Shifokorlar — majburiy emas
         doctor_qs = CustomUser.objects.filter(role__in=('doctor', 'old'), is_active=True).order_by('first_name')
-        self.fields['attending_doctor'].queryset = doctor_qs
-        self.fields['attending_doctor'].required = False
-        self.fields['attending_doctor'].empty_label = "— Tanlang —"
         self.fields['department_head'].queryset = doctor_qs
         self.fields['department_head'].required = False
         self.fields['department_head'].empty_label = "— Tanlang —"
