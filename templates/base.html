@@ -68,7 +68,8 @@
         <a href="{% url 'service_statistics' %}" class="nav-link-new"><i class="bi bi-graph-up"></i> Xizmatlar statistikasi</a>
         {% endif %}
         {% if request.user.role == 'admin' or request.user.is_superuser %}
-        <a href="{% url 'user_list' %}" class="nav-link-new"><i class="bi bi-gear"></i> Foydalanuvchilar</a>
+        <a href="{% url 'user_list' %}" class="nav-link-new {% if request.resolver_match.url_name == 'user_list' or request.resolver_match.url_name == 'user_create' or request.resolver_match.url_name == 'user_edit' %}active{% endif %}"><i class="bi bi-people"></i> Foydalanuvchilar</a>
+        <a href="{% url 'panel_dashboard' %}" class="nav-link-new {% if 'panel' in request.path %}active{% endif %}"><i class="bi bi-gear-wide-connected"></i> Admin panel</a>
         {% endif %}
 
         <div class="sidebar-footer">

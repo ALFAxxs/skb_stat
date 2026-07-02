@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Xizmat kategoriyalari — Admin panel{% endblock %}
+
+{% block content %}
+{% include 'panel/_breadcrumb.html' with active="Xizmat kategoriyalari" %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">🗂 Xizmat kategoriyalari</h4>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addModal">
+        ➕ Yangi kategoriya
+    </button>
+</div>
+
+<form class="row g-2 mb-3" method="get">
+    <div class="col-auto">
+        <input class="form-control form-control-sm" name="q" value="{{ q }}" placeholder="Qidirish...">
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-outline-secondary btn-sm">Qidirish</button>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-hover table-bordered align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Ikona</th>
+                <th>Nomi</th>
+                <th>Nomi (RU)</th>
+                <th>Kodi</th>
+                <th>Turi</th>
+                <th>Xizmatlar</th>
+                <th>Holat</th>
+                <th>Amallar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in categories %}
+            <tr>
+                <td class="text-center" style="font-size:1.3rem;">{{ c.icon }}</td>
+                <td>{{ c.name }}</td>
+                <td class="text-muted small">{{ c.name_ru|default:"—" }}</td>
+                <td class="text-muted small">{{ c.code|default:"—" }}</td>
+                <td><span class="badge bg-secondary">{{ c.get_category_type_display }}</span></td>
+                <td class="text-center">{{ c.service_count }}</td>
+                <td>
+                    <span class="badge {% if c.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                        {% if c.is_active %}Faol{% else %}Nofaol{% endif %}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal"
+                        data-bs-target="#editModal"
+                        data-pk="{{ c.pk }}"
+                        data-name="{{ c.name }}"
+                        data-name-ru="{{ c.name_ru }}"
+                        data-code="{{ c.code }}"
+                        data-type="{{ c.category_type }}"
+                        data-icon="{{ c.icon }}"
+                        data-active="{% if c.is_active %}1{% else %}0{% endif %}">✏️</button>
+                    <form method="post" action="{% url 'panel_category_delete' c.pk %}"
+                          class="d-inline"
+                          onsubmit="return confirm('O\'chirish tasdiqlansizmi?')">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-danger" {% if c.service_count %}title="Bu kategoriyada xizmatlar bor" {% endif %}>🗑</button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="text-center text-muted">Ma'lumot topilmadi</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include 'panel/_category_modal.html' with modal_id="addModal" modal_title="Yangi kategoriya" form_action_url="panel_category_save" btn_class="btn-primary" btn_text="Saqlash" %}
+{% include 'panel/_category_modal.html' with modal_id="editModal" modal_title="Tahrirlash" btn_class="btn-warning" btn_text="Yangilash" %}
+
+{% if request.GET.add %}
+<script>document.addEventListener('DOMContentLoaded', function() {
+    new bootstrap.Modal(document.getElementById('addModal')).show();
+});</script>
+{% endif %}
+
+<script>
+document.getElementById('editModal').addEventListener('show.bs.modal', function(e) {
+    var b = e.relatedTarget;
+    var m = this;
+    m.querySelector('[name=name]').value    = b.dataset.name;
+    m.querySelector('[name=name_ru]').value = b.dataset.nameRu;
+    m.querySelector('[name=code]').value    = b.dataset.code;
+    m.querySelector('[name=icon]').value    = b.dataset.icon;
+    m.querySelector('[name=category_type]').value = b.dataset.type;
+    m.querySelector('[name=is_active]').value = b.dataset.active;
+    m.querySelector('form').action = '/panel/kategoriyalar/' + b.dataset.pk + '/saqlash/';
+});
+</script>
+{% endblock %}

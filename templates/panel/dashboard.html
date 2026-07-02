@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Admin Panel{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-4">
+    <h3 class="mb-0">⚙️ Admin panel</h3>
+    <span class="badge bg-danger">{{ request.user.get_role_display }}</span>
+</div>
+
+<div class="row g-3">
+    <div class="col-6 col-md-4 col-lg-2">
+        <a href="{% url 'user_list' %}" class="text-decoration-none">
+            <div class="card text-center h-100 border-primary">
+                <div class="card-body py-4">
+                    <div style="font-size:2rem;">👥</div>
+                    <div class="fw-bold mt-2">{{ stats.users }}</div>
+                    <div class="small text-muted">Foydalanuvchilar</div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <a href="{% url 'panel_departments' %}" class="text-decoration-none">
+            <div class="card text-center h-100 border-info">
+                <div class="card-body py-4">
+                    <div style="font-size:2rem;">🏢</div>
+                    <div class="fw-bold mt-2">{{ stats.departments }}</div>
+                    <div class="small text-muted">Bo'limlar</div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <a href="{% url 'panel_categories' %}" class="text-decoration-none">
+            <div class="card text-center h-100 border-warning">
+                <div class="card-body py-4">
+                    <div style="font-size:2rem;">🗂</div>
+                    <div class="fw-bold mt-2">{{ stats.categories }}</div>
+                    <div class="small text-muted">Xizmat kategoriyalari</div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <a href="{% url 'panel_services' %}" class="text-decoration-none">
+            <div class="card text-center h-100 border-success">
+                <div class="card-body py-4">
+                    <div style="font-size:2rem;">🩺</div>
+                    <div class="fw-bold mt-2">{{ stats.services }}</div>
+                    <div class="small text-muted">Xizmatlar</div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <a href="{% url 'panel_medicines' %}" class="text-decoration-none">
+            <div class="card text-center h-100 border-secondary">
+                <div class="card-body py-4">
+                    <div style="font-size:2rem;">💊</div>
+                    <div class="fw-bold mt-2">{{ stats.medicines }}</div>
+                    <div class="small text-muted">Dorilar</div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <a href="{% url 'panel_lab_templates' %}" class="text-decoration-none">
+            <div class="card text-center h-100 border-danger">
+                <div class="card-body py-4">
+                    <div style="font-size:2rem;">🧪</div>
+                    <div class="fw-bold mt-2">{{ stats.lab_templates }}</div>
+                    <div class="small text-muted">Lab shablonlari</div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mt-2">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header fw-semibold">Tezkor havolalar</div>
+            <div class="list-group list-group-flush">
+                <a href="{% url 'user_create' %}" class="list-group-item list-group-item-action">➕ Yangi foydalanuvchi</a>
+                <a href="{% url 'panel_departments' %}?add=1" class="list-group-item list-group-item-action">➕ Yangi bo'lim</a>
+                <a href="{% url 'panel_categories' %}?add=1" class="list-group-item list-group-item-action">➕ Yangi kategoriya</a>
+                <a href="{% url 'panel_services' %}?add=1" class="list-group-item list-group-item-action">➕ Yangi xizmat</a>
+                <a href="{% url 'panel_medicines' %}?add=1" class="list-group-item list-group-item-action">➕ Yangi dori</a>
+                <a href="{% url 'panel_lab_templates' %}?add=1" class="list-group-item list-group-item-action">➕ Yangi lab shabloni</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header fw-semibold">Tizim haqida</div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr><td class="text-muted">Django admin</td><td><a href="/admin/" target="_blank">/admin/ →</a></td></tr>
+                    <tr><td class="text-muted">Statistika</td><td><a href="{% url 'statistics_dashboard' %}">Hisobotlar →</a></td></tr>
+                    <tr><td class="text-muted">Xizmatlar statistikasi</td><td><a href="{% url 'service_statistics' %}">Ko'rish →</a></td></tr>
+                    <tr><td class="text-muted">Bemorlar ro'yxati</td><td><a href="{% url 'patient_list' %}">Ko'rish →</a></td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

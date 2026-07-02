@@ -1,0 +1,44 @@
+{% load i18n %}
+<div class="modal fade" id="{{ modal_id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ modal_title }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% if action_url %}{% url action_url %}{% endif %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Nomi <span class="text-danger">*</span></label>
+                            <input class="form-control" name="name" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Kategoriya</label>
+                            <select class="form-select" name="category">
+                                {% for val, label in category_choices %}
+                                <option value="{{ val }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Tavsif</label>
+                            <textarea class="form-control" name="description" rows="2"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Holat</label>
+                            <select class="form-select" name="is_active">
+                                <option value="1">✅ Faol</option>
+                                <option value="0">❌ Nofaol</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn {{ btn_class }} w-100">{{ btn_text }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,52 @@
+{% load i18n %}
+<div class="modal fade" id="{{ modal_id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ modal_title }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% if form_action_url %}{% url form_action_url %}{% endif %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-8">
+                            <label class="form-label fw-semibold">Nomi (UZ) <span class="text-danger">*</span></label>
+                            <input class="form-control" name="name" required>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label fw-semibold">Ikona</label>
+                            <input class="form-control" name="icon" value="🏥" maxlength="5">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Nomi (RU)</label>
+                            <input class="form-control" name="name_ru">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Kodi</label>
+                            <input class="form-control" name="code" maxlength="20">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Turi</label>
+                            <select class="form-select" name="category_type">
+                                {% for val, label in type_choices %}
+                                <option value="{{ val }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Holat</label>
+                            <select class="form-select" name="is_active">
+                                <option value="1">✅ Faol</option>
+                                <option value="0">❌ Nofaol</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn {{ btn_class }} w-100">{{ btn_text }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

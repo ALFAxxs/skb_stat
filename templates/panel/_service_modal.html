@@ -1,0 +1,105 @@
+{% load i18n %}
+<div class="modal fade" id="{{ modal_id }}" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ modal_title }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% if action_url %}{% url action_url %}{% endif %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-8">
+                            <label class="form-label fw-semibold">Nomi (UZ) <span class="text-danger">*</span></label>
+                            <input class="form-control" name="name" required>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label fw-semibold">Kodi</label>
+                            <input class="form-control" name="code" maxlength="20">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Nomi (RU)</label>
+                            <input class="form-control" name="name_ru">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Kategoriya <span class="text-danger">*</span></label>
+                            <select class="form-select" name="category_id" required>
+                                <option value="">— Tanlang —</option>
+                                {% for c in categories %}
+                                <option value="{{ c.pk }}">{{ c.icon }} {{ c.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Bo'lim</label>
+                            <select class="form-select" name="department_id">
+                                <option value="">— Tanlang —</option>
+                                {% for d in departments %}
+                                <option value="{{ d.pk }}">{{ d.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Oddiy narx (so'm)</label>
+                            <input class="form-control" name="price_normal" type="number" min="0" step="100" value="0">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Temir yo'lchi narxi (so'm)</label>
+                            <input class="form-control" name="price_railway" type="number" min="0" step="100" value="0">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Holat</label>
+                            <select class="form-select" name="is_active">
+                                <option value="1">✅ Faol</option>
+                                <option value="0">❌ Nofaol</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Operatsiyami?</label>
+                            <select class="form-select" name="is_operation">
+                                <option value="0">❌ Yo'q</option>
+                                <option value="1">✅ Ha — operatsiya</option>
+                            </select>
+                        </div>
+
+                        <!-- Shifokorlar -->
+                        {% if doctors %}
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">👨‍⚕️ Biriktirilgan shifokorlar</label>
+                            <input type="text" class="form-control form-control-sm mb-2 svc-doc-search"
+                                placeholder="Shifokorni qidirish..." autocomplete="off">
+                            <div class="border rounded p-2 svc-doc-list"
+                                 style="max-height:180px; overflow-y:auto;">
+                                {% for doc in doctors %}
+                                <div class="form-check svc-doc-item">
+                                    <input class="form-check-input" type="checkbox"
+                                           name="assigned_doctors"
+                                           value="{{ doc.pk }}"
+                                           id="{{ modal_id }}_doc_{{ doc.pk }}">
+                                    <label class="form-check-label" for="{{ modal_id }}_doc_{{ doc.pk }}">
+                                        {{ doc.get_full_name|default:doc.username }}
+                                        {% if doc.department %}<small class="text-muted">· {{ doc.department.name }}</small>{% endif %}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="d-flex gap-2 mt-1">
+                                <button type="button" class="btn btn-outline-secondary btn-sm svc-doc-all">
+                                    Barchasini tanlash
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm svc-doc-none">
+                                    Barchasini olib tashlash
+                                </button>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn {{ btn_class }} w-100">{{ btn_text }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

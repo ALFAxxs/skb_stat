@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Bo'limlar — Admin panel{% endblock %}
+
+{% block content %}
+{% include 'panel/_breadcrumb.html' with active="Bo'limlar" %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">🏢 Bo'limlar</h4>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addModal">
+        ➕ Yangi bo'lim
+    </button>
+</div>
+
+<form class="row g-2 mb-3" method="get">
+    <div class="col-auto">
+        <input class="form-control form-control-sm" name="q" value="{{ q }}" placeholder="Qidirish...">
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-outline-secondary btn-sm">Qidirish</button>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-hover table-bordered align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>#</th>
+                <th>Nomi</th>
+                <th>Holat</th>
+                <th>Amallar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in departments %}
+            <tr>
+                <td class="text-muted small">{{ forloop.counter }}</td>
+                <td>{{ d.name }}</td>
+                <td>
+                    <form method="post" action="{% url 'panel_department_toggle' d.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button class="badge border-0
+                            {% if d.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                            {% if d.is_active %}Faol{% else %}Nofaol{% endif %}
+                        </button>
+                    </form>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal"
+                        data-bs-target="#editModal"
+                        data-pk="{{ d.pk }}" data-name="{{ d.name }}">✏️</button>
+                    <form method="post" action="{% url 'panel_department_delete' d.pk %}"
+                          class="d-inline"
+                          onsubmit="return confirm('O\'chirish tasdiqlansizmi?')">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-danger">🗑</button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-muted">Ma'lumot topilmadi</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Qo'shish modal -->
+<div class="modal fade" id="addModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Yangi bo'lim</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form method="post" action="{% url 'panel_department_save' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <label class="form-label fw-semibold">Nomi <span class="text-danger">*</span></label>
+                    <input class="form-control" name="name" required autofocus>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary w-100">Saqlash</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Tahrirlash modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Tahrirlash</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form method="post" id="editForm" action="">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <label class="form-label fw-semibold">Nomi <span class="text-danger">*</span></label>
+                    <input class="form-control" name="name" id="editName" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-warning w-100">Yangilash</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if request.GET.add %}
+<script>document.addEventListener('DOMContentLoaded', function() {
+    new bootstrap.Modal(document.getElementById('addModal')).show();
+});</script>
+{% endif %}
+
+<script>
+document.getElementById('editModal').addEventListener('show.bs.modal', function(e) {
+    var btn = e.relatedTarget;
+    document.getElementById('editName').value = btn.dataset.name;
+    document.getElementById('editForm').action = '/panel/bolimlar/' + btn.dataset.pk + '/saqlash/';
+});
+</script>
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Dorilar — Admin panel{% endblock %}
+
+{% block content %}
+{% include 'panel/_breadcrumb.html' with active="Dorilar" %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">💊 Dorilar</h4>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addModal">
+        ➕ Yangi dori
+    </button>
+</div>
+
+<form class="row g-2 mb-3" method="get">
+    <div class="col-auto">
+        <input class="form-control form-control-sm" name="q" value="{{ q }}" placeholder="Nomi yoki MNN...">
+    </div>
+    <div class="col-auto">
+        <select class="form-select form-select-sm" name="cat">
+            <option value="">— Kategoriya —</option>
+            {% for val, label in category_choices %}
+            <option value="{{ val }}" {% if cat == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-outline-secondary btn-sm">Qidirish</button>
+    </div>
+    {% if q or cat %}
+    <div class="col-auto">
+        <a href="{% url 'panel_medicines' %}" class="btn btn-outline-danger btn-sm">✕</a>
+    </div>
+    {% endif %}
+</form>
+
+<div class="table-responsive">
+    <table class="table table-hover table-bordered align-middle" style="font-size:.88rem;">
+        <thead class="table-light">
+            <tr>
+                <th>Savdo nomi</th>
+                <th>MNN</th>
+                <th>Shakli</th>
+                <th>Dozasi</th>
+                <th>Birlik</th>
+                <th>Kat.</th>
+                <th>Holat</th>
+                <th>Amallar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in medicines %}
+            <tr>
+                <td class="fw-semibold">{{ m.name }}</td>
+                <td class="text-muted small">{{ m.mnn|default:"—" }}</td>
+                <td class="small">{{ m.get_dosage_form_display|default:"—" }}</td>
+                <td class="small">{{ m.strength|default:"—" }}</td>
+                <td class="small">{{ m.get_unit_display }}</td>
+                <td><span class="badge bg-secondary">{{ m.get_category_display }}</span></td>
+                <td>
+                    <form method="post" action="{% url 'panel_medicine_toggle' m.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button class="badge border-0 {% if m.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                            {% if m.is_active %}Faol{% else %}Nofaol{% endif %}
+                        </button>
+                    </form>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal"
+                        data-bs-target="#editModal"
+                        data-pk="{{ m.pk }}"
+                        data-name="{{ m.name }}"
+                        data-mnn="{{ m.mnn }}"
+                        data-dosage="{{ m.dosage_form }}"
+                        data-strength="{{ m.strength }}"
+                        data-unit="{{ m.unit }}"
+                        data-category="{{ m.category }}"
+                        data-active="{% if m.is_active %}1{% else %}0{% endif %}">✏️</button>
+                    <form method="post" action="{% url 'panel_medicine_delete' m.pk %}"
+                          class="d-inline"
+                          onsubmit="return confirm('O\'chirish tasdiqlansizmi?')">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-danger">🗑</button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="text-center text-muted">Ma'lumot topilmadi</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include 'panel/_medicine_modal.html' with modal_id="addModal" modal_title="Yangi dori" action_url="panel_medicine_save" btn_class="btn-primary" btn_text="Saqlash" %}
+{% include 'panel/_medicine_modal.html' with modal_id="editModal" modal_title="Tahrirlash" btn_class="btn-warning" btn_text="Yangilash" %}
+
+{% if request.GET.add %}
+<script>document.addEventListener('DOMContentLoaded', function() {
+    new bootstrap.Modal(document.getElementById('addModal')).show();
+});</script>
+{% endif %}
+
+<script>
+document.getElementById('editModal').addEventListener('show.bs.modal', function(e) {
+    var b = e.relatedTarget;
+    var m = this;
+    m.querySelector('[name=name]').value        = b.dataset.name;
+    m.querySelector('[name=mnn]').value         = b.dataset.mnn;
+    m.querySelector('[name=dosage_form]').value = b.dataset.dosage;
+    m.querySelector('[name=strength]').value    = b.dataset.strength;
+    m.querySelector('[name=unit]').value        = b.dataset.unit;
+    m.querySelector('[name=category]').value    = b.dataset.category;
+    m.querySelector('[name=is_active]').value   = b.dataset.active;
+    m.querySelector('form').action = '/panel/dorilar/' + b.dataset.pk + '/saqlash/';
+});
+</script>
+{% endblock %}

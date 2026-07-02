@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Lab shablonlari — Admin panel{% endblock %}
+
+{% block content %}
+{% include 'panel/_breadcrumb.html' with active="Lab shablonlari" %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">🧪 Laboratoriya shablonlari</h4>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addModal">
+        ➕ Yangi shablon
+    </button>
+</div>
+
+<form class="row g-2 mb-3" method="get">
+    <div class="col-auto">
+        <input class="form-control form-control-sm" name="q" value="{{ q }}" placeholder="Qidirish...">
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-outline-secondary btn-sm">Qidirish</button>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-hover table-bordered align-middle" style="font-size:.88rem;">
+        <thead class="table-light">
+            <tr>
+                <th>Nomi</th>
+                <th>Kategoriya</th>
+                <th>Parametrlar</th>
+                <th>Tavsif</th>
+                <th>Holat</th>
+                <th>Amallar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in templates %}
+            <tr>
+                <td class="fw-semibold">{{ t.name }}</td>
+                <td><span class="badge bg-secondary">{{ t.get_category_display }}</span></td>
+                <td class="text-center">{{ t.param_count }}</td>
+                <td class="text-muted small">{{ t.description|truncatechars:60|default:"—" }}</td>
+                <td>
+                    <form method="post" action="{% url 'panel_lab_template_toggle' t.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button class="badge border-0 {% if t.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                            {% if t.is_active %}Faol{% else %}Nofaol{% endif %}
+                        </button>
+                    </form>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal"
+                        data-bs-target="#editModal"
+                        data-pk="{{ t.pk }}"
+                        data-name="{{ t.name }}"
+                        data-cat="{{ t.category }}"
+                        data-desc="{{ t.description }}"
+                        data-active="{% if t.is_active %}1{% else %}0{% endif %}">✏️</button>
+                    <form method="post" action="{% url 'panel_lab_template_delete' t.pk %}"
+                          class="d-inline"
+                          onsubmit="return confirm('O\'chirish tasdiqlansizmi?')">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-danger"
+                            {% if t.param_count %}title="Bu shablonda parametrlar bor"{% endif %}>🗑</button>
+                    </form>
+                    <a href="/admin/laboratory/labtemplate/{{ t.pk }}/change/"
+                       target="_blank" class="btn btn-sm btn-outline-secondary"
+                       title="Parametrlarni boshqarish (Django admin)">📋</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted">Ma'lumot topilmadi</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="alert alert-info small mt-2">
+    💡 Lab shablonining parametrlarini (qon tahlili qiymatlari va me'yorlari) tahrirlash uchun
+    <a href="/admin/laboratory/labtemplate/" target="_blank">Django admin → Lab shablonlari</a>
+    sahifasini foydalaning yoki jadvalning <strong>📋</strong> tugmasini bosing.
+</div>
+
+{% include 'panel/_lab_template_modal.html' with modal_id="addModal" modal_title="Yangi shablon" action_url="panel_lab_template_save" btn_class="btn-primary" btn_text="Saqlash" %}
+{% include 'panel/_lab_template_modal.html' with modal_id="editModal" modal_title="Tahrirlash" btn_class="btn-warning" btn_text="Yangilash" %}
+
+{% if request.GET.add %}
+<script>document.addEventListener('DOMContentLoaded', function() {
+    new bootstrap.Modal(document.getElementById('addModal')).show();
+});</script>
+{% endif %}
+
+<script>
+document.getElementById('editModal').addEventListener('show.bs.modal', function(e) {
+    var b = e.relatedTarget;
+    var m = this;
+    m.querySelector('[name=name]').value      = b.dataset.name;
+    m.querySelector('[name=category]').value  = b.dataset.cat;
+    m.querySelector('[name=description]').value = b.dataset.desc;
+    m.querySelector('[name=is_active]').value = b.dataset.active;
+    m.querySelector('form').action = '/panel/lab-shablonlar/' + b.dataset.pk + '/saqlash/';
+});
+</script>
+{% endblock %}

@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}Xizmatlar — Admin panel{% endblock %}
+
+{% block content %}
+{% include 'panel/_breadcrumb.html' with active="Xizmatlar" %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">🩺 Xizmatlar</h4>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addModal">
+        ➕ Yangi xizmat
+    </button>
+</div>
+
+<form class="row g-2 mb-3" method="get">
+    <div class="col-auto">
+        <input class="form-control form-control-sm" name="q" value="{{ q }}" placeholder="Qidirish...">
+    </div>
+    <div class="col-auto">
+        <select class="form-select form-select-sm" name="cat">
+            <option value="">— Kategoriya —</option>
+            {% for c in categories %}
+            <option value="{{ c.pk }}" {% if cat_id == c.pk|stringformat:"s" %}selected{% endif %}>
+                {{ c.icon }} {{ c.name }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-outline-secondary btn-sm">Qidirish</button>
+    </div>
+    {% if q or cat_id %}
+    <div class="col-auto">
+        <a href="{% url 'panel_services' %}" class="btn btn-outline-danger btn-sm">✕ Tozalash</a>
+    </div>
+    {% endif %}
+</form>
+
+<div class="table-responsive">
+    <table class="table table-hover table-bordered align-middle" style="font-size:.88rem;">
+        <thead class="table-light">
+            <tr>
+                <th>Nomi</th>
+                <th>Kodi</th>
+                <th>Kategoriya</th>
+                <th>Bo'lim</th>
+                <th class="text-end">Oddiy narx</th>
+                <th class="text-end">TY narx</th>
+                <th>Turi</th>
+                <th>Shifokorlar</th>
+                <th>Holat</th>
+                <th>Amallar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in services %}
+            <tr>
+                <td>{{ s.name }}</td>
+                <td class="text-muted small">{{ s.code|default:"—" }}</td>
+                <td>{{ s.category.icon }} {{ s.category.name }}</td>
+                <td class="small text-muted">{{ s.department.name|default:"—" }}</td>
+                <td class="text-end">{{ s.price_normal|floatformat:0 }}</td>
+                <td class="text-end text-muted">{{ s.price_railway|floatformat:0 }}</td>
+                <td>
+                    {% if s.is_operation %}
+                    <span class="badge bg-danger">🔪 Op.</span>
+                    {% else %}
+                    <span class="badge bg-light text-dark">Xizmat</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% with docs=s.assigned_doctors.all %}
+                    {% if docs %}
+                        <button type="button"
+                            class="badge bg-primary border-0 btn-doc-list"
+                            style="cursor:pointer;"
+                            data-svc-name="{{ s.name }}"
+                            data-docs="{{ s.doc_info_json }}">
+                            👨‍⚕️ {{ docs|length }} shifokor
+                        </button>
+                    {% else %}
+                        <span class="text-muted small">—</span>
+                    {% endif %}
+                    {% endwith %}
+                </td>
+                <td>
+                    <form method="post" action="{% url 'panel_service_toggle' s.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button class="badge border-0 {% if s.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                            {% if s.is_active %}Faol{% else %}Nofaol{% endif %}
+                        </button>
+                    </form>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal"
+                        data-bs-target="#editModal"
+                        data-pk="{{ s.pk }}"
+                        data-name="{{ s.name }}"
+                        data-name-ru="{{ s.name_ru }}"
+                        data-code="{{ s.code }}"
+                        data-cat="{{ s.category_id }}"
+                        data-dept="{{ s.department_id|default:'' }}"
+                        data-price-n="{{ s.price_normal }}"
+                        data-price-r="{{ s.price_railway }}"
+                        data-active="{% if s.is_active %}1{% else %}0{% endif %}"
+                        data-op="{% if s.is_operation %}1{% else %}0{% endif %}"
+                        data-doctors="{{ s.doc_pks_json }}">✏️</button>
+                    <form method="post" action="{% url 'panel_service_delete' s.pk %}"
+                          class="d-inline"
+                          onsubmit="return confirm('O\'chirish tasdiqlansizmi?')">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-danger">🗑</button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="10" class="text-center text-muted">Ma'lumot topilmadi</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include 'panel/_service_modal.html' with modal_id="addModal" modal_title="Yangi xizmat" action_url="panel_service_save" btn_class="btn-primary" btn_text="Saqlash" %}
+{% include 'panel/_service_modal.html' with modal_id="editModal" modal_title="Tahrirlash" btn_class="btn-warning" btn_text="Yangilash" %}
+
+<!-- Shifokorlar ko'rish modali -->
+<div class="modal fade" id="docListModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title mb-0" id="docListModalTitle">👨‍⚕️ Shifokorlar</h6>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <ul class="list-group list-group-flush" id="docListBody"></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if request.GET.add %}
+<script>document.addEventListener('DOMContentLoaded', function() {
+    new bootstrap.Modal(document.getElementById('addModal')).show();
+});</script>
+{% endif %}
+
+<script>
+// Doktor qidirish + barchasini tanlash/olib tashlash logikasi (har bir modal uchun)
+document.querySelectorAll('.modal').forEach(function(modal) {
+    var searchInput = modal.querySelector('.svc-doc-search');
+    var list        = modal.querySelector('.svc-doc-list');
+    var btnAll      = modal.querySelector('.svc-doc-all');
+    var btnNone     = modal.querySelector('.svc-doc-none');
+
+    if (searchInput && list) {
+        searchInput.addEventListener('input', function() {
+            var q = this.value.toLowerCase();
+            list.querySelectorAll('.svc-doc-item').forEach(function(item) {
+                var name = item.querySelector('label').textContent.toLowerCase();
+                item.style.display = name.includes(q) ? '' : 'none';
+            });
+        });
+    }
+    if (btnAll && list) {
+        btnAll.addEventListener('click', function() {
+            list.querySelectorAll('input[type=checkbox]').forEach(function(cb) {
+                if (cb.closest('.svc-doc-item').style.display !== 'none') cb.checked = true;
+            });
+        });
+    }
+    if (btnNone && list) {
+        btnNone.addEventListener('click', function() {
+            list.querySelectorAll('input[type=checkbox]').forEach(function(cb) { cb.checked = false; });
+        });
+    }
+});
+
+// Edit modal ochilganda ma'lumotlarni to'ldirish
+document.getElementById('editModal').addEventListener('show.bs.modal', function(e) {
+    var b = e.relatedTarget;
+    var m = this;
+
+    m.querySelector('[name=name]').value          = b.dataset.name || '';
+    m.querySelector('[name=name_ru]').value       = b.dataset.nameRu || '';
+    m.querySelector('[name=code]').value          = b.dataset.code || '';
+    m.querySelector('[name=category_id]').value   = b.dataset.cat || '';
+    m.querySelector('[name=department_id]').value = b.dataset.dept || '';
+    m.querySelector('[name=price_normal]').value  = b.dataset.priceN || '0';
+    m.querySelector('[name=price_railway]').value = b.dataset.priceR || '0';
+    m.querySelector('[name=is_active]').value     = b.dataset.active || '1';
+    m.querySelector('[name=is_operation]').value  = b.dataset.op || '0';
+
+    // Qidiruv maydonini tozalash va barcha itemlarni ko'rsatish
+    var searchInput = m.querySelector('.svc-doc-search');
+    if (searchInput) {
+        searchInput.value = '';
+        m.querySelectorAll('.svc-doc-item').forEach(function(item) { item.style.display = ''; });
+    }
+
+    // Shifokorlar checkboxlarini to'ldirish
+    var assignedIds = [];
+    try { assignedIds = JSON.parse(b.dataset.doctors || '[]'); } catch(e) {}
+    assignedIds = assignedIds.map(String);
+    m.querySelectorAll('input[name=assigned_doctors]').forEach(function(cb) {
+        cb.checked = assignedIds.includes(cb.value);
+    });
+
+    m.querySelector('form').action = '/panel/xizmatlar/' + b.dataset.pk + '/saqlash/';
+});
+
+// Add modal ochilganda barcha checkboxlarni tozalash
+document.getElementById('addModal').addEventListener('show.bs.modal', function() {
+    var m = this;
+    m.querySelectorAll('input[name=assigned_doctors]').forEach(function(cb) { cb.checked = false; });
+    var searchInput = m.querySelector('.svc-doc-search');
+    if (searchInput) {
+        searchInput.value = '';
+        m.querySelectorAll('.svc-doc-item').forEach(function(item) { item.style.display = ''; });
+    }
+});
+
+// Shifokorlar ro'yxati modali — Bootstrap yuklanganidan keyin
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.btn-doc-list');
+    if (!btn) return;
+    e.stopPropagation();
+
+    var svcName = btn.dataset.svcName || '';
+    var docs = [];
+    try { docs = JSON.parse(btn.dataset.docs || '[]'); } catch(err) { console.error('docs parse error', err); }
+
+    document.getElementById('docListModalTitle').textContent = '👨‍⚕️ ' + svcName;
+    var ul = document.getElementById('docListBody');
+    ul.innerHTML = docs.length
+        ? docs.map(function(d, i) {
+            return '<li class="list-group-item py-2">' +
+                '<span class="fw-semibold">' + (i + 1) + '. ' + d.name + '</span>' +
+                (d.dept ? '<br><small class="text-muted">' + d.dept + '</small>' : '') +
+                '</li>';
+          }).join('')
+        : '<li class="list-group-item text-muted small">Shifokor biriktirilmagan</li>';
+
+    // Bootstrap yuklanganidan keyin chaqiriladi (click handler — page load dan keyin)
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('docListModal')).show();
+});
+</script>
+{% endblock %}
