@@ -6,10 +6,10 @@
             <a class="nav-link {% if active == 'dashboard' %}active{% endif %}" href="{% url 'doctor_dashboard' %}">🏠 {% trans "Bosh sahifa" %}</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link {% if active == 'inpatient' %}active{% endif %}" href="{% url 'doctor_inpatients' %}">🛏 {% trans "Statsionar" %}</a>
+            <a class="nav-link {% if active == 'inpatient' %}active{% endif %} position-relative" href="{% url 'doctor_inpatients' %}">🛏 {% trans "Statsionar" %}<span id="navBadgeInpatient" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" style="font-size:.6rem;">0</span></a>
         </li>
         <li class="nav-item">
-            <a class="nav-link {% if active == 'outpatient' %}active{% endif %}" href="{% url 'doctor_outpatients' %}">🚶 {% trans "Ambulator" %}</a>
+            <a class="nav-link {% if active == 'outpatient' %}active{% endif %} position-relative" href="{% url 'doctor_outpatients' %}">🚶 {% trans "Ambulator" %}<span id="navBadgeOutpatient" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" style="font-size:.6rem;">0</span></a>
         </li>
         <li class="nav-item">
             <a class="nav-link {% if active == 'reports' %}active{% endif %}" href="{% url 'statistics_dashboard' %}">📊 {% trans "Hisobotlar" %}</a>
@@ -20,7 +20,7 @@
         </li>
         {% endif %}
         <li class="nav-item">
-            <a class="nav-link {% if active == 'consultations' %}active{% endif %}" href="{% url 'doctor_consultation_inbox' %}">🩺 {% trans "Konsultatsiya so'rovlari" %}</a>
+            <a class="nav-link {% if active == 'consultations' %}active{% endif %} position-relative" href="{% url 'doctor_consultation_inbox' %}">🩺 {% trans "Konsultatsiya so'rovlari" %}<span id="navBadgeConsult" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" style="font-size:.6rem;">0</span></a>
         </li>
     </ul>
 
@@ -46,6 +46,13 @@
         return m ? decodeURIComponent(m.pop()) : '';
     }
 
+    function setNavBadge(id, count) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (count > 0) { el.textContent = count; el.classList.remove('d-none'); }
+        else { el.classList.add('d-none'); }
+    }
+
     function render(data) {
         if (data.unread > 0) {
             badge.textContent = data.unread;
@@ -53,6 +60,9 @@
         } else {
             badge.classList.add('d-none');
         }
+        setNavBadge('navBadgeInpatient',  data.unread_inpatient  || 0);
+        setNavBadge('navBadgeOutpatient', data.unread_outpatient || 0);
+        setNavBadge('navBadgeConsult',    data.pending_consultations || 0);
         if (!data.notifications.length) {
             list.innerHTML = '<li><span class="dropdown-item-text text-muted small">Bildirishnomalar yo\'q</span></li>';
             return;

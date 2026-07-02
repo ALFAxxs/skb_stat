@@ -2093,7 +2093,13 @@ def schedule_occurrence_update(request, pk):
 def doctor_notifications_ajax(request):
     _send_due_schedule_reminders()
     base = DoctorNotification.objects.filter(recipient=request.user)
-    unread = base.filter(is_read=False).count()
+    unread_base = base.filter(is_read=False)
+    unread = unread_base.count()
+    unread_inpatient  = unread_base.filter(patient_card__visit_type='inpatient').count()
+    unread_outpatient = unread_base.filter(patient_card__visit_type='ambulatory').count()
+    pending_consultations = ConsultationRequest.objects.filter(
+        consultants=request.user, status='assigned'
+    ).count()
     notifications = base.order_by('-created_at')[:15]
     data = [{
         'id':          n.id,
@@ -2102,7 +2108,13 @@ def doctor_notifications_ajax(request):
         'created_at':  n.created_at.strftime('%d.%m.%Y %H:%M'),
         'patient_id':  n.patient_card_id,
     } for n in notifications]
-    return JsonResponse({'unread': unread, 'notifications': data})
+    return JsonResponse({
+        'unread':                 unread,
+        'unread_inpatient':       unread_inpatient,
+        'unread_outpatient':      unread_outpatient,
+        'pending_consultations':  pending_consultations,
+        'notifications':          data,
+    })
 
 
 @require_POST

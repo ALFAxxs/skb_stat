@@ -240,9 +240,29 @@
   </table>
   {% endif %}
 
-  <div class="footer-line">
-    <div>{% blocktrans with d=print_date|date:"d.m.Y" %}Sana: {{ d }}{% endblocktrans %}</div>
-    <div>{% trans "Shifokor imzosi:" %} <span class="footer-sign">&nbsp;</span></div>
+  <!-- Imzo bloki -->
+  <div style="margin-top:32px;">
+    <div style="font-size:9pt; color:#555; margin-bottom:16px;">
+      {% blocktrans with d=print_date|date:"d.m.Y" %}Sana: {{ d }}{% endblocktrans %}
+    </div>
+    <table style="width:100%; border-collapse:collapse; font-size:9.5pt;">
+      <tr>
+        <td style="width:50%; padding-right:24px; vertical-align:bottom;">
+          <div style="font-weight:bold; margin-bottom:4px;">{% trans "Davolovchi shifokor:" %}</div>
+          <div style="margin-bottom:28px;">{{ patient.attending_doctor.full_name|default:'&nbsp;' }}</div>
+          <div style="border-bottom:1px solid #000; width:100%;">&nbsp;</div>
+          <div style="font-size:8pt; color:#555; text-align:center; margin-top:2px;">{% trans "(imzo)" %}</div>
+        </td>
+        <td style="width:50%; padding-left:24px; vertical-align:bottom;">
+          <div style="font-weight:bold; margin-bottom:4px;">{% trans "Bo'lim mudiri:" %}</div>
+          <div style="margin-bottom:28px;">
+            {% if exam.department_head_name %}{{ exam.department_head_name }}{% elif patient.department_head %}{{ patient.department_head.full_name }}{% else %}&nbsp;{% endif %}
+          </div>
+          <div style="border-bottom:1px solid #000; width:100%;">&nbsp;</div>
+          <div style="font-size:8pt; color:#555; text-align:center; margin-top:2px;">{% trans "(imzo)" %}</div>
+        </td>
+      </tr>
+    </table>
   </div>
 
   <script>

@@ -243,36 +243,18 @@
     {% for fname, label in visible_fields %}
 
     {% if fname == 'specialist_consultations' %}
-    <!-- Specialist consultations — ko'p qatorli -->
+    <!-- Turdosh mutaxasislar maslahatlari — faqat konsultatsiya so'rash tugmasi -->
     <div class="exam-card">
       <div class="exam-card-header" onclick="toggleCard('body-spec','icon-spec')">
         <span class="exam-card-label">{{ label }}</span>
         <span id="icon-spec" style="color:#9ca3af;font-size:18px;">＋</span>
       </div>
-      <div class="exam-card-body" id="body-spec" style="display:none;">
-        <div id="spec-rows">
-          {% if prefill and prefill.specialist_consultations %}
-            {% for line in prefill.specialist_consultations.splitlines %}
-            <div class="spec-row">
-              <textarea class="form-control spec-input" rows="2">{{ line }}</textarea>
-              <button type="button" class="btn btn-sm btn-outline-danger mt-1"
-                      onclick="this.closest('.spec-row').remove()">✕</button>
-            </div>
-            {% endfor %}
-          {% else %}
-          <div class="spec-row">
-            <textarea class="form-control spec-input" rows="2"
-                      placeholder="{% trans "Mutaxassis va xulosa..." %}"></textarea>
-            <button type="button" class="btn btn-sm btn-outline-danger mt-1"
-                    onclick="this.closest('.spec-row').remove()">✕</button>
-          </div>
-          {% endif %}
-        </div>
-        <input type="hidden" name="specialist_consultations" id="spec-hidden">
-        <button type="button" class="btn-add-spec mt-2" onclick="addSpecRow()">＋ {% trans "Qo'shish" %}</button>
-        <button type="button" class="btn-add-spec mt-2 ms-2" data-bs-toggle="modal" data-bs-target="#consultRequestModal">
+      <div class="exam-card-body" id="body-spec" style="display:none; padding:16px 20px;">
+        <input type="hidden" name="specialist_consultations" id="spec-hidden" value="">
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#consultRequestModal">
           🤝 {% trans "Konsultatsiya so'rash" %}
         </button>
+        <div id="consult-sent-list" class="mt-2"></div>
       </div>
     </div>
 
@@ -285,10 +267,14 @@
       </div>
       <div class="exam-card-body" id="body-labinv" style="display:none;">
         {% if available_lab_results or available_diag_results or available_labresult_results %}
+        <div class="d-flex gap-2 mb-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-lab-select-all">☑ {% trans "Barchasini belgilash" %}</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-lab-deselect-all">☐ {% trans "Barchasini olib tashlash" %}</button>
+        </div>
         <table class="lab-inv-table">
           <thead>
             <tr>
-              <th></th>
+              <th style="width:36px;"><input type="checkbox" id="lab-select-all-chk" title="{% trans "Barchasini belgilash" %}"></th>
               <th>{% trans "Tekshiruv" %}</th>
               <th>{% trans "Parametr" %}</th>
               <th>{% trans "Qiymat" %}</th>
@@ -477,6 +463,28 @@
       </div>
     </div>
 
+    <!-- IMZO BLOKI -->
+    <div class="exam-card" style="margin-top:8px;">
+      <div class="exam-card-body" style="padding:20px 24px;">
+        <div class="row g-4 text-center">
+          <div class="col-md-6">
+            <div class="small fw-semibold text-uppercase text-muted mb-1" style="letter-spacing:.05em;">{% trans "Davolovchi shifokor" %}</div>
+            <div class="fw-semibold" style="font-size:15px; min-height:24px;">{{ patient.attending_doctor.full_name|default:'—' }}</div>
+            <div class="border-bottom border-dark mx-auto mt-4" style="width:80%;">&nbsp;</div>
+            <div class="small text-muted mt-1">{% trans "(imzo)" %}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="small fw-semibold text-uppercase text-muted mb-1" style="letter-spacing:.05em;">{% trans "Bo'lim mudiri" %}</div>
+            <div class="fw-semibold" style="font-size:15px; min-height:24px;">
+              {% if exam and exam.department_head_name %}{{ exam.department_head_name }}{% elif patient.department_head %}{{ patient.department_head.full_name }}{% elif dept_head_default %}{{ dept_head_default }}{% else %}—{% endif %}
+            </div>
+            <div class="border-bottom border-dark mx-auto mt-4" style="width:80%;">&nbsp;</div>
+            <div class="small text-muted mt-1">{% trans "(imzo)" %}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </form><!-- /exam-main-form -->
 </div>
 
@@ -561,7 +569,6 @@ const DIAG_URL     = `/patients/ajax/episode-diagnoses/${PATIENT_ID}/`;
 const ICD10_URL    = `/patients/ajax/icd10-search/`;
 const CSRF         = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
 let   activeField  = null;
-const TXT_SPEC_PLACEHOLDER = "{% trans "Mutaxassis va xulosa..." %}";
 const MSG_SAVING = "⏳ {% trans 'Saqlanmoqda...' %}";
 const MSG_NO_DIAGNOSES = "{% trans "Tashxislar qo'shilmagan" %}";
 const MSG_DELETE_CONFIRM = "{% trans "O'chirilsinmi?" %}";
@@ -588,14 +595,35 @@ function toggleCard(bodyId, iconId) {
   if (icon) icon.textContent = isOpen ? '＋' : '－';
 }
 
-// Birinchi maydonni ochiq ko'rsatish
+// Ma'lumoti bor maydonlarni ochiq ko'rsatish
 document.addEventListener('DOMContentLoaded', function() {
-  const firstBody = document.querySelector('.exam-card-body[id^="body-"]');
-  if (firstBody) {
-    firstBody.style.display = 'block';
-    const id = firstBody.id.replace('body-', '');
-    const icon = document.getElementById('icon-' + id);
-    if (icon) icon.textContent = '－';
+  let anyOpened = false;
+  document.querySelectorAll('.exam-card-body[id^="body-"]').forEach(function(body) {
+    let hasData = false;
+    // Textarea lar bo'sh emasmi?
+    body.querySelectorAll('textarea').forEach(function(ta) {
+      if (ta.value.trim()) hasData = true;
+    });
+    // Belgilangan checkbox lar bormi? (lab natijalari)
+    if (body.querySelectorAll('input[type=checkbox]:checked').length > 0) hasData = true;
+
+    if (hasData) {
+      body.style.display = 'block';
+      const id = body.id.replace('body-', '');
+      const icon = document.getElementById('icon-' + id);
+      if (icon) icon.textContent = '－';
+      anyOpened = true;
+    }
+  });
+  // Hech biri ochilmagan bo'lsa birinchisini och
+  if (!anyOpened) {
+    const firstBody = document.querySelector('.exam-card-body[id^="body-"]:not(#body-spec)');
+    if (firstBody) {
+      firstBody.style.display = 'block';
+      const id = firstBody.id.replace('body-', '');
+      const icon = document.getElementById('icon-' + id);
+      if (icon) icon.textContent = '－';
+    }
   }
 
   // Auto-resize textareas
@@ -632,40 +660,49 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-// ===== SPECIALIST CONSULTATIONS =====
-function addSpecRow() {
-  const rows = document.getElementById('spec-rows');
-  const div  = document.createElement('div');
-  div.className = 'spec-row';
-  div.innerHTML = `<textarea class="form-control spec-input" rows="2" placeholder="${TXT_SPEC_PLACEHOLDER}"></textarea>
-    <button type="button" class="btn btn-sm btn-outline-danger mt-1"
-            onclick="this.closest('.spec-row').remove()">✕</button>`;
-  rows?.appendChild(div);
-}
-
-// Konsultatsiya so'rovi modal orqali yuborilgach — sahifa qayta yuklanmasdan
-// "Turdosh mutaxassislar maslahatlari" ro'yxatiga qator sifatida qo'shamiz
+// Konsultatsiya so'rovi modal orqali yuborilgach — ro'yxatga qo'shamiz
 window.onConsultationRequested = function (data) {
-  const rows = document.getElementById('spec-rows');
-  const div  = document.createElement('div');
-  div.className = 'spec-row';
-  div.innerHTML = `<textarea class="form-control spec-input" rows="2">🤝 ${data.label} — so'rov yuborildi</textarea>
-    <button type="button" class="btn btn-sm btn-outline-danger mt-1"
-            onclick="this.closest('.spec-row').remove()">✕</button>`;
-  rows?.appendChild(div);
+  const list = document.getElementById('consult-sent-list');
+  if (list) {
+    const item = document.createElement('div');
+    item.className = 'text-success small mt-1';
+    item.textContent = '✅ 🤝 ' + data.label + ' — so\'rov yuborildi';
+    list.appendChild(item);
+  }
   setTimeout(() => {
     bootstrap.Modal.getOrCreateInstance(document.getElementById('consultRequestModal')).hide();
   }, 800);
 };
 
-// Before submit — collect spec rows
-document.getElementById('exam-main-form')?.addEventListener('submit', function(e) {
-  // Collect specialist rows
-  const specInputs = document.querySelectorAll('.spec-input');
-  const specVal    = Array.from(specInputs).map(t => t.value.trim()).filter(Boolean).join('\n');
-  const specHidden = document.getElementById('spec-hidden');
-  if (specHidden) specHidden.value = specVal;
+// Lab natijalari — barchasini belgilash / olib tashlash
+(function () {
+  const allChk = document.getElementById('lab-select-all-chk');
+  const btnAll = document.getElementById('btn-lab-select-all');
+  const btnNone = document.getElementById('btn-lab-deselect-all');
+  function getLabCbs() {
+    return document.querySelectorAll('input[name="selected_lab_ids"], input[name="selected_diag_ids"], input[name="selected_labresult_ids"]');
+  }
+  if (allChk) {
+    allChk.addEventListener('change', function() {
+      getLabCbs().forEach(cb => { cb.checked = this.checked; });
+    });
+  }
+  if (btnAll) {
+    btnAll.addEventListener('click', function() {
+      getLabCbs().forEach(cb => { cb.checked = true; });
+      if (allChk) allChk.checked = true;
+    });
+  }
+  if (btnNone) {
+    btnNone.addEventListener('click', function() {
+      getLabCbs().forEach(cb => { cb.checked = false; });
+      if (allChk) allChk.checked = false;
+    });
+  }
+})();
 
+// Before submit — submit protection
+document.getElementById('exam-main-form')?.addEventListener('submit', function(e) {
   // Submit protection — faqat haqiqatda "Saqlash" tugmasi bosilganda
   const btn = document.getElementById('btn-submit-exam');
   if (btn && e.submitter === btn) { btn.disabled = true; btn.textContent = MSG_SAVING; }
