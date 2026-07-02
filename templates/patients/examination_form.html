@@ -266,70 +266,88 @@
         <span id="icon-labinv" style="color:#9ca3af;font-size:18px;">＋</span>
       </div>
       <div class="exam-card-body" id="body-labinv" style="display:none;">
-        {% if available_lab_results or available_diag_results or available_labresult_results %}
-        <div class="d-flex gap-2 mb-2">
-          <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-lab-select-all">☑ {% trans "Barchasini belgilash" %}</button>
-          <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-lab-deselect-all">☐ {% trans "Barchasini olib tashlash" %}</button>
+
+        <!-- Ko'rinish tanlash -->
+        <input type="hidden" name="lab_inv_mode" id="lab-inv-mode" value="table">
+        <div class="d-flex gap-1 mb-3">
+          <button type="button" class="btn btn-sm btn-primary" id="btn-labview-table" onclick="setLabView('table')">📋 {% trans "Jadval" %}</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-labview-text" onclick="setLabView('text')">✏️ {% trans "Matn" %}</button>
         </div>
-        <table class="lab-inv-table">
-          <thead>
-            <tr>
-              <th style="width:36px;"><input type="checkbox" id="lab-select-all-chk" title="{% trans "Barchasini belgilash" %}"></th>
-              <th>{% trans "Tekshiruv" %}</th>
-              <th>{% trans "Parametr" %}</th>
-              <th>{% trans "Qiymat" %}</th>
-              <th>{% trans "Sana" %}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in available_lab_results %}
-            {% with log=item.result_logs.first %}
-            <tr>
-              <td><input type="checkbox" name="selected_lab_ids" value="{{ item.pk }}" {% if item.pk in selected_lab_ids %}checked{% endif %}></td>
-              <td>🧪 {{ item.test_name }}</td>
-              <td>—</td>
-              <td>{{ log.result_text|default:'—' }}{% if log.recommendation %}<br><small>{% trans "Tavsiya" %}: {{ log.recommendation }}</small>{% endif %}</td>
-              <td>{{ item.created_at|date:"d.m.Y" }}</td>
-            </tr>
-            {% endwith %}
-            {% endfor %}
-            {% for item in available_diag_results %}
-            {% with log=item.result_logs.first %}
-            <tr>
-              <td><input type="checkbox" name="selected_diag_ids" value="{{ item.pk }}" {% if item.pk in selected_diag_ids %}checked{% endif %}></td>
-              <td>🔬 {{ item.get_diagnostic_type_display }}</td>
-              <td>—</td>
-              <td>{{ log.conclusion|default:'—' }}{% if log.recommendation %}<br><small>{% trans "Tavsiya" %}: {{ log.recommendation }}</small>{% endif %}</td>
-              <td>{{ item.created_at|date:"d.m.Y" }}</td>
-            </tr>
-            {% endwith %}
-            {% endfor %}
-            {% for item in available_labresult_results %}
-            <tr class="lab-inv-group-row">
-              <td><input type="checkbox" name="selected_labresult_ids" value="{{ item.pk }}" {% if item.pk in selected_labresult_ids %}checked{% endif %}></td>
-              <td colspan="3"><strong>🧪 {{ item.template.name }}</strong></td>
-              <td>{{ item.created_at|date:"d.m.Y" }}</td>
-            </tr>
-            {% for v in item.values.all %}
-              {% if v.value %}
+
+        <!-- JADVAL ko'rinishi -->
+        <div id="lab-view-table">
+          {% if available_lab_results or available_diag_results or available_labresult_results %}
+          <div class="d-flex gap-2 mb-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-lab-select-all">☑ {% trans "Barchasini belgilash" %}</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-lab-deselect-all">☐ {% trans "Barchasini olib tashlash" %}</button>
+          </div>
+          <table class="lab-inv-table">
+            <thead>
               <tr>
-                <td></td>
-                <td></td>
-                <td>{{ v.parameter.name }}</td>
-                <td>{{ v.value }} <small class="text-muted">({{ v.get_value_status_display }})</small></td>
-                <td></td>
+                <th style="width:36px;"><input type="checkbox" id="lab-select-all-chk" title="{% trans "Barchasini belgilash" %}"></th>
+                <th>{% trans "Tekshiruv" %}</th>
+                <th>{% trans "Parametr" %}</th>
+                <th>{% trans "Qiymat" %}</th>
+                <th>{% trans "Sana" %}</th>
               </tr>
+            </thead>
+            <tbody>
+              {% for item in available_lab_results %}
+              {% with log=item.result_logs.first %}
+              <tr>
+                <td><input type="checkbox" name="selected_lab_ids" value="{{ item.pk }}" {% if item.pk in selected_lab_ids %}checked{% endif %}></td>
+                <td>🧪 {{ item.test_name }}</td>
+                <td>—</td>
+                <td>{{ log.result_text|default:'—' }}{% if log.recommendation %}<br><small>{% trans "Tavsiya" %}: {{ log.recommendation }}</small>{% endif %}</td>
+                <td>{{ item.created_at|date:"d.m.Y" }}</td>
+              </tr>
+              {% endwith %}
+              {% endfor %}
+              {% for item in available_diag_results %}
+              {% with log=item.result_logs.first %}
+              <tr>
+                <td><input type="checkbox" name="selected_diag_ids" value="{{ item.pk }}" {% if item.pk in selected_diag_ids %}checked{% endif %}></td>
+                <td>🔬 {{ item.get_diagnostic_type_display }}</td>
+                <td>—</td>
+                <td>{{ log.conclusion|default:'—' }}{% if log.recommendation %}<br><small>{% trans "Tavsiya" %}: {{ log.recommendation }}</small>{% endif %}</td>
+                <td>{{ item.created_at|date:"d.m.Y" }}</td>
+              </tr>
+              {% endwith %}
+              {% endfor %}
+              {% for item in available_labresult_results %}
+              <tr class="lab-inv-group-row">
+                <td><input type="checkbox" name="selected_labresult_ids" value="{{ item.pk }}" {% if item.pk in selected_labresult_ids %}checked{% endif %}></td>
+                <td colspan="3"><strong>🧪 {{ item.template.name }}</strong></td>
+                <td>{{ item.created_at|date:"d.m.Y" }}</td>
+              </tr>
+              {% for v in item.values.all %}
+                {% if v.value %}
+                <tr>
+                  <td></td>
+                  <td></td>
+                  <td>{{ v.parameter.name }}</td>
+                  <td>{{ v.value }} <small class="text-muted">({{ v.get_value_status_display }})</small></td>
+                  <td></td>
+                </tr>
+                {% endif %}
+              {% endfor %}
+              {% if item.conclusion %}
+              <tr><td></td><td colspan="3"><em>{% trans "Xulosa" %}: {{ item.conclusion }}</em></td><td></td></tr>
               {% endif %}
-            {% endfor %}
-            {% if item.conclusion %}
-            <tr><td></td><td colspan="3"><em>{% trans "Xulosa" %}: {{ item.conclusion }}</em></td><td></td></tr>
-            {% endif %}
-            {% endfor %}
-          </tbody>
-        </table>
-        {% else %}
-        <div class="lab-inv-empty">{% trans "Tayyor natijalar yo'q" %}</div>
-        {% endif %}
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="lab-inv-empty">{% trans "Tayyor natijalar yo'q" %}</div>
+          {% endif %}
+        </div>
+
+        <!-- MATN ko'rinishi -->
+        <div id="lab-view-text" style="display:none;">
+          <textarea name="lab_investigations_text" id="lab-inv-textarea"
+                    style="width:100%;min-height:160px;border:none;outline:none;resize:vertical;font-size:15px;line-height:1.7;color:#111827;background:transparent;padding:8px 0;"
+                    placeholder="{% trans "Laboratoriya va instrumental tadqiqotlar natijalarini yozing..." %}">{% if prefill and prefill.lab_investigations %}{{ prefill.lab_investigations }}{% endif %}</textarea>
+        </div>
 
         <!-- Yangi tahlil/tekshiruv tayinlash -->
         <div class="lab-order-box mt-3">
@@ -337,6 +355,110 @@
             ＋ {% trans "Yangi tahlil/tekshiruv tayinlash" %}
           </button>
           <div id="lab-order-msg" class="small mt-1"></div>
+        </div>
+      </div>
+    </div>
+
+    {% elif fname == 'conclusion' %}
+    <!-- Tavsiyalar — prescriptions, lab nomlari, konsultatsiya nomlari yordamchisi -->
+    <div class="exam-card">
+      <div class="exam-card-header" onclick="toggleCard('body-conclusion','icon-conclusion')">
+        <div class="d-flex align-items-center gap-2">
+          <span class="exam-card-label">{{ label }}</span>
+          <button type="button" class="shablon-btn"
+                  onclick="event.stopPropagation();openShablon('conclusion')"
+                  title="{% trans "Shablondan qo'shish" %}">📋</button>
+        </div>
+        <span id="icon-conclusion" style="color:#9ca3af;font-size:18px;">＋</span>
+      </div>
+      <div class="exam-card-body" id="body-conclusion" style="display:none;">
+        <textarea name="conclusion" id="examfield-conclusion" placeholder="{% trans "Yozing..." %}">{% if prefill %}{{ prefill.conclusion }}{% endif %}</textarea>
+
+        <!-- Yordamchi panellar -->
+        <div class="mt-3 border-top pt-3">
+
+          {% if patient_prescriptions %}
+          <!-- Dori-darmonlar (retseptlar) -->
+          <div class="mb-3">
+            <div class="fw-semibold small text-muted text-uppercase mb-2" style="letter-spacing:.04em;">
+              💊 {% trans "Tayinlangan dorilar" %}
+              <button type="button" class="btn btn-sm btn-outline-secondary ms-2 py-0 px-2" id="btn-rx-select-all" style="font-size:11px;">{% trans "Barchasini" %}</button>
+            </div>
+            <div style="max-height:200px; overflow-y:auto; border:1px solid #e5e7eb; border-radius:8px; padding:8px;">
+              {% for rx in patient_prescriptions %}
+              <div class="d-flex align-items-start gap-2 py-1 border-bottom">
+                <input type="checkbox" class="rx-include-cb form-check-input mt-1 flex-shrink-0"
+                       data-text="{{ rx.drug_name }}{% if rx.dose %} {{ rx.dose }}{% endif %}{% if rx.method %}, {{ rx.method }}{% endif %}{% if rx.frequency_num %}, {{ rx.frequency_num }}x/{{ rx.frequency_unit }}{% endif %}{% if rx.duration_days %}, {{ rx.duration_days }} {% trans "kun" %}{% endif %}{% if rx.note %} ({{ rx.note }}){% endif %}">
+                <div class="small">
+                  <span class="fw-semibold">{{ rx.drug_name }}</span>
+                  {% if rx.dose %}<span class="text-muted"> · {{ rx.dose }}</span>{% endif %}
+                  {% if rx.method %}<span class="text-muted"> · {{ rx.method }}</span>{% endif %}
+                  {% if rx.duration_days %}<span class="text-muted"> · {{ rx.duration_days }} {% trans "kun" %}</span>{% endif %}
+                  {% if rx.frequency_num %}<span class="text-muted"> · {{ rx.frequency_num }}x/{{ rx.frequency_unit }}</span>{% endif %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            <button type="button" class="btn btn-sm btn-primary mt-2" id="btn-rx-insert">
+              ➕ {% trans "Tanlangan dorilarni qo'shish" %}
+            </button>
+          </div>
+          {% endif %}
+
+          <!-- Tahlillar va diagnostika nomlari -->
+          {% if available_lab_results or available_diag_results or available_labresult_results %}
+          <div class="mb-3">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <span class="fw-semibold small text-muted text-uppercase" style="letter-spacing:.04em;">🧪 {% trans "Tahlillar / tekshiruvlar nomi" %}</span>
+              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" id="btn-lab-names-all" style="font-size:11px;">{% trans "Barchasini" %}</button>
+            </div>
+            <div style="max-height:140px; overflow-y:auto; border:1px solid #e5e7eb; border-radius:8px; padding:6px 10px;">
+              {% for item in available_lab_results %}
+              <div class="form-check py-1">
+                <input class="form-check-input conc-name-cb" type="checkbox" value="🧪 {{ item.test_name }}" id="clab-{{ item.pk }}">
+                <label class="form-check-label small" for="clab-{{ item.pk }}">{{ item.test_name }}</label>
+              </div>
+              {% endfor %}
+              {% for item in available_diag_results %}
+              <div class="form-check py-1">
+                <input class="form-check-input conc-name-cb" type="checkbox" value="🔬 {{ item.get_diagnostic_type_display }}" id="cdiag-{{ item.pk }}">
+                <label class="form-check-label small" for="cdiag-{{ item.pk }}">{{ item.get_diagnostic_type_display }}</label>
+              </div>
+              {% endfor %}
+              {% for item in available_labresult_results %}
+              <div class="form-check py-1">
+                <input class="form-check-input conc-name-cb" type="checkbox" value="🧪 {{ item.template.name }}" id="clabr-{{ item.pk }}">
+                <label class="form-check-label small" for="clabr-{{ item.pk }}">{{ item.template.name }}</label>
+              </div>
+              {% endfor %}
+            </div>
+            <button type="button" class="btn btn-sm btn-info text-white mt-2" id="btn-lab-names-insert">
+              ➕ {% trans "Tanlangan nomlarni qo'shish" %}
+            </button>
+          </div>
+          {% endif %}
+
+          <!-- Konsultatsiyalar nomlari -->
+          {% if patient_consult_names %}
+          <div class="mb-2">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <span class="fw-semibold small text-muted text-uppercase" style="letter-spacing:.04em;">🤝 {% trans "Konsultatsiyalar nomi" %}</span>
+              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" id="btn-consult-names-all" style="font-size:11px;">{% trans "Barchasini" %}</button>
+            </div>
+            <div style="max-height:140px; overflow-y:auto; border:1px solid #e5e7eb; border-radius:8px; padding:6px 10px;">
+              {% for c in patient_consult_names %}
+              <div class="form-check py-1">
+                <input class="form-check-input conc-consult-cb" type="checkbox" value="🤝 {{ c.display_label }}" id="cconsult-{{ forloop.counter }}">
+                <label class="form-check-label small" for="cconsult-{{ forloop.counter }}">{{ c.display_label }}</label>
+              </div>
+              {% endfor %}
+            </div>
+            <button type="button" class="btn btn-sm btn-primary mt-2" id="btn-consult-names-insert">
+              ➕ {% trans "Tanlangan nomlarni qo'shish" %}
+            </button>
+          </div>
+          {% endif %}
+
         </div>
       </div>
     </div>
@@ -354,7 +476,7 @@
         <span id="icon-{{ fname }}" style="color:#9ca3af;font-size:18px;">＋</span>
       </div>
       <div class="exam-card-body" id="body-{{ fname }}" style="display:none;">
-        <textarea name="{{ fname }}" id="examfield-{{ fname }}" placeholder="{% trans "Yozing..." %}">{% if prefill %}{% if fname == 'complaints' %}{{ prefill.complaints }}{% elif fname == 'anamnesis_morbi' %}{{ prefill.anamnesis_morbi }}{% elif fname == 'epidemiological_anamnesis' %}{{ prefill.epidemiological_anamnesis }}{% elif fname == 'anamnesis_vitae' %}{{ prefill.anamnesis_vitae }}{% elif fname == 'status_praesens' %}{{ prefill.status_praesens }}{% elif fname == 'neurological_status' %}{{ prefill.neurological_status }}{% elif fname == 'status_localis' %}{{ prefill.status_localis }}{% elif fname == 'allergy_anamnesis' %}{{ prefill.allergy_anamnesis }}{% elif fname == 'conclusion' %}{{ prefill.conclusion }}{% elif fname == 'drug_justification' %}{{ prefill.drug_justification }}{% endif %}{% endif %}</textarea>
+        <textarea name="{{ fname }}" id="examfield-{{ fname }}" placeholder="{% trans "Yozing..." %}">{% if prefill %}{% if fname == 'complaints' %}{{ prefill.complaints }}{% elif fname == 'anamnesis_morbi' %}{{ prefill.anamnesis_morbi }}{% elif fname == 'epidemiological_anamnesis' %}{{ prefill.epidemiological_anamnesis }}{% elif fname == 'anamnesis_vitae' %}{{ prefill.anamnesis_vitae }}{% elif fname == 'status_praesens' %}{{ prefill.status_praesens }}{% elif fname == 'neurological_status' %}{{ prefill.neurological_status }}{% elif fname == 'status_localis' %}{{ prefill.status_localis }}{% elif fname == 'allergy_anamnesis' %}{{ prefill.allergy_anamnesis }}{% elif fname == 'drug_justification' %}{{ prefill.drug_justification }}{% endif %}{% endif %}</textarea>
       </div>
     </div>
     {% endif %}
@@ -427,9 +549,11 @@
         <table class="table table-sm table-bordered align-middle mb-0" id="diag-ex-table">
           <thead class="table-light">
             <tr>
-              <th>{% trans "Tashxislar" %}</th>
+              <th>{% trans "Tashxis kodi / nomi" %}</th>
               <th>{% trans "Tashxis turi" %}</th>
-              <th>{% trans "Kechishi" %}</th>
+              <th>{% trans "Tanlangan turi" %}</th>
+              <th>{% trans "Kasallik kechishi" %}</th>
+              <th>{% trans "Klinik tashxis" %}</th>
               <th>{% trans "Sana" %}</th>
               <th></th>
             </tr>
@@ -440,12 +564,11 @@
               <td>
                 {% if d.icd10_code %}<span class="badge bg-primary me-1">{{ d.icd10_code.code }}</span>{% endif %}
                 <span class="small">{{ d.icd10_code.title_uz|default:"—" }}</span>
-                {% if d.clinical_text %}
-                <div class="text-muted small mt-1">{{ d.clinical_text|truncatechars:80 }}</div>
-                {% endif %}
               </td>
               <td><span class="badge bg-secondary">{{ d.get_diagnosis_type_display }}</span></td>
+              <td class="small">{{ d.get_diagnosis_role_display|default:"—" }}</td>
               <td class="small">{{ d.get_disease_course_display|default:"—" }}</td>
+              <td class="small text-muted">{{ d.clinical_text|default:"—"|truncatechars:60 }}</td>
               <td class="small text-muted">{{ d.created_at|date:"d.m.Y" }}</td>
               <td>
                 <button type="button" class="btn btn-sm btn-outline-danger btn-del-diag-ex"
@@ -674,6 +797,76 @@ window.onConsultationRequested = function (data) {
   }, 800);
 };
 
+// ===== LAB KO'RINISH TOGGLE =====
+window.setLabView = function (mode) {
+  document.getElementById('lab-inv-mode').value = mode;
+  const isTable = mode === 'table';
+  document.getElementById('lab-view-table').style.display = isTable ? '' : 'none';
+  document.getElementById('lab-view-text').style.display  = isTable ? 'none' : '';
+  document.getElementById('btn-labview-table').className = isTable
+      ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline-secondary';
+  document.getElementById('btn-labview-text').className  = isTable
+      ? 'btn btn-sm btn-outline-secondary' : 'btn btn-sm btn-primary';
+};
+// Agar mavjud ko'rik tahrirlansa va matn bor bo'lsa — matn rejimini ko'rsat
+(function () {
+  const ta = document.getElementById('lab-inv-textarea');
+  if (ta && ta.value.trim()) { window.setLabView('text'); }
+})();
+
+// ===== TAVSIYALAR yordamchisi =====
+(function () {
+  const ta = document.getElementById('examfield-conclusion');
+  if (!ta) return;
+
+  function appendToTextarea(text) {
+    const cur = ta.value.trim();
+    ta.value = cur ? cur + '\n' + text : text;
+    ta.style.height = 'auto';
+    ta.style.height = Math.max(100, ta.scrollHeight) + 'px';
+  }
+
+  function insertChecked(selector, clearAfter) {
+    const checked = document.querySelectorAll(selector + ':checked');
+    if (!checked.length) return;
+    const lines = [];
+    checked.forEach(cb => lines.push('• ' + cb.value));
+    appendToTextarea(lines.join('\n'));
+    if (clearAfter) checked.forEach(cb => { cb.checked = false; });
+  }
+
+  // Dori: "Barchasini" tugmasi
+  document.getElementById('btn-rx-select-all')?.addEventListener('click', () => {
+    document.querySelectorAll('.rx-include-cb').forEach(cb => { cb.checked = true; });
+  });
+
+  // Dori: "Tanlangan dorilarni qo'shish"
+  document.getElementById('btn-rx-insert')?.addEventListener('click', function () {
+    const checked = document.querySelectorAll('.rx-include-cb:checked');
+    if (!checked.length) return;
+    const lines = ['Tayinlangan dorilar:'];
+    checked.forEach(cb => lines.push('• ' + cb.dataset.text));
+    appendToTextarea(lines.join('\n'));
+    checked.forEach(cb => { cb.checked = false; });
+  });
+
+  // Tahlillar: "Barchasini" + "Qo'shish"
+  document.getElementById('btn-lab-names-all')?.addEventListener('click', () => {
+    document.querySelectorAll('.conc-name-cb').forEach(cb => { cb.checked = true; });
+  });
+  document.getElementById('btn-lab-names-insert')?.addEventListener('click', () => {
+    insertChecked('.conc-name-cb', true);
+  });
+
+  // Konsultatsiyalar: "Barchasini" + "Qo'shish"
+  document.getElementById('btn-consult-names-all')?.addEventListener('click', () => {
+    document.querySelectorAll('.conc-consult-cb').forEach(cb => { cb.checked = true; });
+  });
+  document.getElementById('btn-consult-names-insert')?.addEventListener('click', () => {
+    insertChecked('.conc-consult-cb', true);
+  });
+})();
+
 // Lab natijalari — barchasini belgilash / olib tashlash
 (function () {
   const allChk = document.getElementById('lab-select-all-chk');
@@ -844,10 +1037,11 @@ function reloadDiags() {
           <td>
             ${d.icd10_code?`<span class="badge bg-primary me-1">${d.icd10_code}</span>`:''}
             <span class="small">${d.icd10_title||'—'}</span>
-            ${d.clinical_text?`<div class="text-muted small mt-1">${d.clinical_text.substring(0,80)}</div>`:''}
           </td>
           <td><span class="badge bg-secondary">${d.diagnosis_type_display}</span></td>
           <td class="small">${d.diagnosis_role_display||'—'}</td>
+          <td class="small">${d.disease_course_display||'—'}</td>
+          <td class="small text-muted">${(d.clinical_text||'—').substring(0,60)}</td>
           <td class="small text-muted">${d.created_at||''}</td>
           <td><button type="button" class="btn btn-sm btn-outline-danger btn-del-diag-ex"
                       data-id="${d.id}">🗑</button></td>

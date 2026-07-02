@@ -154,7 +154,13 @@
   <div class="field-line"><span class="field-label">{{ label }}:</span> {{ value|default:'—' }}</div>
   {% endfor %}
 
-  <!-- Laboratoriya va instrumental tadqiqotlar -->
+  <!-- Laboratoriya va instrumental tadqiqotlar — matn ko'rinishi -->
+  {% if lab_inv_free_text %}
+  <div class="section-title">{% trans "Laboratoriya va instrumental tadqiqotlar:" %}</div>
+  <div class="field-line" style="white-space:pre-wrap;">{{ lab_inv_free_text }}</div>
+  {% endif %}
+
+  <!-- Laboratoriya va instrumental tadqiqotlar — jadval ko'rinishi -->
   {% if lab_result_rows or lab_test_results or diag_results %}
   <div class="section-title">{% trans "Laboratoriya va instrumental tadqiqotlar:" %}</div>
   <table class="diag-table">
@@ -221,19 +227,23 @@
   <table class="diag-table">
     <thead>
       <tr>
-        <th>{% trans "Kod" %}</th>
-        <th>{% trans "Nomi" %}</th>
-        <th>{% trans "Turi" %}</th>
-        <th>{% trans "Kechishi" %}</th>
+        <th style="width:8%;">{% trans "Kod" %}</th>
+        <th style="width:22%;">{% trans "Nomi" %}</th>
+        <th style="width:12%;">{% trans "Tashxis turi" %}</th>
+        <th style="width:12%;">{% trans "Tanlangan turi" %}</th>
+        <th style="width:12%;">{% trans "Kasallik kechishi" %}</th>
+        <th>{% trans "Klinik tashxis" %}</th>
       </tr>
     </thead>
     <tbody>
       {% for d in diagnoses %}
       <tr>
-        <td>{{ d.icd10_code.code|default:'—' }}</td>
-        <td>{{ d.icd10_code.title_uz|default:d.clinical_text|default:'—' }}</td>
+        <td><strong>{{ d.icd10_code.code|default:'—' }}</strong></td>
+        <td>{{ d.icd10_code.title_uz|default:'—' }}</td>
         <td>{{ d.get_diagnosis_type_display }}</td>
+        <td>{{ d.get_diagnosis_role_display|default:'—' }}</td>
         <td>{{ d.get_disease_course_display|default:'—' }}</td>
+        <td>{{ d.clinical_text|default:'—' }}</td>
       </tr>
       {% endfor %}
     </tbody>

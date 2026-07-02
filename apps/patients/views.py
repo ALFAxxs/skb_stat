@@ -148,15 +148,17 @@ def episode_diagnoses(request, patient_id):
     if request.method == 'GET':
         diags = patient.episode_diagnoses.select_related('icd10_code').all()
         data = [{
-            'id':             d.id,
-            'icd10_code':     d.icd10_code.code if d.icd10_code else '',
-            'icd10_title':    d.icd10_code.title_uz if d.icd10_code else '',
-            'diagnosis_type': d.diagnosis_type,
+            'id':                     d.id,
+            'icd10_code':             d.icd10_code.code if d.icd10_code else '',
+            'icd10_title':            d.icd10_code.title_uz if d.icd10_code else '',
+            'diagnosis_type':         d.diagnosis_type,
             'diagnosis_type_display': d.get_diagnosis_type_display(),
-            'diagnosis_role': d.diagnosis_role,
+            'diagnosis_role':         d.diagnosis_role,
             'diagnosis_role_display': d.get_diagnosis_role_display(),
-            'clinical_text':  d.clinical_text,
-            'sort_order':     d.sort_order,
+            'disease_course_display': d.get_disease_course_display(),
+            'clinical_text':          d.clinical_text,
+            'sort_order':             d.sort_order,
+            'created_at':             d.created_at.strftime('%d.%m.%Y') if d.created_at else '',
         } for d in diags]
         return JsonResponse({'diagnoses': data})
 
@@ -180,11 +182,13 @@ def episode_diagnoses(request, patient_id):
                 sort_order=sort_order,
             )
             return JsonResponse({'success': True, 'id': d.id,
-                                 'icd10_code': d.icd10_code.code if d.icd10_code else '',
-                                 'icd10_title': d.icd10_code.title_uz if d.icd10_code else '',
+                                 'icd10_code':             d.icd10_code.code if d.icd10_code else '',
+                                 'icd10_title':            d.icd10_code.title_uz if d.icd10_code else '',
                                  'diagnosis_type_display': d.get_diagnosis_type_display(),
                                  'diagnosis_role_display': d.get_diagnosis_role_display(),
-                                 'clinical_text': d.clinical_text})
+                                 'disease_course_display': d.get_disease_course_display(),
+                                 'clinical_text':          d.clinical_text,
+                                 'created_at':             d.created_at.strftime('%d.%m.%Y') if d.created_at else ''})
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
@@ -246,9 +250,9 @@ EXAM_FIELDS = [
     ('neurological_status',      _l('Nevrologik holat')),
     ('status_localis',           _l('Mahalliy holat (Status localis)')),
     ('epidemiological_anamnesis',_l('Epidemiologik anamnez')),
+    ('allergy_anamnesis',        _l('Allergoanamnesis')),
     ('lab_investigations',       _l('Laboratoriya va instrumental tadqiqotlar va maslahatlar')),
     ('specialist_consultations', _l('Turdosh mutaxassislar maslahatlari')),
-    ('allergy_anamnesis',        _l('Allergoanamnesis')),
     ('conclusion',               _l('Tavsiyalar')),
     ('drug_justification',       _l('Dori vositalari uchun asoslar')),
 ]
@@ -339,7 +343,11 @@ def medical_examination_page(request, patient_id, exam_pk=None):
             if res.conclusion:
                 text += f"\n{_('Xulosa')}: {res.conclusion}"
             parts.append(text)
-        exam.lab_investigations = '\n\n'.join(parts)
+        lab_inv_mode = request.POST.get('lab_inv_mode', 'table')
+        if lab_inv_mode == 'text':
+            exam.lab_investigations = request.POST.get('lab_investigations_text', '').strip()
+        else:
+            exam.lab_investigations = '\n\n'.join(parts)
 
         exam.save()
         exam.selected_lab_tests.set(lab_qs)
@@ -429,6 +437,8 @@ def medical_examination_page(request, patient_id, exam_pk=None):
         'selected_labresult_ids': selected_labresult_ids,
         'service_categories': service_categories,
         'prefill': prefill,
+        'patient_prescriptions': patient.prescriptions.order_by('-created_at')[:30],
+        'patient_consult_names': patient.consultation_requests.select_related('service').order_by('-created_at')[:30],
     })
 
 
@@ -466,6 +476,9 @@ def medical_examination_print(request, patient_id, exam_pk):
     diag_results      = exam.selected_diagnostics.prefetch_related('result_logs').all()
     lab_result_rows = exam.selected_lab_results.select_related('template').prefetch_related('values__parameter').all()
 
+    # Agar jadval natijasi yo'q lekin matn maydoni to'ldirilgan bo'lsa
+    has_table_results = lab_test_results.exists() or diag_results.exists() or lab_result_rows.exists()
+    lab_inv_free_text = exam.lab_investigations if not has_table_results else ''
     return render(request, 'patients/examination_print.html', {
         'patient':           patient,
         'exam':              exam,
@@ -474,6 +487,7 @@ def medical_examination_print(request, patient_id, exam_pk):
         'lab_test_results':  lab_test_results,
         'diag_results':      diag_results,
         'lab_result_rows':   lab_result_rows,
+        'lab_inv_free_text': lab_inv_free_text,
         'diagnoses':         patient.episode_diagnoses.select_related('icd10_code').all(),
         'header_b64':        _hospital_header_b64(),
         'print_date':        timezone.now(),
@@ -507,6 +521,9 @@ def medical_examination_print_preview(request, patient_id):
         if fname not in hidden and (fname != 'drug_justification' or show_drug) and fname != 'lab_investigations'
     ]
 
+    lab_inv_mode_prev = request.POST.get('lab_inv_mode', 'table')
+    lab_inv_text_prev = request.POST.get('lab_investigations_text', '').strip()
+
     selected_lab_ids       = request.POST.getlist('selected_lab_ids')
     selected_diag_ids      = request.POST.getlist('selected_diag_ids')
     selected_labresult_ids = request.POST.getlist('selected_labresult_ids')
@@ -522,17 +539,18 @@ def medical_examination_print_preview(request, patient_id):
     ).select_related('template').prefetch_related('values__parameter')
 
     return render(request, 'patients/examination_print.html', {
-        'patient':           patient,
-        'exam':              preview,
-        'exam_type_display': valid_exam_types.get(exam_type, ''),
-        'fields':            fields,
-        'lab_test_results':  lab_test_results,
-        'diag_results':      diag_results,
-        'lab_result_rows':   lab_result_rows,
-        'diagnoses':         patient.episode_diagnoses.select_related('icd10_code').all(),
-        'header_b64':        _hospital_header_b64(),
-        'print_date':        timezone.now(),
-        'is_preview':        True,
+        'patient':            patient,
+        'exam':               preview,
+        'exam_type_display':  valid_exam_types.get(exam_type, ''),
+        'fields':             fields,
+        'lab_test_results':   lab_test_results if lab_inv_mode_prev == 'table' else [],
+        'diag_results':       diag_results     if lab_inv_mode_prev == 'table' else [],
+        'lab_result_rows':    lab_result_rows  if lab_inv_mode_prev == 'table' else [],
+        'lab_inv_free_text':  lab_inv_text_prev if lab_inv_mode_prev == 'text' else '',
+        'diagnoses':          patient.episode_diagnoses.select_related('icd10_code').all(),
+        'header_b64':         _hospital_header_b64(),
+        'print_date':         timezone.now(),
+        'is_preview':         True,
     })
 
 

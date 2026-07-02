@@ -142,16 +142,45 @@ let assignTimer;
 
 function fetchAssignServices(q) {
     if (assignCat === '__my_packages__') {
-        const seen = new Set();
-        const items = [];
-        myPackages.forEach(pkg => pkg.items.forEach(item => {
-            if (seen.has(item.service_id)) return;
-            seen.add(item.service_id);
-            items.push({ id: item.service_id, name: item.service_name, category: item.category || '', price: item.price || 0 });
-        }));
         const ql = (q || '').toLowerCase().trim();
-        const filtered = ql ? items.filter(s => s.name.toLowerCase().includes(ql)) : items;
-        renderAssignGrid(filtered);
+        assignGridEmpty.style.display = 'none';
+        if (!myPackages.length) {
+            assignGrid.innerHTML = '<div class="col-12 text-center text-muted py-4">⭐ Mening paketim bo\'sh. Xizmatlar yonidagi ☆ tugmasini bosib qo\'shing.</div>';
+            return;
+        }
+        let html = '';
+        myPackages.forEach(pkg => {
+            const items = pkg.items.filter(item => !ql || item.service_name.toLowerCase().includes(ql));
+            if (!items.length) return;
+            html += `<div class="col-12 mb-2">
+                <div class="d-flex align-items-center gap-2 mb-1" style="background:#fffbeb;border-radius:8px;padding:6px 10px;">
+                    <span class="fw-semibold small">⭐ ${pkg.name || 'Paket'}</span>
+                    <button type="button" class="btn btn-sm btn-warning py-0 px-2 ms-auto pkg-add-all-btn" data-pkg-idx="${myPackages.indexOf(pkg)}" style="font-size:12px;">Barchasini qo'shish</button>
+                </div>
+                <div class="row g-2">
+                    ${items.map(item => assignRowHTML({ id: item.service_id, name: item.service_name, category: item.category || '', price: item.price || 0 })).join('')}
+                </div>
+            </div>`;
+        });
+        assignGrid.innerHTML = html || '<div class="col-12 text-center text-muted py-4">Topilmadi</div>';
+        bindAssignGridEvents();
+        // "Barchasini qo'shish" tugmalari
+        assignGrid.querySelectorAll('.pkg-add-all-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const pkg = myPackages[parseInt(this.dataset.pkgIdx)];
+                if (!pkg) return;
+                pkg.items.forEach(item => {
+                    const id = String(item.service_id);
+                    assignCart[id] = assignCart[id] || {
+                        id, name: item.service_name, category: item.category || '',
+                        price: parseFloat(item.price) || 0, doctor_id: null, comment: '',
+                        scheduled_date: '', scheduled_time: '09:00', repeat_days: 1,
+                    };
+                });
+                renderAssignSummary();
+                fetchAssignServices(document.getElementById('assign-search').value);
+            });
+        });
         return;
     }
     const catParam = assignSubCatId ? `&category=${assignSubCatId}` : '';
