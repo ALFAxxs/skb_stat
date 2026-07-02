@@ -1859,20 +1859,12 @@ def doctor_patient_list(request, visit_type):
         messages.warning(request, _("Sizning shifokor profilingiz hali yaratilmagan."))
         return redirect('doctor_dashboard')
 
-    # Bo'lim mudiri uchun faqat shaxsan biriktirilgan bemorlar ko'rinadi.
-    # Butun bo'lim ro'yxati /patients/ sahifasida mavjud.
+    # Bo'lim mudiri uchun faqat o'zi davolovchi shifokor sifatida biriktirilgan
+    # bemorlar ko'rinadi. Butun bo'lim ro'yxati /patients/ sahifasida mavjud.
     if doctor.is_head:
-        personal_q = (
-            Q(attending_doctor=doctor) |
-            Q(department_head=doctor) |
-            Q(consultation_requests__consultants=doctor) |
-            Q(diagnostic_assignments__assigned_by=doctor) |
-            Q(lab_test_assignments__assigned_by=doctor) |
-            Q(treatment_procedures__assigned_by=doctor)
-        )
         qs = PatientCard.objects.select_related(
             'department', 'attending_doctor', 'department_head'
-        ).filter(personal_q).distinct().filter(visit_type=visit_type)
+        ).filter(attending_doctor=doctor, visit_type=visit_type)
     else:
         qs = _doctor_scope(doctor).filter(visit_type=visit_type)
 
