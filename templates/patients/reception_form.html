@@ -1105,31 +1105,24 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ==================== BO'LIM → SHIFOKOR FILTER ====================
-    const deptSelect    = document.getElementById('id_department');
-    const doctorSelect  = document.getElementById('id_attending_doctor');
-    const headSelect    = document.getElementById('id_department_head');
+    const deptSelect = document.getElementById('id_department');
+    const headSelect = document.getElementById('id_department_head');
 
     function loadDoctors(deptId) {
-        if (!doctorSelect || !headSelect) return;
+        if (!headSelect) return;
         if (!deptId) {
-            doctorSelect.innerHTML = OPT_SELECT_PLACEHOLDER;
-            headSelect.innerHTML   = OPT_SELECT_PLACEHOLDER;
+            headSelect.innerHTML = OPT_SELECT_PLACEHOLDER;
             return;
         }
         fetch(`/patients/ajax/doctors/?department_id=${deptId}`)
             .then(res => res.json())
             .then(data => {
-                doctorSelect.innerHTML = OPT_SELECT_PLACEHOLDER;
-                headSelect.innerHTML   = OPT_SELECT_PLACEHOLDER;
+                headSelect.innerHTML = OPT_SELECT_PLACEHOLDER;
                 data.forEach(doc => {
-                    const opt1 = new Option(doc.full_name, doc.id);
-                    const opt2 = new Option(doc.full_name, doc.id);
-                    doctorSelect.add(opt1);
-                    // Bo'lim mudiri faqat is_head=True bo'lganlar
-                    if (doc.is_head) headSelect.add(opt2);
+                    if (doc.is_head) headSelect.add(new Option(doc.full_name, doc.id));
                 });
-                // Agar faqat bitta mudir bo'lsa — avtomatik tanlash
-                if (headSelect.options.length === 2) {
+                // Bo'lim mudiri avtomatik tanlansin
+                if (headSelect.options.length >= 2) {
                     headSelect.selectedIndex = 1;
                 }
             })
