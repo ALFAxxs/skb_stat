@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load i18n %}
 {% block title %}{% blocktrans with name=patient.full_name %}{{ name }} — bemor kartasi{% endblocktrans %}{% endblock %}
 
@@ -12,46 +12,6 @@
     .info-row .label { width: 230px; flex-shrink: 0; color: #6c757d; font-size: .9rem; }
     .info-row .value { font-weight: 500; }
     .section-title { color: #0d6efd; font-weight: 600; margin: 16px 0 8px; }
-
-    /* ===== RX BLOCK ===== */
-    .rx-card { border-radius: 8px; border: 1px solid #dee2e6; margin-bottom: 14px; overflow: hidden; }
-    .rx-card-header { background: #f0f4ff; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #d0dcf5; }
-    .rx-card-title { font-weight: 600; color: #2c4fa3; font-size: .95rem; }
-    .rx-label { font-size: 0.81rem; color: #495057; font-weight: 500; margin-bottom: 4px; display: block; }
-    .rx-required::after { content: ' *'; color: #dc3545; }
-    .rx-input { border-radius: 6px; border: 1px solid #ced4da; padding: 7px 11px; width: 100%; font-size: .875rem; transition: border-color .15s ease, box-shadow .15s ease; background: #fff; }
-    .rx-input:hover:not(:disabled):not(:focus) { border-color: #86b7fe; }
-    .rx-input:focus { border-color: #0d6efd; box-shadow: 0 0 0 .2rem rgba(13,110,253,.15); outline: none; }
-    .rx-select { border-radius: 6px; border: 1px solid #ced4da; padding: 7px 10px; font-size: .875rem; background: #fff; transition: border-color .15s; cursor: pointer; }
-    .rx-select:hover { border-color: #86b7fe; }
-    .rx-select:focus { border-color: #0d6efd; box-shadow: 0 0 0 .2rem rgba(13,110,253,.15); outline: none; }
-    .rx-search-wrap { position: relative; }
-    .rx-search-icon { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: #adb5bd; font-size: 13px; pointer-events: none; }
-    .rx-search-wrap .rx-input { padding-left: 30px; }
-    .rx-ac-list { position: absolute; top: 100%; left: 0; right: 0; z-index: 1070; background: #fff; border: 1px solid #ced4da; border-top: none; border-radius: 0 0 6px 6px; max-height: 190px; overflow-y: auto; box-shadow: 0 6px 16px rgba(0,0,0,.1); display: none; }
-    .rx-ac-item { padding: 8px 12px; cursor: pointer; font-size: 0.84rem; border-bottom: 1px solid #f4f4f4; }
-    .rx-ac-item:hover, .rx-ac-item.hlt { background: #e8f0fe; color: #1a56db; }
-    .rx-freq-wrap { display: flex; gap: 5px; align-items: center; }
-    .rx-freq-wrap .rx-input { width: 68px; text-align: center; flex-shrink: 0; }
-    .rx-freq-wrap .rx-label-in { font-size: .8rem; color: #6c757d; white-space: nowrap; }
-    .rx-freq-wrap .rx-select { flex: 1; }
-    .rx-dur-wrap { display: flex; gap: 6px; align-items: center; }
-    .rx-dur-wrap .rx-input { flex: 1; }
-    .rx-dur-wrap .rx-postfix { font-size: .85rem; color: #6c757d; white-space: nowrap; }
-    .rx-time-wrap { display: flex; gap: 5px; align-items: center; }
-    .rx-time-wrap .rx-select { flex: 1; }
-    .rx-time-wrap .rx-colon { color: #6c757d; font-weight: 600; }
-    .rx-daterange-wrap { display: flex; align-items: center; gap: 6px; }
-    .rx-daterange-wrap .rx-input { flex: 1; }
-    .rx-daterange-wrap .rx-sep { color: #6c757d; font-size: 1.1rem; line-height: 1; }
-    .rx-daterange-wrap .rx-cal-icon { color: #6c757d; font-size: 14px; }
-    .rx-chevron { display: inline-block; transition: transform .2s; }
-    .rx-chevron.open { transform: rotate(0deg); }
-    .rx-chevron.closed { transform: rotate(-90deg); }
-    .rx-body { padding: 16px; }
-    .rx-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-    @media (max-width: 900px) { .rx-grid { grid-template-columns: 1fr 1fr; } }
-    @media (max-width: 600px) { .rx-grid { grid-template-columns: 1fr; } }
 
     /* ===== YOZUV QO'SHISH MODAL ===== */
     .assign-svc-row { border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px; transition: border-color .15s, background .15s; }
@@ -90,7 +50,7 @@
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-exam" type="button">🩺 {% trans "Shifokor ko'rigi" %} <span class="badge bg-secondary">{{ examinations.count }}</span></button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-procedures" type="button">💉 {% trans "Tibbiy muolajalar" %} <span class="badge bg-secondary">{{ procedures_badge_count }}</span></button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-consult" type="button">🤝 {% trans "Konsultatsiyalar" %} <span class="badge bg-secondary">{{ consultation_requests|length|add:consultations.count }}</span></button></li>
-    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-prescription" type="button">📄 {% trans "Рецепт" %}</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-med-order" type="button">💊 {% trans "Davolash rejasi" %} <span class="badge bg-secondary">{{ medication_orders|length }}</span></button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-completion" type="button">✅ {% trans "Davolash yakuni" %}</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-invoice" type="button">🧾 {% trans "Hisob-faktura" %}</button></li>
 </ul>
@@ -287,10 +247,6 @@
     <!-- 3. TIBBIY MUOLAJALAR -->
     <div class="tab-pane fade" id="tab-procedures">
 
-        <div class="alert alert-info d-flex justify-content-between align-items-center mb-3">
-            <span>💊 {% blocktrans %}Dori-darmon tayinlash endi <strong>«Рецепт»</strong> bo'limi orqali amalga oshiriladi.{% endblocktrans %}</span>
-            <button type="button" class="btn btn-sm btn-primary" onclick="document.querySelector('[data-bs-target=\'#tab-prescription\']').click()">📄 {% trans "Retsept yozish" %}</button>
-        </div>
         <div class="d-flex justify-content-end mb-3">
             <button type="button" class="btn btn-primary btn-sm" onclick="openAssignModal()">💉 + {% trans "Yozuv qo'shish" %}</button>
         </div>
@@ -590,135 +546,204 @@
     </div>
 
 
-    <!-- РЕЦЕПТ TAB -->
-    <div class="tab-pane fade" id="tab-prescription">
+    <!-- DAVOLASH REJASI TAB -->
+    <div class="tab-pane fade" id="tab-med-order">
       <div class="card border-0 shadow-sm">
-        <div class="card-body">
-
-          <div class="d-flex justify-content-between align-items-center mb-4">
-            <h5 class="mb-0 fw-bold" style="font-size:1.15rem;">{% trans "Yozilgan retseptlar" %}</h5>
-            <button type="button" class="btn btn-primary btn-sm px-3" id="rx-add-btn" onclick="rxShowForm()">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-1" style="vertical-align:-1px"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>
-              {% trans "Dori qo'shish" %}
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0 fw-bold">💊 {% trans "Davolash rejasi" %}</h5>
+          <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addMedOrderModal">
+            ➕ {% trans "Qo'shish" %}
+          </button>
+        </div>
+        <div class="card-body p-0">
+          {% if medication_orders %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" style="font-size:.9rem;">
+              <thead class="table-light">
+                <tr>
+                  <th>{% trans "Dori / muolaja" %}</th>
+                  <th>{% trans "Turi" %}</th>
+                  <th>{% trans "Doza" %}</th>
+                  <th>{% trans "Davomiyligi" %}</th>
+                  <th>{% trans "Kuniga" %}</th>
+                  <th>{% trans "Ovqat" %}</th>
+                  <th>{% trans "Boshlanish" %}</th>
+                  <th>{% trans "Tayinlagan" %}</th>
+                  <th>{% trans "Holat" %}</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for o in medication_orders %}
+                <tr class="{% if o.status == 'cancelled' %}table-secondary text-muted{% elif o.status == 'completed' %}table-success{% endif %}">
+                  <td>
+                    <div class="fw-semibold">{{ o.medicine_name }}</div>
+                    {% if o.special_instructions %}<div class="small text-muted">{{ o.special_instructions|truncatechars:60 }}</div>{% endif %}
+                  </td>
+                  <td class="small">{{ o.get_medicine_type_display }}</td>
+                  <td class="small">{{ o.single_dose|default:"—" }}</td>
+                  <td class="small">{{ o.duration_days }} {% trans "kun" %}</td>
+                  <td class="small">{{ o.times_per_day }}×</td>
+                  <td class="small">{{ o.get_food_relation_display }}</td>
+                  <td class="small">{{ o.start_date|date:"d.m.Y" }}</td>
+                  <td class="small">{{ o.prescribed_by.get_full_name|default:"—" }}</td>
+                  <td>
+                    <span class="badge bg-{% if o.status == 'active' %}success{% elif o.status == 'completed' %}primary{% else %}secondary{% endif %}">
+                      {{ o.get_status_display }}
+                    </span>
+                  </td>
+                  <td>
+                    {% if o.status == 'active' %}
+                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal"
+                      data-bs-target="#editMedOrderModal"
+                      data-pk="{{ o.pk }}"
+                      data-name="{{ o.medicine_name }}"
+                      data-type="{{ o.medicine_type }}"
+                      data-days="{{ o.duration_days }}"
+                      data-times="{{ o.times_per_day }}"
+                      data-dose="{{ o.single_dose }}"
+                      data-max-dose="{{ o.max_daily_dose }}"
+                      data-food="{{ o.food_relation }}"
+                      data-start="{{ o.start_date|date:'Y-m-d' }}"
+                      data-admin-times="{{ o.administration_times|join:',' }}"
+                      data-instructions="{{ o.special_instructions }}"
+                      data-comment="{{ o.doctor_comment }}">✏️</button>
+                    <form method="post" action="{% url 'med_order_cancel' o.pk %}" class="d-inline"
+                          onsubmit="return confirm('{% trans "Bekor qilinsinmi?" %}')">
+                      {% csrf_token %}
+                      <button class="btn btn-sm btn-outline-danger" title="{% trans 'Bekor qilish' %}">✕</button>
+                    </form>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center text-muted py-5">
+            <div style="font-size:2.5rem;">💊</div>
+            <div class="mt-2">{% trans "Davolash rejasi yo'q" %}</div>
+            <button class="btn btn-primary btn-sm mt-3" data-bs-toggle="modal" data-bs-target="#addMedOrderModal">
+              ➕ {% trans "Qo'shish" %}
             </button>
           </div>
-
-          {{ prescriptions|json_script:"prescriptions-data" }}
-
-          <div id="rx-list-empty" class="text-center text-muted py-5">
-            <div style="font-size:2.5rem;">📄</div>
-            <div class="mt-2">{% trans "Retseptlar yo'q. Dori qo'shish tugmasini bosing." %}</div>
-          </div>
-
-          <div id="rx-list" class="list-group list-group-flush mb-3"></div>
-
-          <div id="rx-error" class="alert alert-danger d-none mb-3"></div>
-
-          <div class="rx-card" id="rx-form-card" style="display:none;">
-            <div class="rx-card-header">
-              <span class="rx-card-title" id="rx-form-title">{% trans "Yangi retsept" %}</span>
-              <button type="button" class="btn btn-sm btn-outline-secondary px-2 py-1" onclick="rxHideForm()">✕</button>
-            </div>
-
-            <div class="rx-body">
-              <!-- ROW 1 -->
-              <div class="rx-grid">
-                <div>
-                  <label class="rx-label rx-required">{% trans "Dori nomi" %}</label>
-                  <input type="text" class="rx-input rx-mnn" placeholder="{% trans "Dori nomini kiriting..." %}" autocomplete="off" required>
-                </div>
-                <div>
-                  <label class="rx-label">Форма выпуска</label>
-                  <input type="text" class="rx-input rx-form-field" placeholder="Таблетки, капсулы..." autocomplete="off">
-                </div>
-              </div>
-
-              <!-- ROW 2 -->
-              <div class="rx-grid">
-                <div>
-                  <label class="rx-label">Доза</label>
-                  <div class="rx-search-wrap">
-                    <span class="rx-search-icon">🔍</span>
-                    <input type="text" class="rx-input rx-ac rx-dose" placeholder="100 мг, 5 мл..." autocomplete="off" data-src="dose">
-                    <div class="rx-ac-list rx-dose-list"></div>
-                  </div>
-                </div>
-                <div>
-                  <label class="rx-label">Частота приёма</label>
-                  <div class="rx-freq-wrap">
-                    <input type="number" min="1" max="99" class="rx-input rx-freq-num" placeholder="раз в">
-                    <span class="rx-label-in">раз в</span>
-                    <select class="rx-select rx-freq-unit">
-                      <option value="День">День</option>
-                      <option value="Неделя">Неделя</option>
-                      <option value="Месяц">Месяц</option>
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label class="rx-label">Разовая доза</label>
-                  <select class="rx-select w-100 rx-single-dose" id="rx-single-dose-select"></select>
-                </div>
-              </div>
-
-              <!-- ROW 3 -->
-              <div class="rx-grid">
-                <div>
-                  <label class="rx-label">Способ применения</label>
-                  <div class="rx-search-wrap">
-                    <span class="rx-search-icon">🔍</span>
-                    <input type="text" class="rx-input rx-ac rx-method" placeholder="Перорально, в/м..." autocomplete="off" data-src="method">
-                    <div class="rx-ac-list rx-method-list"></div>
-                  </div>
-                </div>
-                <div>
-                  <label class="rx-label">Продолжительность приёма</label>
-                  <div class="rx-dur-wrap">
-                    <input type="number" min="1" max="365" class="rx-input rx-duration" placeholder="7">
-                    <span class="rx-dur-wrap-postfix rx-postfix">дней</span>
-                  </div>
-                </div>
-                <div>
-                  <label class="rx-label">Время приёма</label>
-                  <div class="rx-time-wrap">
-                    <select class="rx-select rx-hour" id="rx-hour-select"></select>
-                    <span class="rx-colon fw-bold" style="color:#6c757d;">:</span>
-                    <select class="rx-select rx-minute" id="rx-minute-select"></select>
-                  </div>
-                </div>
-              </div>
-
-              <!-- ROW 4 -->
-              <div class="rx-grid">
-                <div>
-                  <label class="rx-label">Период приёма</label>
-                  <div class="rx-daterange-wrap">
-                    <span class="rx-cal-icon">📅</span>
-                    <input type="date" class="rx-input rx-date-start" title="Начало">
-                    <span class="rx-sep">—</span>
-                    <input type="date" class="rx-input rx-date-end" title="Конец">
-                  </div>
-                </div>
-                <div>
-                  <label class="rx-label">Кол-во препарата за весь период</label>
-                  <input type="text" class="rx-input rx-total" placeholder="Вычисляется автоматически" readonly style="background:#f8f9fa; color:#6c757d;">
-                </div>
-                <div>
-                  <label class="rx-label">Примечание</label>
-                  <input type="text" class="rx-input rx-note" placeholder="Доп. указания...">
-                </div>
-              </div>
-
-              <div class="d-flex justify-content-end gap-2 mt-3">
-                <button type="button" class="btn btn-secondary" onclick="rxHideForm()">{% trans "Bekor" %}</button>
-                <button type="button" class="btn btn-success" id="rx-save-btn" onclick="rxSave()">💾 {% trans "Saqlash" %}</button>
-              </div>
-            </div>
-          </div>
-
+          {% endif %}
         </div>
       </div>
     </div>
+
+    <!-- BAJARILISH HOLATI KARTI -->
+    <div class="card border-0 shadow-sm mt-3">
+      <div class="card-header bg-white">
+        <h6 class="mb-0 fw-bold">📋 {% trans "Bajarilish holati" %} <small class="text-muted fw-normal">{% trans "(hamshira tomonidan bajariladigan reja)" %}</small></h6>
+      </div>
+      <div class="card-body p-0">
+        {% if schedule_day_groups %}
+        {% for dg in schedule_day_groups %}
+        <div class="border-bottom px-3 py-2">
+          <div class="fw-semibold small text-muted mb-2">📅 {{ dg.date|date:"d.m.Y, l" }}</div>
+          <div class="d-flex flex-wrap gap-2">
+            {% for o in dg.occurrences %}
+            <div class="border rounded p-2 d-flex flex-column gap-1"
+                 style="min-width:190px; max-width:240px;
+                        background:{% if o.status == 'done' %}#d4edda{% elif o.status == 'cancelled' or o.status == 'stopped' %}#f8d7da{% elif o.status == 'missed' %}#e2e3e5{% else %}#fff3cd{% endif %};">
+              <div class="fw-semibold small">{{ o.scheduled_at|date:"H:i" }} — {{ o.label }}</div>
+              <div>
+                <span class="badge bg-{% if o.status == 'done' %}success{% elif o.status == 'cancelled' or o.status == 'stopped' %}danger{% elif o.status == 'missed' %}secondary{% else %}warning text-dark{% endif %}">
+                  {{ o.get_status_display }}
+                </span>
+              </div>
+              {% if o.performed_by %}
+              <div class="small text-muted">👤 {{ o.performed_by.get_full_name|default:o.performed_by.username }}</div>
+              {% endif %}
+              {% if o.completed_at %}
+              <div class="small text-muted">🕐 {{ o.completed_at|date:"H:i" }}</div>
+              {% endif %}
+              {% if o.reason %}
+              <div class="small text-danger">{{ o.reason }}</div>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="text-center text-muted py-4">
+          <div style="font-size:2rem;">📋</div>
+          <div class="mt-1 small">{% trans "Rejalashtirilgan bandlar yo'q" %}</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Qo'shish modali -->
+    <div class="modal fade" id="addMedOrderModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">💊 {% trans "Davolash rejasiga qo'shish" %}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <form method="post" action="{% url 'med_order_add' patient.pk %}">
+            {% csrf_token %}
+            {% include 'patients/doctor/_med_order_form.html' %}
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-primary">{% trans "Saqlash" %}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tahrirlash modali -->
+    <div class="modal fade" id="editMedOrderModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">✏️ {% trans "Davolash rejasini tahrirlash" %}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <form method="post" id="editMedOrderForm" action="">
+            {% csrf_token %}
+            {% include 'patients/doctor/_med_order_form.html' %}
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-warning">{% trans "Yangilash" %}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // URL hash orqali tab-med-order ga o'tish
+      if (window.location.hash === '#tab-med-order') {
+        var btn = document.querySelector('[data-bs-target="#tab-med-order"]');
+        if (btn) btn.click();
+      }
+    });
+    document.getElementById('editMedOrderModal').addEventListener('show.bs.modal', function(e) {
+      var b = e.relatedTarget, m = this;
+      m.querySelector('[name=medicine_name]').value       = b.dataset.name || '';
+      m.querySelector('[name=medicine_type]').value       = b.dataset.type || 'tablet';
+      m.querySelector('[name=duration_days]').value       = b.dataset.days || '1';
+      m.querySelector('[name=times_per_day]').value       = b.dataset.times || '1';
+      m.querySelector('[name=single_dose]').value         = b.dataset.dose || '';
+      m.querySelector('[name=max_daily_dose]').value      = b.dataset.maxDose || '';
+      m.querySelector('[name=food_relation]').value       = b.dataset.food || 'none';
+      m.querySelector('[name=start_date]').value          = b.dataset.start || '';
+      m.querySelector('[name=special_instructions]').value = b.dataset.instructions || '';
+      m.querySelector('[name=doctor_comment]').value      = b.dataset.comment || '';
+      // Qabul vaqtlari
+      var times = (b.dataset.adminTimes || '').split(',').map(function(t){ return t.trim(); }).filter(Boolean);
+      m.querySelectorAll('[name=administration_times]').forEach(function(inp, i) {
+        inp.value = times[i] || '';
+      });
+      document.getElementById('editMedOrderForm').action = '/patients/davolash-reja/' + b.dataset.pk + '/yangilash/';
+    });
+    </script>
+
 
 </div><!-- /tab-content -->
 
@@ -825,347 +850,6 @@
     </div>
   </div>
 </div>
-
-<script>
-(function () {
-'use strict';
-
-/* ─── Reference data ─── */
-const MEDICINE_SEARCH_URL = '{% url "medicine_search" %}';
-
-const METHOD_LIST = [
-  'Перорально (внутрь)','Внутримышечно (в/м)','Внутривенно (в/в)',
-  'Подкожно (п/к)','Сублингвально','Наружно','Ингаляционно',
-  'Ректально','Вагинально','Глазные капли','Ушные капли','Интраназально',
-];
-
-const SINGLE_DOSE_OPTS = [
-  { label:'— Выберите —', val:'' },
-  { label:'¼ таб.',   val:'0.25' },
-  { label:'½ таб.',   val:'0.5'  },
-  { label:'1 таб.',   val:'1'    },
-  { label:'1½ таб.',  val:'1.5'  },
-  { label:'2 таб.',   val:'2'    },
-  { label:'3 таб.',   val:'3'    },
-  { label:'1 капс.',  val:'1'    },
-  { label:'2 капс.',  val:'2'    },
-  { label:'1 мл',     val:'1'    },
-  { label:'2 мл',     val:'2'    },
-  { label:'5 мл',     val:'5'    },
-  { label:'10 мл',    val:'10'   },
-  { label:'1 кап.',   val:'1'    },
-  { label:'2 кап.',   val:'2'    },
-  { label:'5 кап.',   val:'5'    },
-  { label:'Другое',   val:''     },
-];
-
-/* ─── Build hours / minutes / single-dose options ─── */
-function buildHourOpts() {
-  let s = '<option value="">—</option>';
-  for (let h = 0; h < 24; h++) s += `<option value="${h}">${String(h).padStart(2,'0')}</option>`;
-  return s;
-}
-function buildMinOpts() {
-  let s = '<option value="">—</option>';
-  for (let m = 0; m < 60; m += 5) s += `<option value="${m}">${String(m).padStart(2,'0')}</option>`;
-  return s;
-}
-document.getElementById('rx-hour-select').innerHTML = buildHourOpts();
-document.getElementById('rx-minute-select').innerHTML = buildMinOpts();
-document.getElementById('rx-single-dose-select').innerHTML = SINGLE_DOSE_OPTS.map(o =>
-  `<option value="${o.val}">${o.label}</option>`
-).join('');
-
-/* ─── State ─── */
-const PRESCRIPTIONS_ADD_URL    = '{% url "prescription_add" patient.pk %}';
-const PRESCRIPTIONS_UPDATE_URL = '{% url "prescription_update" 999999 %}';
-const PRESCRIPTIONS_DELETE_URL = '{% url "prescription_delete" 999999 %}';
-const PRESCRIPTIONS_PRINT_URL  = '{% url "prescription_print" 999999 %}';
-let RX_LIST = JSON.parse(document.getElementById('prescriptions-data').textContent);
-let rxEditId = null;
-
-const rxFormCard  = document.getElementById('rx-form-card');
-const rxListEl    = document.getElementById('rx-list');
-const rxEmptyEl   = document.getElementById('rx-list-empty');
-const rxErrorEl   = document.getElementById('rx-error');
-
-function rxFieldEls() {
-  return {
-    drug_name:      rxFormCard.querySelector('.rx-mnn'),
-    dosage_form:    rxFormCard.querySelector('.rx-form-field'),
-    dose:           rxFormCard.querySelector('.rx-dose'),
-    frequency_num:  rxFormCard.querySelector('.rx-freq-num'),
-    frequency_unit: rxFormCard.querySelector('.rx-freq-unit'),
-    single_dose:    rxFormCard.querySelector('.rx-single-dose'),
-    method:         rxFormCard.querySelector('.rx-method'),
-    duration_days:  rxFormCard.querySelector('.rx-duration'),
-    hour:           rxFormCard.querySelector('.rx-hour'),
-    minute:         rxFormCard.querySelector('.rx-minute'),
-    date_start:      rxFormCard.querySelector('.rx-date-start'),
-    date_end:        rxFormCard.querySelector('.rx-date-end'),
-    total_quantity:  rxFormCard.querySelector('.rx-total'),
-    note:            rxFormCard.querySelector('.rx-note'),
-  };
-}
-
-function rxRenderList() {
-  if (!RX_LIST.length) {
-    rxListEl.innerHTML = '';
-    rxEmptyEl.style.display = '';
-    return;
-  }
-  rxEmptyEl.style.display = 'none';
-  rxListEl.innerHTML = RX_LIST.map(p => `
-    <div class="list-group-item d-flex justify-content-between align-items-start" data-id="${p.id}">
-      <div>
-        <div class="fw-semibold">${p.summary}</div>
-        <div class="text-muted small">${p.created_at}</div>
-        ${p.note ? `<div class="small text-muted">📝 ${p.note}</div>` : ''}
-      </div>
-      <div class="d-flex gap-1 flex-shrink-0">
-        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="rxEdit(${p.id})" title="{% trans "Tahrirlash" %}">✏️</button>
-        <button type="button" class="btn btn-sm btn-outline-danger" onclick="rxDelete(${p.id})" title="{% trans "O'chirish" %}">🗑</button>
-        <a class="btn btn-sm btn-outline-primary" href="${PRESCRIPTIONS_PRINT_URL.replace('999999', p.id)}" target="_blank" title="{% trans "Chop etish" %}">🖨</a>
-      </div>
-    </div>
-  `).join('');
-}
-rxRenderList();
-
-window.rxShowForm = function (id) {
-  rxEditId = id || null;
-  rxErrorEl.classList.add('d-none');
-  const f = rxFieldEls();
-  const item = id ? RX_LIST.find(p => p.id === id) : null;
-  document.getElementById('rx-form-title').textContent = item ? '{% trans "Retseptni tahrirlash" %}' : '{% trans "Yangi retsept" %}';
-
-  f.drug_name.value      = item ? item.drug_name : '';
-  f.dosage_form.value    = item ? item.dosage_form : '';
-  f.dose.value           = item ? item.dose : '';
-  f.frequency_num.value  = item ? (item.frequency_num || '') : '';
-  f.frequency_unit.value = item ? (item.frequency_unit || 'День') : 'День';
-  f.single_dose.value    = item ? (item.single_dose || '') : '';
-  f.method.value         = item ? item.method : '';
-  f.duration_days.value  = item ? (item.duration_days || '') : '';
-  f.date_start.value     = item ? (item.date_start || '') : new Date().toISOString().slice(0, 10);
-  f.date_end.value       = item ? (item.date_end || '') : '';
-  f.total_quantity.value = item ? (item.total_quantity || '') : '';
-  f.note.value           = item ? item.note : '';
-
-  const timeParts = item && item.intake_time ? item.intake_time.split(':') : ['', ''];
-  f.hour.value   = timeParts[0] || '';
-  f.minute.value = timeParts[1] || '';
-
-  rxFormCard.style.display = '';
-  rxFormCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-};
-
-window.rxHideForm = function () {
-  rxFormCard.style.display = 'none';
-  rxEditId = null;
-};
-
-window.rxEdit = function (id) {
-  rxShowForm(id);
-};
-
-window.rxDelete = function (id) {
-  if (!confirm("{% trans "Retseptni o'chirishni tasdiqlaysizmi?" %}")) return;
-  fetch(PRESCRIPTIONS_DELETE_URL.replace('999999', id), {
-    method: 'POST',
-    headers: { 'X-CSRFToken': '{{ csrf_token }}' },
-  }).then(r => r.json()).then(data => {
-    if (data.success) {
-      RX_LIST = RX_LIST.filter(p => p.id !== id);
-      rxRenderList();
-    } else {
-      alert(data.error || '{% trans "Xato yuz berdi" %}');
-    }
-  }).catch(() => alert('{% trans "Tarmoq xatosi" %}'));
-};
-
-window.rxSave = function () {
-  const f = rxFieldEls();
-  const drugName = f.drug_name.value.trim();
-  if (!drugName) {
-    rxErrorEl.textContent = '{% trans "Dori nomini kiriting" %}';
-    rxErrorEl.classList.remove('d-none');
-    return;
-  }
-  const hour = f.hour.value, minute = f.minute.value;
-  const payload = {
-    drug_name:      drugName,
-    dosage_form:    f.dosage_form.value.trim(),
-    dose:           f.dose.value.trim(),
-    frequency_num:  f.frequency_num.value || null,
-    frequency_unit: f.frequency_unit.value,
-    single_dose:    f.single_dose.value,
-    method:         f.method.value.trim(),
-    duration_days:  f.duration_days.value || null,
-    intake_time:    (hour && minute) ? `${hour}:${minute}` : '',
-    date_start:     f.date_start.value || '',
-    date_end:       f.date_end.value || '',
-    total_quantity: f.total_quantity.value.trim(),
-    note:           f.note.value.trim(),
-  };
-
-  const url = rxEditId ? PRESCRIPTIONS_UPDATE_URL.replace('999999', rxEditId) : PRESCRIPTIONS_ADD_URL;
-  const btn = document.getElementById('rx-save-btn');
-  btn.disabled = true;
-  fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-    body: JSON.stringify(payload),
-  }).then(r => r.json()).then(data => {
-    btn.disabled = false;
-    if (data.success) {
-      if (rxEditId) {
-        RX_LIST = RX_LIST.map(p => p.id === rxEditId ? data.prescription : p);
-      } else {
-        RX_LIST.unshift(data.prescription);
-      }
-      rxRenderList();
-      rxHideForm();
-    } else {
-      rxErrorEl.textContent = data.error || '{% trans "Xato yuz berdi" %}';
-      rxErrorEl.classList.remove('d-none');
-    }
-  }).catch(() => {
-    btn.disabled = false;
-    rxErrorEl.textContent = '{% trans "Tarmoq xatosi" %}';
-    rxErrorEl.classList.remove('d-none');
-  });
-};
-
-/* ─── Autocomplete ─── */
-const LOCAL_SOURCES = {
-  method: { list: METHOD_LIST,  key: null   },
-};
-// dose → AJAX orqali medicine_search endpoint (mnn/form endi qo'lda yoziladi)
-const AJAX_FIELD_MAP = { dose: 'strength' };
-
-function fetchAC(fieldParam, q, cb) {
-  const url = `${MEDICINE_SEARCH_URL}?field=${fieldParam}&q=${encodeURIComponent(q)}&category=drug`;
-  fetch(url)
-    .then(r => r.json())
-    .then(data => cb(Array.isArray(data) ? data : []))
-    .catch(() => cb([]));
-}
-
-function initAC(input, listEl, srcKey) {
-  const isAjax = srcKey in AJAX_FIELD_MAP;
-  const src    = LOCAL_SOURCES[srcKey];
-  let timer;
-
-  function renderList(items, labelFn) {
-    listEl.innerHTML = items.map((item, i) =>
-      `<div class="rx-ac-item" data-idx="${i}">${labelFn(item)}</div>`
-    ).join('');
-    listEl.style.display = items.length ? 'block' : 'none';
-
-    listEl.querySelectorAll('.rx-ac-item').forEach((row, i) => {
-      row.addEventListener('mousedown', e => {
-        e.preventDefault();
-        const item = items[i];
-        input.value = typeof item === 'string' ? item : labelFn(item);
-        listEl.style.display = 'none';
-        input.dispatchEvent(new Event('change'));
-      });
-    });
-  }
-
-  input.addEventListener('input', () => {
-    clearTimeout(timer);
-    const q = input.value.trim();
-    if (q.length < 1) { listEl.style.display = 'none'; return; }
-
-    if (isAjax) {
-      timer = setTimeout(() => {
-        fetchAC(AJAX_FIELD_MAP[srcKey], q, items => renderList(items, s => s));
-      }, 200);
-    } else {
-      timer = setTimeout(() => {
-        const ql = q.toLowerCase();
-        const data = src.list;
-        const matches = src.key
-          ? data.filter(o => o[src.key].toLowerCase().includes(ql)).slice(0, 10)
-          : data.filter(s => s.toLowerCase().includes(ql)).slice(0, 10);
-        renderList(matches, item => src.key ? item[src.key] : item);
-      }, 80);
-    }
-  });
-
-  input.addEventListener('focus', () => {
-    if (input.value.length >= 1) input.dispatchEvent(new Event('input'));
-  });
-
-  input.addEventListener('blur', () => {
-    setTimeout(() => { listEl.style.display = 'none'; }, 200);
-  });
-}
-
-/* ─── Date sync ─── */
-function syncEnd(card) {
-  const startEl    = card.querySelector('.rx-date-start');
-  const durationEl = card.querySelector('.rx-duration');
-  const endEl      = card.querySelector('.rx-date-end');
-  if (!startEl.value || !durationEl.value) return;
-  const d = new Date(startEl.value);
-  d.setDate(d.getDate() + parseInt(durationEl.value, 10) - 1);
-  endEl.value = d.toISOString().slice(0, 10);
-}
-
-function syncDuration(card) {
-  const startEl = card.querySelector('.rx-date-start');
-  const endEl   = card.querySelector('.rx-date-end');
-  const durEl   = card.querySelector('.rx-duration');
-  if (!startEl.value || !endEl.value) return;
-  const diff = Math.round((new Date(endEl.value) - new Date(startEl.value)) / 86400000) + 1;
-  if (diff > 0) { durEl.value = diff; }
-}
-
-/* ─── Total quantity auto-calc ─── */
-function calcTotal(card) {
-  const freqNum   = parseFloat(card.querySelector('.rx-freq-num').value)   || 0;
-  const freqUnit  = card.querySelector('.rx-freq-unit').value;
-  const duration  = parseFloat(card.querySelector('.rx-duration').value)   || 0;
-  const singleVal = parseFloat(card.querySelector('.rx-single-dose').value) || 0;
-
-  if (!freqNum || !duration) { card.querySelector('.rx-total').value = ''; return; }
-
-  let dosesPerDay = freqNum;
-  if (freqUnit === 'Неделя')  dosesPerDay = freqNum / 7;
-  if (freqUnit === 'Месяц')   dosesPerDay = freqNum / 30;
-
-  const totalDoses = Math.round(dosesPerDay * duration);
-  const qty = singleVal > 0 ? totalDoses * singleVal : totalDoses;
-  const txt = Number.isInteger(qty) ? String(qty) : qty.toFixed(1);
-
-  card.querySelector('.rx-total').value = singleVal > 0 ? `${txt} ед.` : `${txt} приём`;
-}
-
-/* ─── Form init (bitta statik forma — bir marta ishga tushadi) ─── */
-(function initRxForm() {
-  const card = rxFormCard;
-  initAC(card.querySelector('.rx-dose'),       card.querySelector('.rx-dose-list'),   'dose');
-  initAC(card.querySelector('.rx-method'),     card.querySelector('.rx-method-list'), 'method');
-
-  const startEl = card.querySelector('.rx-date-start');
-  const endEl   = card.querySelector('.rx-date-end');
-  const durEl   = card.querySelector('.rx-duration');
-  startEl.addEventListener('change', () => syncEnd(card));
-  durEl.addEventListener('input',    () => syncEnd(card));
-  endEl.addEventListener('change',   () => syncDuration(card));
-
-  ['input', 'change'].forEach(ev => {
-    ['.rx-freq-num', '.rx-freq-unit', '.rx-duration', '.rx-single-dose'].forEach(sel => {
-      const el = card.querySelector(sel);
-      if (el) el.addEventListener(ev, () => calcTotal(card));
-    });
-  });
-})();
-
-})();
 </script>
 
 <script>

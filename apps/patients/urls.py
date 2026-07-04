@@ -39,6 +39,11 @@ urlpatterns = [
     path('retsept/<int:pk>/ochirish/', views.prescription_delete, name='prescription_delete'),
     path('retsept/<int:pk>/chop-etish/', views.prescription_print, name='prescription_print'),
 
+    # --- Davolash rejasi ---
+    path('doctor/bemor/<int:pk>/davolash-reja/qoshish/', views.med_order_add,    name='med_order_add'),
+    path('davolash-reja/<int:order_pk>/yangilash/',      views.med_order_update, name='med_order_update'),
+    path('davolash-reja/<int:order_pk>/bekor/',          views.med_order_cancel, name='med_order_cancel'),
+
     # --- Hamshira kabineti ---
     path('hamshira/', views.nurse_dashboard, name='nurse_dashboard'),
     path('hamshira/muolaja/<int:pk>/bajarish/', views.procedure_log_execution, name='procedure_log_execution'),
@@ -46,6 +51,8 @@ urlpatterns = [
 
     # --- Laborant — shifokor tayinlagan tahlillar navbati ---
     path('laboratoriya/tayinlovlar/', views.lab_assignment_queue, name='lab_assignment_queue'),
+    path('laboratoriya/bemor/<int:pk>/', views.lab_assign_patient, name='lab_assign_patient'),
+    path('laboratoriya/tayinlov/<int:pk>/boshlash/', views.lab_assign_start_entry, name='lab_assign_start_entry'),
     path('laboratoriya/tayinlov/<int:pk>/natija/', views.lab_test_result_form, name='lab_test_result_form'),
     path('laboratoriya/tayinlov/<int:pk>/natija/saqlash/', views.lab_test_result_save, name='lab_test_result_save'),
     path('laboratoriya/tayinlov/<int:pk>/chop-etish/', views.lab_test_result_print, name='lab_test_result_print'),

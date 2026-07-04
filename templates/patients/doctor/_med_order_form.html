@@ -1,0 +1,76 @@
+{% load i18n %}
+<div class="modal-body">
+  <div class="row g-3">
+
+    <div class="col-12">
+      <label class="form-label fw-semibold">{% trans "Dori / muolaja nomi" %} <span class="text-danger">*</span></label>
+      <input class="form-control" name="medicine_name" required placeholder="{% trans 'Masalan: Ciprofloxacin 500mg yoki Sistema' %}">
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label fw-semibold">{% trans "Turi" %}</label>
+      <select class="form-select" name="medicine_type">
+        {% for val, label in med_type_choices %}
+        <option value="{{ val }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label fw-semibold">{% trans "Davomiyligi (kun)" %}</label>
+      <input class="form-control" name="duration_days" type="number" min="1" value="1">
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label fw-semibold">{% trans "Kuniga necha marta" %}</label>
+      <input class="form-control" name="times_per_day" type="number" min="1" max="24" value="1">
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label fw-semibold">{% trans "Bir martalik doza" %}</label>
+      <input class="form-control" name="single_dose" placeholder="{% trans '500mg, 1 tab, 2ml...' %}">
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label fw-semibold">{% trans "Kunlik maksimal doza" %}</label>
+      <input class="form-control" name="max_daily_dose" placeholder="{% trans 'Masalan: 2000mg' %}">
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label fw-semibold">{% trans "Ovqat bilan bog'liqligi" %}</label>
+      <select class="form-select" name="food_relation">
+        {% for val, label in food_choices %}
+        <option value="{{ val }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label fw-semibold">{% trans "Boshlanish sanasi" %}</label>
+      <input class="form-control" name="start_date" type="date" value="{{ today|date:'Y-m-d' }}">
+    </div>
+
+    <div class="col-12">
+      <label class="form-label fw-semibold">{% trans "Qabul qilish vaqtlari" %} <small class="text-muted">({% trans "ixtiyoriy" %})</small></label>
+      <div class="d-flex flex-wrap gap-2">
+        <input class="form-control" style="width:110px;" name="administration_times" type="time" placeholder="08:00">
+        <input class="form-control" style="width:110px;" name="administration_times" type="time" placeholder="14:00">
+        <input class="form-control" style="width:110px;" name="administration_times" type="time" placeholder="20:00">
+        <input class="form-control" style="width:110px;" name="administration_times" type="time" placeholder="00:00">
+      </div>
+    </div>
+
+    <div class="col-12">
+      <label class="form-label fw-semibold">{% trans "Maxsus ko'rsatmalar" %}</label>
+      <textarea class="form-control" name="special_instructions" rows="2"
+        placeholder="{% trans 'Hamshiraga ko\'rsatma, suyultirish tartibi va h.k.' %}"></textarea>
+    </div>
+
+    <div class="col-12">
+      <label class="form-label fw-semibold">{% trans "Shifokor izohi" %}</label>
+      <textarea class="form-control" name="doctor_comment" rows="2"
+        placeholder="{% trans 'Qo\'shimcha eslatma...' %}"></textarea>
+    </div>
+
+  </div>
+</div>

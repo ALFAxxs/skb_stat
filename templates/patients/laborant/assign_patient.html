@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}{{ patient.full_name }} — {% trans "Tayinlangan tahlillar" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <!-- Sarlavha -->
+  <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+    <div>
+      <h4 class="mb-1">🧪 {{ patient.full_name }}</h4>
+      <div class="text-muted small">
+        📋 {{ patient.medical_record_number }}
+        {% if patient.birth_date %} · {{ patient.birth_date|date:"d.m.Y" }}{% endif %}
+        {% if patient.phone %} · 📞 {{ patient.phone }}{% endif %}
+        {% if patient.room_number %} · {% blocktrans with r=patient.room_number %}{{ r }}-xona{% endblocktrans %}{% endif %}
+      </div>
+    </div>
+    <a href="{% url 'lab_assignment_queue' %}" class="btn btn-outline-secondary btn-sm">
+      ← {% trans "Navbatga qaytish" %}
+    </a>
+  </div>
+
+  <!-- Tayinlangan tahlillar -->
+  {% if assignments %}
+  <div class="card shadow-sm">
+    <div class="card-header bg-primary text-white py-2">
+      <strong>📋 {% trans "Tayinlangan tahlillar" %}</strong>
+      <span class="badge bg-white text-primary ms-2">{{ assignments|length }}</span>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="font-size:.9rem;">
+        <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>{% trans "Tahlil nomi" %}</th>
+            <th>{% trans "Tayinlagan shifokor" %}</th>
+            <th>{% trans "Sana" %}</th>
+            <th>{% trans "Holat" %}</th>
+            <th>{% trans "Amallar" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in assignments %}
+          <tr class="{% if a.status == 'done' %}table-success{% elif a.status == 'cancelled' %}table-secondary text-muted{% endif %}">
+            <td class="text-muted small">{{ forloop.counter }}</td>
+            <td>
+              <div class="fw-semibold">{{ a.test_name }}</div>
+              {% if a.notes %}<div class="text-muted small">{{ a.notes|truncatechars:80 }}</div>{% endif %}
+            </td>
+            <td class="small">{{ a.assigned_by.get_full_name|default:"—" }}</td>
+            <td class="small text-nowrap">{{ a.created_at|date:"d.m.Y H:i" }}</td>
+            <td>
+              <span class="badge bg-{% if a.status == 'done' %}success{% elif a.status == 'in_progress' %}info{% elif a.status == 'sample_taken' %}primary{% elif a.status == 'cancelled' %}secondary{% else %}warning{% endif %}">
+                {{ a.get_status_display }}
+              </span>
+            </td>
+            <td style="min-width:220px;">
+              {% if a.status == 'assigned' or a.status == 'sample_taken' %}
+              <div class="d-flex gap-1 flex-wrap">
+                <button class="btn btn-sm btn-primary"
+                        onclick="startAssignEntry({{ a.pk }})">
+                  ▶ {% trans "Boshlash" %}
+                </button>
+                <form method="post" action="{% url 'lab_test_update_status' a.pk %}"
+                      onsubmit="return confirm('{% trans "Bekor qilinsinmi?" %}');" class="d-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="status" value="cancelled">
+                  <input type="hidden" name="next" value="{{ request.path }}">
+                  <button type="submit" class="btn btn-sm btn-outline-danger">✕ {% trans "Bekor" %}</button>
+                </form>
+              </div>
+              {% elif a.status == 'in_progress' %}
+              <button class="btn btn-sm btn-outline-primary"
+                      onclick="startAssignEntry({{ a.pk }})">
+                🧪 {% trans "Davom etish" %}
+              </button>
+              {% elif a.status == 'done' %}
+              <a href="{% url 'lab_test_result_print' a.pk %}" class="btn btn-sm btn-outline-secondary" target="_blank">🖨 {% trans "Chop etish" %}</a>
+              {% else %}
+              <span class="text-muted small">{{ a.get_status_display }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% else %}
+  <div class="alert alert-info text-center py-4">
+    <div style="font-size:2rem;">🧪</div>
+    <div class="mt-2">{% trans "Bu bemor uchun tayinlangan tahlillar yo'q." %}</div>
+    <a href="{% url 'lab_assignment_queue' %}" class="btn btn-outline-primary btn-sm mt-3">← {% trans "Qaytish" %}</a>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- ═══ SHABLON TANLASH MODALI ═══ -->
+<div class="modal fade" id="assignTemplateModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">📋 {% trans "Shablon tanlash" %}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="assign-id">
+        <input type="text" id="assign-tmpl-search" class="form-control mb-2"
+               placeholder="🔍 {% trans "Shablon nomini qidiring..." %}">
+        <div style="max-height:340px; overflow-y:auto;">
+          {% regroup templates by get_category_display as tmpl_groups %}
+          {% for group in tmpl_groups %}
+            <div class="text-muted small fw-semibold mt-2 mb-1 px-1">{{ group.grouper }}</div>
+            {% for tmpl in group.list %}
+            <button class="btn btn-outline-primary btn-sm w-100 text-start mb-1 assign-tmpl-option"
+                    data-id="{{ tmpl.pk }}" data-name="{{ tmpl.name }}">
+              {{ tmpl.name }}
+            </button>
+            {% endfor %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const CSRF = "{{ csrf_token }}";
+
+function startAssignEntry(assignId) {
+  document.getElementById("assign-id").value = assignId;
+  new bootstrap.Modal(document.getElementById("assignTemplateModal")).show();
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  document.getElementById("assign-tmpl-search").addEventListener("input", function () {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll(".assign-tmpl-option").forEach(b => {
+      b.style.display = b.dataset.name.toLowerCase().includes(q) ? "" : "none";
+    });
+  });
+
+  document.querySelectorAll(".assign-tmpl-option").forEach(btn => {
+    btn.addEventListener("click", async function () {
+      const assignId  = document.getElementById("assign-id").value;
+      const templateId = this.dataset.id;
+      bootstrap.Modal.getInstance(document.getElementById("assignTemplateModal")).hide();
+      const url = "{% url 'lab_assign_start_entry' 0 %}".replace('/0/', '/' + assignId + '/');
+      const r = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF },
+        body: JSON.stringify({ template_id: parseInt(templateId) }),
+      });
+      const d = await r.json();
+      if (d.success && d.redirect) {
+        window.location.href = d.redirect;
+      } else {
+        alert("Xato: " + (d.error || "Noma'lum xato"));
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

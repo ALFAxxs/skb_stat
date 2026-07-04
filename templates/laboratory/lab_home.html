@@ -17,14 +17,24 @@
   <div class="card mb-3 shadow-sm">
     <div class="card-body py-2">
       <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label mb-0 small fw-semibold">🔍 {% trans "Bemor (ism, telefon, JSHSHIR, pasport)" %}</label>
+          <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm"
+                 placeholder="{% trans "Qidirish..." %}">
+        </div>
         <div class="col-auto">
-          <label class="form-label mb-0 small fw-semibold">{% trans "Sana" %}</label>
-          <input type="date" name="date" class="form-control form-control-sm"
-                 value="{{ filter_date|date:'Y-m-d' }}">
+          <label class="form-label mb-0 small fw-semibold">{% trans "Dan" %}</label>
+          <input type="date" name="date_from" class="form-control form-control-sm"
+                 value="{{ date_from|date:'Y-m-d' }}">
+        </div>
+        <div class="col-auto">
+          <label class="form-label mb-0 small fw-semibold">{% trans "Gacha" %}</label>
+          <input type="date" name="date_to" class="form-control form-control-sm"
+                 value="{{ date_to|date:'Y-m-d' }}">
         </div>
         <div class="col-auto">
           <label class="form-label mb-0 small fw-semibold">{% trans "Holat" %}</label>
-          <select name="status" class="form-select form-select-sm" style="min-width:160px">
+          <select name="status" class="form-select form-select-sm" style="min-width:150px">
             <option value="">{% trans "Barcha holatlar" %}</option>
             {% for val, label in item_statuses %}
             <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
@@ -32,8 +42,11 @@
           </select>
         </div>
         <div class="col-auto">
-          <button type="submit" class="btn btn-primary btn-sm">{% trans "Ko'rsatish" %}</button>
-          <a href="{% url 'lab_home' %}" class="btn btn-outline-secondary btn-sm">{% trans "Bugun" %}</a>
+          <label class="form-label mb-0 small">&nbsp;</label>
+          <div class="d-flex gap-1">
+            <button type="submit" class="btn btn-primary btn-sm">{% trans "Ko'rsatish" %}</button>
+            <a href="{% url 'lab_home' %}" class="btn btn-outline-secondary btn-sm">{% trans "Bugun" %}</a>
+          </div>
         </div>
       </form>
     </div>
@@ -44,7 +57,7 @@
   <div class="row g-2 mb-3">
     {% if status_counts.pending %}
     <div class="col-auto">
-      <a href="?date={{ filter_date|date:'Y-m-d' }}&status=pending"
+      <a href="?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}&q={{ q }}&status=pending"
          class="badge bg-secondary text-decoration-none fs-6 py-2 px-3">
         🕐 {% trans "Kutilmoqda" %}: {{ status_counts.pending }}
       </a>
@@ -52,7 +65,7 @@
     {% endif %}
     {% if status_counts.sample_taken %}
     <div class="col-auto">
-      <a href="?date={{ filter_date|date:'Y-m-d' }}&status=sample_taken"
+      <a href="?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}&q={{ q }}&status=sample_taken"
          class="badge bg-info text-dark text-decoration-none fs-6 py-2 px-3">
         🧪 {% trans "Namuna" %}: {{ status_counts.sample_taken }}
       </a>
@@ -60,7 +73,7 @@
     {% endif %}
     {% if status_counts.in_progress %}
     <div class="col-auto">
-      <a href="?date={{ filter_date|date:'Y-m-d' }}&status=in_progress"
+      <a href="?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}&q={{ q }}&status=in_progress"
          class="badge bg-warning text-dark text-decoration-none fs-6 py-2 px-3">
         ⚙️ {% trans "Jarayonda" %}: {{ status_counts.in_progress }}
       </a>
@@ -68,7 +81,7 @@
     {% endif %}
     {% if status_counts.result_entering %}
     <div class="col-auto">
-      <a href="?date={{ filter_date|date:'Y-m-d' }}&status=result_entering"
+      <a href="?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}&q={{ q }}&status=result_entering"
          class="badge bg-primary text-decoration-none fs-6 py-2 px-3">
         ✏️ {% trans "Kiritilmoqda" %}: {{ status_counts.result_entering }}
       </a>
@@ -76,7 +89,7 @@
     {% endif %}
     {% if status_counts.completed %}
     <div class="col-auto">
-      <a href="?date={{ filter_date|date:'Y-m-d' }}&status=completed"
+      <a href="?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}&q={{ q }}&status=completed"
          class="badge bg-success text-decoration-none fs-6 py-2 px-3">
         ✅ {% trans "Tayyor" %}: {{ status_counts.completed }}
       </a>
@@ -84,7 +97,7 @@
     {% endif %}
     {% if status_counts.rejected %}
     <div class="col-auto">
-      <a href="?date={{ filter_date|date:'Y-m-d' }}&status=rejected"
+      <a href="?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}&q={{ q }}&status=rejected"
          class="badge bg-danger text-decoration-none fs-6 py-2 px-3">
         ✕ {% trans "Rad" %}: {{ status_counts.rejected }}
       </a>
@@ -97,7 +110,14 @@
   {% if patients_list %}
   <div class="card shadow-sm">
     <div class="card-header py-2 bg-primary text-white">
-      <strong>{% blocktrans with d=filter_date|date:"d.m.Y" %}{{ d }} — Laboratoriya buyurtmalari{% endblocktrans %}</strong>
+      <strong>
+        {% if date_from == date_to %}
+          {{ date_from|date:"d.m.Y" }}
+        {% else %}
+          {{ date_from|date:"d.m.Y" }} — {{ date_to|date:"d.m.Y" }}
+        {% endif %}
+        — {% trans "Laboratoriya buyurtmalari" %}
+      </strong>
     </div>
     <div class="table-responsive">
       <table class="table table-hover table-sm align-middle mb-0">
@@ -148,7 +168,8 @@
 
   {% else %}
   <div class="alert alert-info">
-    <strong>{{ filter_date|date:"d.m.Y" }}</strong> {% trans "kuni" %}
+    {% if q %}<strong>«{{ q }}»</strong> — {% endif %}
+    {% if date_from == date_to %}<strong>{{ date_from|date:"d.m.Y" }}</strong>{% else %}<strong>{{ date_from|date:"d.m.Y" }} — {{ date_to|date:"d.m.Y" }}</strong>{% endif %}
     {% if status_filter %}{% trans "tanlangan holatda" %} {% endif %}{% trans "laboratoriya buyurtmasi yo'q." %}
   </div>
   {% endif %}

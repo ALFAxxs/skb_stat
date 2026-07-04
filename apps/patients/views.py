@@ -2288,8 +2288,32 @@ def doctor_patient_card(request, pk):
         'consultants', 'responses__responded_by', 'schedule_occurrences'
     ).order_by('-created_at')
 
-    # Retsept tab
-    prescriptions = patient.prescriptions.select_related('doctor').order_by('-created_at')
+    # Davolash rejasi tab
+    from apps.care.models import MedicationOrder
+    medication_orders = MedicationOrder.objects.filter(
+        patient_card=patient
+    ).select_related('prescribed_by').order_by('-created_at')
+
+    # Davolash rejasi — bajarilish holati (ServiceSchedule occurrences)
+    sched_occs = ServiceSchedule.objects.filter(
+        Q(treatment_procedure__patient_card=patient) |
+        Q(lab_test_assignment__patient_card=patient) |
+        Q(diagnostic_assignment__patient_card=patient) |
+        Q(consultation_request__patient_card=patient)
+    ).select_related(
+        'treatment_procedure', 'lab_test_assignment',
+        'diagnostic_assignment', 'consultation_request',
+        'performed_by'
+    ).order_by('scheduled_at')
+
+    _sched_by_date = {}
+    for occ in sched_occs:
+        d = timezone.localtime(occ.scheduled_at).date()
+        _sched_by_date.setdefault(d, []).append(occ)
+    schedule_day_groups = [
+        {'date': d, 'occurrences': _sched_by_date[d]}
+        for d in sorted(_sched_by_date.keys())
+    ]
 
     # 7-tab: Davolash yakuni
     discharge_exam = examinations.filter(examination_type='discharge').first()
@@ -2316,7 +2340,6 @@ def doctor_patient_card(request, pk):
         'consultations': consultations,
         'consultation_requests': consultation_requests,
         'discharge_exam': discharge_exam,
-        'prescriptions': [_prescription_payload(p) for p in prescriptions],
         'patient_services': patient_services,
         'patient_medicines': patient_medicines,
         'services_total': services_total,
@@ -2327,6 +2350,10 @@ def doctor_patient_card(request, pk):
         'discharge_conclusions': DischargeConclusion.objects.filter(is_active=True).order_by('name'),
         'outcome_choices':      PatientCard.OUTCOME_CHOICES,
         'today':                timezone.localdate(),
+        'medication_orders':    medication_orders,
+        'med_type_choices':     MedicationOrder.MEDICINE_TYPE_CHOICES,
+        'food_choices':         MedicationOrder.FOOD_RELATION_CHOICES,
+        'schedule_day_groups':  schedule_day_groups,
     })
 
 # ==================== AMBULATOR QABUL ====================
@@ -2887,6 +2914,94 @@ def prescription_add(request, pk):
     return JsonResponse({'success': True, 'prescription': _prescription_payload(p)})
 
 
+# ==================== DAVOLASH REJASI ====================
+
+@login_required
+@require_POST
+def med_order_add(request, pk):
+    from apps.care.models import MedicationOrder
+    doctor = _get_doctor_profile(request.user)
+    patient = get_object_or_404(PatientCard, pk=pk)
+    if not doctor or not _doctor_card_access(doctor, patient):
+        messages.error(request, _("Ruxsat yo'q."))
+        return redirect('doctor_patient_card', pk=pk)
+
+    medicine_name = request.POST.get('medicine_name', '').strip()
+    if not medicine_name:
+        messages.error(request, _("Dori nomi kiritilishi shart."))
+        return redirect('doctor_patient_card', pk=pk)
+
+    import json as _json
+    raw_times = request.POST.getlist('administration_times')
+    admin_times = [t.strip() for t in raw_times if t.strip()]
+
+    MedicationOrder.objects.create(
+        patient_card    = patient,
+        prescribed_by   = request.user,
+        created_by      = request.user,
+        medicine_name   = medicine_name,
+        medicine_type   = request.POST.get('medicine_type', 'tablet'),
+        duration_days   = int(request.POST.get('duration_days') or 1),
+        times_per_day   = int(request.POST.get('times_per_day') or 1),
+        administration_times = admin_times,
+        food_relation   = request.POST.get('food_relation', 'none'),
+        single_dose     = request.POST.get('single_dose', '').strip(),
+        max_daily_dose  = request.POST.get('max_daily_dose', '').strip(),
+        special_instructions = request.POST.get('special_instructions', '').strip(),
+        doctor_comment  = request.POST.get('doctor_comment', '').strip(),
+        start_date      = request.POST.get('start_date') or timezone.localdate(),
+    )
+    messages.success(request, _("Davolash rejasi qo'shildi."))
+    return redirect(f"{reverse('doctor_patient_card', kwargs={'pk': pk})}#tab-med-order")
+
+
+@login_required
+@require_POST
+def med_order_update(request, order_pk):
+    from apps.care.models import MedicationOrder
+    order = get_object_or_404(MedicationOrder, pk=order_pk)
+    doctor = _get_doctor_profile(request.user)
+    if not doctor or not _doctor_card_access(doctor, order.patient_card):
+        messages.error(request, _("Ruxsat yo'q."))
+        return redirect('doctor_patient_card', pk=order.patient_card_id)
+
+    medicine_name = request.POST.get('medicine_name', '').strip()
+    if not medicine_name:
+        messages.error(request, _("Dori nomi kiritilishi shart."))
+        return redirect('doctor_patient_card', pk=order.patient_card_id)
+
+    raw_times = request.POST.getlist('administration_times')
+    order.medicine_name   = medicine_name
+    order.medicine_type   = request.POST.get('medicine_type', 'tablet')
+    order.duration_days   = int(request.POST.get('duration_days') or 1)
+    order.times_per_day   = int(request.POST.get('times_per_day') or 1)
+    order.administration_times = [t.strip() for t in raw_times if t.strip()]
+    order.food_relation   = request.POST.get('food_relation', 'none')
+    order.single_dose     = request.POST.get('single_dose', '').strip()
+    order.max_daily_dose  = request.POST.get('max_daily_dose', '').strip()
+    order.special_instructions = request.POST.get('special_instructions', '').strip()
+    order.doctor_comment  = request.POST.get('doctor_comment', '').strip()
+    order.start_date      = request.POST.get('start_date') or timezone.localdate()
+    order.save()
+    messages.success(request, _("Davolash rejasi yangilandi."))
+    return redirect(f"{reverse('doctor_patient_card', kwargs={'pk': order.patient_card_id})}#tab-med-order")
+
+
+@login_required
+@require_POST
+def med_order_cancel(request, order_pk):
+    from apps.care.models import MedicationOrder
+    order = get_object_or_404(MedicationOrder, pk=order_pk)
+    doctor = _get_doctor_profile(request.user)
+    if not doctor or not _doctor_card_access(doctor, order.patient_card):
+        messages.error(request, _("Ruxsat yo'q."))
+        return redirect('doctor_patient_card', pk=order.patient_card_id)
+    order.status = 'cancelled'
+    order.save(update_fields=['status'])
+    messages.success(request, _("Davolash rejasi bekor qilindi."))
+    return redirect(f"{reverse('doctor_patient_card', kwargs={'pk': order.patient_card_id})}#tab-med-order")
+
+
 @login_required
 @require_POST
 def prescription_update(request, pk):
@@ -3161,26 +3276,127 @@ def lab_test_assign(request, pk):
 
 @login_required
 def lab_assignment_queue(request):
-    """Laborant — shifokorlar tayinlagan tahlillar navbati."""
+    """Laborant — shifokorlar tayinlagan tahlillar, bemorlar bo'yicha guruhlangan."""
     if request.user.role != 'laborant' and not request.user.is_superuser:
         return redirect('access_denied')
-    qs = LabTestAssignment.objects.select_related('patient_card', 'assigned_by').prefetch_related('schedule_occurrences')
-    status = request.GET.get('status', '')
-    if status:
-        qs = qs.filter(status=status)
+
+    from datetime import datetime as _dt
+    today_d = timezone.localdate()
+
+    date_from_str = request.GET.get('date_from', '')
+    date_to_str   = request.GET.get('date_to', '')
+    try:
+        date_from = _dt.strptime(date_from_str, '%Y-%m-%d').date() if date_from_str else today_d
+    except ValueError:
+        date_from = today_d
+    try:
+        date_to = _dt.strptime(date_to_str, '%Y-%m-%d').date() if date_to_str else date_from
+    except ValueError:
+        date_to = date_from
+    if date_to < date_from:
+        date_to = date_from
+
+    q            = request.GET.get('q', '').strip()
+    status_filter = request.GET.get('status', '')
+
+    qs = LabTestAssignment.objects.select_related('patient_card', 'assigned_by').filter(
+        created_at__date__gte=date_from,
+        created_at__date__lte=date_to,
+    )
+
+    if q:
+        qs = qs.filter(
+            Q(patient_card__full_name__icontains=q) |
+            Q(patient_card__phone__icontains=q) |
+            Q(patient_card__JSHSHIR__icontains=q) |
+            Q(patient_card__passport_serial__icontains=q)
+        )
+
+    if status_filter:
+        qs = qs.filter(status=status_filter)
     else:
         qs = qs.exclude(status__in=['done', 'cancelled'])
-    query = request.GET.get('q', '')
-    if query:
-        qs = qs.filter(Q(patient_card__full_name__icontains=query) | Q(test_name__icontains=query))
-    qs = qs.order_by('-created_at')
-    paginator = Paginator(qs, 20)
-    page_obj = paginator.get_page(request.GET.get('page'))
+
+    qs = qs.order_by('patient_card__full_name', '-created_at')
+
+    # Bemorlar bo'yicha guruhlash
+    patients_dict = {}
+    for a in qs:
+        pid = a.patient_card_id
+        if pid not in patients_dict:
+            patients_dict[pid] = {
+                'patient':     a.patient_card,
+                'assignments': [],
+                'statuses':    [],
+            }
+        patients_dict[pid]['assignments'].append(a)
+        patients_dict[pid]['statuses'].append(a.status)
+
+    patients_list = list(patients_dict.values())
+
     notifications = DoctorNotification.objects.filter(recipient=request.user).order_by('-created_at')[:8]
     return render(request, 'patients/laborant/queue.html', {
-        'page_obj': page_obj, 'status': status, 'query': query,
-        'status_choices': LabTestAssignment.STATUS_CHOICES, 'notifications': notifications,
-        'pending_count': LabTestAssignment.objects.filter(status='assigned').count(),
+        'patients_list':  patients_list,
+        'date_from':      date_from,
+        'date_to':        date_to,
+        'q':              q,
+        'status_filter':  status_filter,
+        'status_choices': LabTestAssignment.STATUS_CHOICES,
+        'notifications':  notifications,
+        'pending_count':  LabTestAssignment.objects.exclude(status__in=['done', 'cancelled']).count(),
+    })
+
+
+@login_required
+def lab_assign_patient(request, pk):
+    """Laborant — bemor bo'yicha shifokor tayinlagan tahlillar ro'yxati."""
+    if request.user.role != 'laborant' and not request.user.is_superuser:
+        return redirect('access_denied')
+    from apps.laboratory.models import LabTemplate
+    patient = get_object_or_404(PatientCard, pk=pk)
+    assignments = LabTestAssignment.objects.filter(
+        patient_card=patient
+    ).select_related('assigned_by').prefetch_related('result_logs__performed_by').order_by('-created_at')
+    templates = LabTemplate.objects.order_by('category', 'name')
+    return render(request, 'patients/laborant/assign_patient.html', {
+        'patient':     patient,
+        'assignments': assignments,
+        'status_choices': LabTestAssignment.STATUS_CHOICES,
+        'templates':   templates,
+    })
+
+
+@login_required
+@require_POST
+def lab_assign_start_entry(request, pk):
+    """AJAX: LabTestAssignment uchun LabResult yaratib, lab_result_enter ga yo'naltirish."""
+    if request.user.role != 'laborant' and not request.user.is_superuser:
+        return JsonResponse({'success': False, 'error': _('Ruxsat yo\'q')}, status=403)
+    from apps.laboratory.models import LabTemplate, LabResult
+    assignment = get_object_or_404(LabTestAssignment, pk=pk)
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, Exception):
+        return JsonResponse({'success': False, 'error': _('JSON xatosi')}, status=400)
+    template_id = data.get('template_id')
+    if not template_id:
+        return JsonResponse({'success': False, 'error': _('Shablon tanlanmagan')}, status=400)
+    tmpl = get_object_or_404(LabTemplate, pk=template_id)
+    existing = LabResult.objects.filter(
+        patient_card=assignment.patient_card, template=tmpl
+    ).first()
+    result = existing or LabResult.objects.create(
+        patient_card=assignment.patient_card,
+        template=tmpl,
+        status='draft',
+        created_by=request.user,
+    )
+    if assignment.status in ('assigned', 'sample_taken'):
+        assignment.status = 'in_progress'
+        assignment.save(update_fields=['status'])
+    return JsonResponse({
+        'success': True,
+        'redirect': f'/laboratory/result/{result.pk}/enter/',
     })
 
 

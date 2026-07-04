@@ -50,30 +50,51 @@ def _item_status_priority(status):
 
 @login_required
 def lab_home(request):
-    """Bugungi lab xizmatlar, bemorlar bo'yicha guruhlangan + LabOrderItem statuslari"""
+    """Lab xizmatlar, bemorlar bo'yicha guruhlangan + LabOrderItem statuslari"""
     if not _check_role(request):
         return redirect('patient_list')
 
-    # Sana filtri
-    date_str = request.GET.get('date', '')
-    if date_str:
-        try:
-            filter_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-        except ValueError:
-            filter_date = date.today()
-    else:
-        filter_date = date.today()
+    from django.db.models import Q as _Q
+    today_date = date.today()
+
+    # Sana oraliq filtri
+    date_from_str = request.GET.get('date_from', '')
+    date_to_str   = request.GET.get('date_to', '')
+    try:
+        date_from = datetime.strptime(date_from_str, '%Y-%m-%d').date() if date_from_str else today_date
+    except ValueError:
+        date_from = today_date
+    try:
+        date_to = datetime.strptime(date_to_str, '%Y-%m-%d').date() if date_to_str else date_from
+    except ValueError:
+        date_to = date_from
+    if date_to < date_from:
+        date_to = date_from
+
+    # Qidiruv: ism, telefon, JSHSHIR, passport
+    q = request.GET.get('q', '').strip()
 
     # Status filtri
     status_filter = request.GET.get('status', '')
 
-    # Bugungi lab PatientService larni olish
+    # Lab PatientService larni olish
     lab_ps_qs = PatientService.objects.filter(
         service__category__category_type='lab',
-        ordered_at__date=filter_date,
+        ordered_at__date__gte=date_from,
+        ordered_at__date__lte=date_to,
     ).select_related(
         'patient_card', 'service', 'service__category'
-    ).order_by('patient_card__full_name', '-ordered_at')
+    )
+
+    if q:
+        lab_ps_qs = lab_ps_qs.filter(
+            _Q(patient_card__full_name__icontains=q) |
+            _Q(patient_card__phone__icontains=q) |
+            _Q(patient_card__JSHSHIR__icontains=q) |
+            _Q(patient_card__passport_serial__icontains=q)
+        )
+
+    lab_ps_qs = lab_ps_qs.order_by('patient_card__full_name', '-ordered_at')
 
     # LabOrderItem statuslarini bir so'rovda olish
     items_map = {
@@ -89,7 +110,6 @@ def lab_home(request):
         item = items_map.get(ps.pk)
         item_status = item.status if item else 'pending'
 
-        # Status filtri
         if status_filter and item_status != status_filter:
             continue
 
@@ -101,13 +121,12 @@ def lab_home(request):
                 'statuses': [],
             }
         patients_dict[pid]['services'].append({
-            'ps':         ps,
-            'item':       item,
-            'status':     item_status,
+            'ps':     ps,
+            'item':   item,
+            'status': item_status,
         })
         patients_dict[pid]['statuses'].append(item_status)
 
-    # Tezkor statistika uchun counter
     from collections import Counter
     all_statuses = [
         s['status']
@@ -116,19 +135,20 @@ def lab_home(request):
     ]
     status_counts = Counter(all_statuses)
 
-    # Eng yuqori prioritetli status bo'yicha saralash
     patients_list = sorted(
         patients_dict.values(),
         key=lambda d: min(_item_status_priority(s) for s in d['statuses'])
     )
 
     context = {
-        'patients_list':  patients_list,
-        'filter_date':    filter_date,
-        'today':          date.today(),
-        'status_filter':  status_filter,
-        'status_counts':  status_counts,
-        'item_statuses':  LabOrderItem.STATUS_CHOICES,
+        'patients_list': patients_list,
+        'date_from':     date_from,
+        'date_to':       date_to,
+        'today':         today_date,
+        'q':             q,
+        'status_filter': status_filter,
+        'status_counts': status_counts,
+        'item_statuses': LabOrderItem.STATUS_CHOICES,
     }
     return render(request, 'laboratory/lab_home.html', context)
 
