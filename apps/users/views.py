@@ -108,6 +108,26 @@ def user_edit(request, pk):
 
 @login_required
 @role_required('admin')
+@require_POST
+def user_change_password(request, pk):
+    user = get_object_or_404(CustomUser, pk=pk)
+    p1 = request.POST.get('new_password1', '').strip()
+    p2 = request.POST.get('new_password2', '').strip()
+    if not p1:
+        messages.error(request, _("Yangi parol kiritilmadi."))
+    elif p1 != p2:
+        messages.error(request, _("Parollar mos kelmadi."))
+    elif len(p1) < 6:
+        messages.error(request, _("Parol kamida 6 ta belgidan iborat bo'lishi kerak."))
+    else:
+        user.set_password(p1)
+        user.save(update_fields=['password'])
+        messages.success(request, _("%(name)s parol yangilandi.") % {'name': user.get_full_name()})
+    return redirect('user_edit', pk=pk)
+
+
+@login_required
+@role_required('admin')
 def user_toggle(request, pk):
     user = get_object_or_404(CustomUser, pk=pk)
     if user != request.user:

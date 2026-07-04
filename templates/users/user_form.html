@@ -90,8 +90,14 @@
                     </div>
                     {% endif %}
 
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 flex-wrap">
                         <button type="submit" class="btn btn-primary">💾 {% trans "Saqlash" %}</button>
+                        {% if form.instance.pk %}
+                        <button type="button" class="btn btn-outline-warning"
+                                data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                            🔑 {% trans "Parolni yangilash" %}
+                        </button>
+                        {% endif %}
                         <a href="{% url 'user_list' %}" class="btn btn-secondary">{% trans "Bekor qilish" %}</a>
                     </div>
                 </form>
@@ -99,6 +105,40 @@
         </div>
     </div>
 </div>
+{% if form.instance.pk %}
+<!-- Parolni yangilash modali -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title">🔑 {% trans "Parolni yangilash" %}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'user_change_password' form.instance.pk %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">{% trans "Yangi parol" %} *</label>
+            <input type="password" name="new_password1" class="form-control"
+                   minlength="6" required autocomplete="new-password">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">{% trans "Parolni tasdiqlang" %} *</label>
+            <input type="password" name="new_password2" class="form-control"
+                   minlength="6" required autocomplete="new-password">
+          </div>
+          <div class="text-muted small">{% trans "Kamida 6 ta belgi" %}</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{% trans "Bekor" %}</button>
+          <button type="submit" class="btn btn-warning btn-sm">💾 {% trans "Saqlash" %}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% endblock %}
 
 {% block scripts %}
