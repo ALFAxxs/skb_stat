@@ -49,6 +49,7 @@
                 <th>Turi</th>
                 <th>Shifokorlar</th>
                 <th>Holat</th>
+                <th>🌍 Norezident</th>
                 <th>Amallar</th>
             </tr>
         </thead>
@@ -86,8 +87,19 @@
                 <td>
                     <form method="post" action="{% url 'panel_service_toggle' s.pk %}" class="d-inline">
                         {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
                         <button class="badge border-0 {% if s.is_active %}bg-success{% else %}bg-danger{% endif %}">
                             {% if s.is_active %}Faol{% else %}Nofaol{% endif %}
+                        </button>
+                    </form>
+                </td>
+                <td>
+                    <form method="post" action="{% url 'panel_service_surcharge_toggle' s.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="badge border-0 {% if s.non_resident_surcharge %}bg-warning text-dark{% else %}bg-secondary{% endif %}"
+                                title="{% if s.non_resident_surcharge %}Norezident +25% — bosib o'chirish{% else %}Norezident oddiy narx — bosib yoqish{% endif %}">
+                            {% if s.non_resident_surcharge %}+25%{% else %}Oddiy{% endif %}
                         </button>
                     </form>
                 </td>
@@ -104,6 +116,7 @@
                         data-pricer="{{ s.price_railway_raw }}"
                         data-active="{% if s.is_active %}1{% else %}0{% endif %}"
                         data-op="{% if s.is_operation %}1{% else %}0{% endif %}"
+                        data-surcharge="{% if s.non_resident_surcharge %}1{% else %}0{% endif %}"
                         data-doctors="{{ s.doc_pks_json }}">✏️</button>
                     <form method="post" action="{% url 'panel_service_delete' s.pk %}"
                           class="d-inline"
@@ -114,7 +127,7 @@
                 </td>
             </tr>
             {% empty %}
-            <tr><td colspan="10" class="text-center text-muted">Ma'lumot topilmadi</td></tr>
+            <tr><td colspan="11" class="text-center text-muted">Ma'lumot topilmadi</td></tr>
             {% endfor %}
         </tbody>
     </table>
@@ -187,8 +200,9 @@ document.getElementById('editModal').addEventListener('show.bs.modal', function(
     m.querySelector('[name=department_id]').value = b.dataset.dept || '';
     m.querySelector('[name=price_normal]').value  = b.dataset.pricen  || '0';
     m.querySelector('[name=price_railway]').value = b.dataset.pricer || '0';
-    m.querySelector('[name=is_active]').value     = b.dataset.active || '1';
-    m.querySelector('[name=is_operation]').value  = b.dataset.op || '0';
+    m.querySelector('[name=is_active]').value              = b.dataset.active || '1';
+    m.querySelector('[name=is_operation]').value           = b.dataset.op || '0';
+    m.querySelector('[name=non_resident_surcharge]').value = b.dataset.surcharge !== undefined ? b.dataset.surcharge : '1';
 
     // Qidiruv maydonini tozalash va barcha itemlarni ko'rsatish
     var searchInput = m.querySelector('.svc-doc-search');

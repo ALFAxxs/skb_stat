@@ -86,6 +86,11 @@ class Service(models.Model):
     )
     is_active    = models.BooleanField(default=True)
     is_operation = models.BooleanField(default=False, verbose_name=_("Operatsiyami?"))
+    non_resident_surcharge = models.BooleanField(
+        default=True,
+        verbose_name=_("Norezident +25%"),
+        help_text=_("Yoqilsa — norezident uchun narx avtomatik 25% qimmatroq hisoblanadi.")
+    )
 
     # Konsultatsiya turidagi xizmatlar uchun — ushbu xizmatni qaysi shifokor(lar) ko'ra oladi
     assigned_doctors = models.ManyToManyField(
@@ -98,8 +103,7 @@ class Service(models.Model):
         from decimal import Decimal
         if patient_category == 'railway':
             return self.price_railway if self.price_railway else self.price_normal
-        elif patient_category == 'non_resident':
-            # Asosiy narx: price_normal, agar 0 bo'lsa price_railway ishlatiladi
+        elif patient_category == 'non_resident' and self.non_resident_surcharge:
             base = self.price_normal if self.price_normal else self.price_railway
             return round(base * Decimal('1.25'), 2)
         else:

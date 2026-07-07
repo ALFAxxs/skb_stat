@@ -33,8 +33,9 @@ urlpatterns = [
     path('panel/xizmatlar/',                          pv.panel_services,             name='panel_services'),
     path('panel/xizmatlar/saqlash/',                  pv.panel_service_save,         name='panel_service_save'),
     path('panel/xizmatlar/<int:pk>/saqlash/',         pv.panel_service_save,         name='panel_service_edit'),
-    path('panel/xizmatlar/<int:pk>/toggle/',          pv.panel_service_toggle,       name='panel_service_toggle'),
-    path('panel/xizmatlar/<int:pk>/ochir/',           pv.panel_service_delete,       name='panel_service_delete'),
+    path('panel/xizmatlar/<int:pk>/toggle/',          pv.panel_service_toggle,           name='panel_service_toggle'),
+    path('panel/xizmatlar/<int:pk>/norezident/',      pv.panel_service_surcharge_toggle, name='panel_service_surcharge_toggle'),
+    path('panel/xizmatlar/<int:pk>/ochir/',           pv.panel_service_delete,           name='panel_service_delete'),
 
     # Dorilar
     path('panel/dorilar/',                            pv.panel_medicines,            name='panel_medicines'),

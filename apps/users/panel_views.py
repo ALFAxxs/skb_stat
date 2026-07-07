@@ -180,9 +180,10 @@ def panel_service_save(request, pk=None):
     department_id = request.POST.get('department_id') or None
     price_normal  = request.POST.get('price_normal', '0') or '0'
     price_railway = request.POST.get('price_railway', '0') or '0'
-    is_active     = request.POST.get('is_active') == '1'
-    is_operation  = request.POST.get('is_operation') == '1'
-    doctor_ids    = request.POST.getlist('assigned_doctors')
+    is_active             = request.POST.get('is_active') == '1'
+    is_operation          = request.POST.get('is_operation') == '1'
+    non_resident_surcharge = request.POST.get('non_resident_surcharge') == '1'
+    doctor_ids            = request.POST.getlist('assigned_doctors')
 
     if not name or not category_id:
         messages.error(request, _("Nomi va kategoriya kiritilishi shart."))
@@ -193,6 +194,7 @@ def panel_service_save(request, pk=None):
         category_id=category_id, department_id=department_id,
         price_normal=price_normal, price_railway=price_railway,
         is_active=is_active, is_operation=is_operation,
+        non_resident_surcharge=non_resident_surcharge,
     )
     if pk:
         svc = get_object_or_404(Service, pk=pk)
@@ -219,6 +221,21 @@ def panel_service_toggle(request, pk):
     svc = get_object_or_404(Service, pk=pk)
     svc.is_active = not svc.is_active
     svc.save()
+    next_url = request.POST.get('next', '')
+    if next_url and next_url.startswith('/'):
+        return redirect(next_url)
+    return redirect('panel_services')
+
+
+@_admin_only
+@require_POST
+def panel_service_surcharge_toggle(request, pk):
+    svc = get_object_or_404(Service, pk=pk)
+    svc.non_resident_surcharge = not svc.non_resident_surcharge
+    svc.save(update_fields=['non_resident_surcharge'])
+    next_url = request.POST.get('next', '')
+    if next_url and next_url.startswith('/'):
+        return redirect(next_url)
     return redirect('panel_services')
 
 

@@ -63,6 +63,14 @@
                                 <option value="1">✅ Ha — operatsiya</option>
                             </select>
                         </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">🌍 Norezident uchun +25%</label>
+                            <select class="form-select" name="non_resident_surcharge">
+                                <option value="1">✅ Yoqilgan — norezident 25% qimmatroq to'laydi</option>
+                                <option value="0">❌ O'chirilgan — norezident oddiy narxda to'laydi</option>
+                            </select>
+                            <div class="text-muted small mt-1">Faqat norezident bemorlar uchun ta'sir qiladi</div>
+                        </div>
 
                         <!-- Shifokorlar -->
                         {% if doctors %}
