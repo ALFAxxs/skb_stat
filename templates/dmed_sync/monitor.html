@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}DMED Sinxronizatsiya{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h4 class="mb-0">🔄 DMED Sinxronizatsiya
+      {% if dmed_enabled %}
+        <span class="badge bg-success ms-2">● Faol</span>
+      {% else %}
+        <span class="badge bg-secondary ms-2">○ O'chirilgan</span>
+      {% endif %}
+    </h4>
+    <div class="d-flex gap-2">
+      <form method="post" action="{% url 'dmed_run_now' %}">
+        {% csrf_token %}
+        <button class="btn btn-primary btn-sm">▶ Hozir ishlatish</button>
+      </form>
+      <form method="post" action="{% url 'dmed_retry_all' %}"
+            onsubmit="return confirm('Barcha xato yozuvlarni qayta navbatga qo\'yish?')">
+        {% csrf_token %}
+        <button class="btn btn-warning btn-sm">↩ Xatolarni qayta yuborish</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Session holati -->
+  {% if session and session.is_valid %}
+  <div class="alert alert-success py-2 d-flex align-items-center gap-3">
+    <span style="font-size:1.5rem;">🔐</span>
+    <div>
+      <strong>DMED session faol</strong>
+      <span class="text-muted ms-2 small">
+        {{ session.logged_in_at|date:"d.m.Y H:i" }} da
+        {% if session.logged_in_by %}<strong>{{ session.logged_in_by }}</strong> tomonidan{% endif %}
+        kirilgan
+      </span>
+    </div>
+  </div>
+  {% else %}
+  <div class="alert alert-danger py-2 d-flex align-items-center gap-3">
+    <span style="font-size:1.5rem;">🔒</span>
+    <div>
+      <strong>DMED session yo'q yoki muddati tugagan!</strong>
+      <div class="small mt-1">
+        Sinxronizatsiya to'xtatilgan. Serverda quyidagini ishga tushiring:
+        <code class="ms-2 px-2 py-1 bg-dark text-white rounded">python manage.py dmed_login</code>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if not dmed_enabled %}
+  <div class="alert alert-warning py-2">
+    ⚠️ <strong>DMED_SYNC_ENABLED = False</strong> —
+    <code>.env</code> da <code>DMED_SYNC_ENABLED=True</code> qo'ying.
+  </div>
+  {% endif %}
+
+  <!-- Statistika -->
+  <div class="row g-2 mb-3">
+    <div class="col-auto">
+      <a href="?status=pending" class="text-decoration-none">
+        <div class="card border-0 shadow-sm text-center px-3 py-2">
+          <div style="font-size:1.6rem;font-weight:700;" class="text-warning">{{ counts.pending }}</div>
+          <div class="small text-muted">Kutilmoqda</div>
+        </div>
+      </a>
+    </div>
+    <div class="col-auto">
+      <a href="?status=running" class="text-decoration-none">
+        <div class="card border-0 shadow-sm text-center px-3 py-2">
+          <div style="font-size:1.6rem;font-weight:700;" class="text-primary">{{ counts.running }}</div>
+          <div class="small text-muted">Jarayonda</div>
+        </div>
+      </a>
+    </div>
+    <div class="col-auto">
+      <a href="?status=done" class="text-decoration-none">
+        <div class="card border-0 shadow-sm text-center px-3 py-2">
+          <div style="font-size:1.6rem;font-weight:700;" class="text-success">{{ counts.done }}</div>
+          <div class="small text-muted">Bajarildi</div>
+        </div>
+      </a>
+    </div>
+    <div class="col-auto">
+      <a href="?status=failed" class="text-decoration-none">
+        <div class="card border-0 shadow-sm text-center px-3 py-2">
+          <div style="font-size:1.6rem;font-weight:700;" class="text-danger">{{ counts.failed }}</div>
+          <div class="small text-muted">Xato</div>
+        </div>
+      </a>
+    </div>
+    <div class="col-auto align-self-center ms-2">
+      <a href="{% url 'dmed_monitor' %}" class="btn btn-outline-secondary btn-sm">✕ Filtr tozalash</a>
+    </div>
+  </div>
+
+  <!-- Filtr -->
+  <form class="row g-2 mb-3" method="get">
+    <div class="col-auto">
+      <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="">— Barcha holatlar —</option>
+        {% for val, label in status_choices %}
+        <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <select name="entity" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="">— Barcha turlar —</option>
+        {% for val, label in entity_choices %}
+        <option value="{{ val }}" {% if entity_filter == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+
+  <!-- Jadval -->
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0" style="font-size:.85rem;">
+        <thead class="table-light">
+          <tr>
+            <th>ID</th>
+            <th>Tur</th>
+            <th>Tavsif</th>
+            <th>Holat</th>
+            <th>DMED ID</th>
+            <th>Urinish</th>
+            <th>Navbatga qo'yilgan</th>
+            <th>Oxirgi urinish</th>
+            <th>Xato</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in records %}
+          <tr class="{% if r.status == 'failed' %}table-danger{% elif r.status == 'done' %}table-success{% elif r.status == 'running' %}table-info{% endif %}">
+            <td class="text-muted">{{ r.pk }}</td>
+            <td><span class="badge bg-secondary">{{ r.get_entity_type_display }}</span></td>
+            <td>{{ r.entity_repr|default:"—"|truncatechars:50 }}</td>
+            <td>
+              <span class="badge
+                {% if r.status == 'done' %}bg-success
+                {% elif r.status == 'failed' %}bg-danger
+                {% elif r.status == 'running' %}bg-primary
+                {% elif r.status == 'skipped' %}bg-secondary
+                {% else %}bg-warning text-dark{% endif %}">
+                {{ r.get_status_display }}
+              </span>
+            </td>
+            <td class="small">{{ r.dmed_id|default:"—" }}</td>
+            <td class="text-center">{{ r.attempts }}</td>
+            <td class="small text-nowrap">{{ r.enqueued_at|date:"d.m.Y H:i:s" }}</td>
+            <td class="small text-nowrap">{{ r.last_attempt_at|date:"H:i:s"|default:"—" }}</td>
+            <td class="small text-danger" style="max-width:250px;word-break:break-all;">
+              {{ r.error|truncatechars:120 }}
+            </td>
+            <td>
+              {% if r.status == 'failed' or r.status == 'skipped' %}
+              <form method="post" action="{% url 'dmed_retry_record' r.pk %}">
+                {% csrf_token %}
+                <button class="btn btn-xs btn-outline-warning" style="font-size:.75rem;padding:1px 6px;">↩</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="10" class="text-center text-muted py-4">Yozuvlar yo'q</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Har 15 soniyada statistika yangilanadi
+(function () {
+  function refresh() {
+    fetch("{% url 'dmed_status_json' %}")
+      .then(r => r.json())
+      .then(d => {
+        // Sahifani to'liq reload qilish o'rniga faqat son'larni yangilaymiz
+        // (oddiy yondashuv)
+        if (d.running > 0 || d.pending > 0) {
+          // Jarayon davom etyapti — avtomatik reload
+          setTimeout(() => location.reload(), 5000);
+        }
+      }).catch(() => {});
+  }
+  setTimeout(refresh, 15000);
+})();
+</script>
+{% endblock %}

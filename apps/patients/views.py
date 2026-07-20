@@ -1068,6 +1068,20 @@ def patient_card_edit(request, pk):
                 elif death_instance:
                     death_instance.delete()
 
+                # Shartnoma raqamini yangilash
+                edit_contract_number = request.POST.get('edit_contract_number', '').strip()
+                if edit_contract_number:
+                    try:
+                        contract = patient.contract
+                        if contract.contract_number != edit_contract_number:
+                            contract.contract_number = edit_contract_number
+                            # Kesh PDF ni o'chirish — keyingi yuklab olishda yangi raqam bilan qayta yaratiladi
+                            if contract.pdf_file:
+                                contract.pdf_file.delete(save=False)
+                            contract.save(update_fields=['contract_number', 'updated_at'])
+                    except Exception:
+                        pass
+
                 messages.success(request, _("Bemor kartasi yangilandi!"))
                 return redirect('patient_detail', pk=pk)
             else:

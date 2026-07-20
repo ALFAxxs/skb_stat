@@ -86,8 +86,8 @@ class PatientCardForm(forms.ModelForm):
         self.fields['attending_doctor'].queryset = doctor_qs
         self.fields['department_head'].queryset = doctor_qs
 
-        # Majburiy maydonlar
-        self.fields['attending_doctor'].required = True
+        # Davolovchi shifokor ixtiyoriy
+        self.fields['attending_doctor'].required = False
         self.fields['department_head'].required = True
 
         # Qolganlar...

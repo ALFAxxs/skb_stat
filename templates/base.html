@@ -70,6 +70,7 @@
         {% if request.user.role == 'admin' or request.user.is_superuser %}
         <a href="{% url 'user_list' %}" class="nav-link-new {% if request.resolver_match.url_name == 'user_list' or request.resolver_match.url_name == 'user_create' or request.resolver_match.url_name == 'user_edit' %}active{% endif %}"><i class="bi bi-people"></i> Foydalanuvchilar</a>
         <a href="{% url 'panel_dashboard' %}" class="nav-link-new {% if 'panel' in request.path %}active{% endif %}"><i class="bi bi-gear-wide-connected"></i> Admin panel</a>
+        <a href="{% url 'dmed_monitor' %}" class="nav-link-new {% if 'dmed' in request.path %}active{% endif %}"><i class="bi bi-arrow-repeat"></i> DMED Sync</a>
         {% endif %}
 
         <div class="sidebar-footer">

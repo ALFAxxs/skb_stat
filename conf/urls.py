@@ -20,4 +20,5 @@ urlpatterns = [
     path('api/bot/', include('apps.telegram_bot.urls')),
     path('api/care/', include('apps.care.urls')),
     path('api/auth/token/', obtain_auth_token, name='api-auth-token'),
+    path('dmed/', include('apps.dmed_sync.urls')),
 ]

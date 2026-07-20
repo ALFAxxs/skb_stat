@@ -137,7 +137,7 @@ def export_excel(request):
     ws.title = "Bemorlar ro'yxati"
 
     headers = [
-        "№", "Bayonnoma №", "Ism-familiya", "Jinsi", "Tug'ilgan sana",
+        "№", "Bayonnoma №", "Kasallik varaqasi №", "Ism-familiya", "Jinsi", "Tug'ilgan sana",
         "Rezident", "Manzil", "Ijtimoiy holat", "Passport", "Qabul turi",
         "Yo'llagan muassasa", "Qabul bo'limi tashxisi", "Necha soat keyin",
         "Shoshilinch", "Pullik", "Yotqizilgan sana", "Bo'lim",
@@ -174,6 +174,7 @@ def export_excel(request):
         row_data = [
             row_num - 1,
             patient.medical_record_number,
+            patient.case_sheet_number or '',
             patient.full_name,
             patient.get_gender_display(),
             patient.birth_date.strftime('%d.%m.%Y') if patient.birth_date else '',

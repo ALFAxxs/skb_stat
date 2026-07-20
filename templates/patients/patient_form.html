@@ -459,7 +459,7 @@
             <!-- 9. Shifokorlar bo'limida -->
 <div class="col-md-6 mb-3">
     <label class="form-label fw-bold">
-        {{ form.attending_doctor.label }} <span class="text-danger">*</span>
+        {{ form.attending_doctor.label }}
     </label>
     {{ form.attending_doctor }}
     <div class="text-danger small">{{ form.attending_doctor.errors }}</div>
@@ -471,6 +471,29 @@
     {{ form.department_head }}
     <div class="text-danger small">{{ form.department_head.errors }}</div>
 </div>
+
+            <!-- Shartnoma raqami (faqat tahrirlashda) -->
+            {% if form.instance.pk %}
+            {% with contract=form.instance.contract %}
+            {% if contract %}
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body py-2">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold mb-1">
+                                📄 Shartnoma raqami
+                            </label>
+                            <input type="text" name="edit_contract_number"
+                                   class="form-control form-control-sm"
+                                   value="{{ contract.contract_number }}"
+                                   maxlength="30">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endwith %}
+            {% endif %}
 
             <div class="d-flex gap-2 mb-5">
                 <button type="submit" class="btn btn-primary btn-lg">💾 {% trans "Saqlash" %}</button>

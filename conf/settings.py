@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'apps.telegram_bot',
     'apps.care',
     'apps.billing',
+    'apps.dmed_sync',
 ]
 
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -79,6 +80,22 @@ REST_FRAMEWORK = {
 # Telegram Bot
 TELEGRAM_BOT_TOKEN  = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 TELEGRAM_BOT_SECRET = os.environ.get('TELEGRAM_BOT_SECRET', 'change-me-in-production')
+
+# ── DMED RPA Sinxronizatsiya ──────────────────────────────────────────────────
+DMED_SYNC_ENABLED   = os.environ.get('DMED_SYNC_ENABLED', 'False') == 'True'
+DMED_URL            = os.environ.get('DMED_URL', '')       # https://dmed.uz
+DMED_HEADLESS       = os.environ.get('DMED_HEADLESS', 'True') == 'True'
+DMED_ALERT_CHAT_ID  = os.environ.get('DMED_ALERT_CHAT_ID', '')  # Telegram chat ID
+
+# Entity turi → DMED rol nomi (rol tanlash sahifasidagi karta matni)
+DMED_ROLE_MAP = {
+    'patient':          'Menejer',    # Registrator → Menejer
+    'visit':            'Menejer',
+    'patient_service':  'Menejer',
+    'lab_result':       'Laborant',
+    'diagnostic':       'Shifokor',
+    'consultation':     'Shifokor',
+}
 
 # Redis
 REDIS_URL = os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/0')
