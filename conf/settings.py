@@ -162,7 +162,9 @@ DATABASES = {
         'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.postgresql'),
         'NAME': os.getenv('DB_NAME', 'skb_stat'), 'USER': os.getenv('DB_USER', 'skb_user'), 'PASSWORD': os.getenv('DB_PASSWORD', ''), 'HOST': os.getenv('DB_HOST', 'localhost'), 'PORT': os.getenv('DB_PORT', '5432'),
     }
-}
+} 
+
+
 
 # DATABASES = {
 #     'default': {
