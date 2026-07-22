@@ -15,9 +15,15 @@
     <h4>📊 {% trans "Xizmatlar statistikasi" %}</h4>
     <div class="d-flex gap-2">
         {% if active_tab == 'services' %}
-        <a href="{% url 'export_services_excel' %}?{{ current_filters }}" class="btn btn-success btn-sm">📥 Excel</a>
-{% elif active_tab == 'medicines' %}
-        <a href="{% url 'export_medicine_excel' %}?{{ current_filters }}" class="btn btn-success btn-sm">📥 Excel</a>
+        <button type="button" id="exportServicesBtn" class="btn btn-success btn-sm"
+                data-start-url="{% url 'export_services_start' %}?{{ current_filters }}"
+                data-status-base="{% url 'export_task_status' 'PLACEHOLDER' %}"
+                data-download-base="{% url 'export_file_download' 'PLACEHOLDER' %}">📥 Excel</button>
+        {% elif active_tab == 'medicines' %}
+        <button type="button" id="exportMedicineBtn" class="btn btn-success btn-sm"
+                data-start-url="{% url 'export_medicine_start' %}?{{ current_filters }}"
+                data-status-base="{% url 'export_task_status' 'PLACEHOLDER' %}"
+                data-download-base="{% url 'export_file_download' 'PLACEHOLDER' %}">📥 Excel</button>
         {% elif active_tab == 'operations' %}
         <a href="{% url 'export_operation_excel' %}?{{ current_filters }}" class="btn btn-success btn-sm">📥 Excel</a>
         {% elif active_tab == 'opservices' %}
@@ -545,5 +551,40 @@ new Chart(document.getElementById('opxChart'), {
     }
 });
 {% endif %}
+
+// Background Excel export
+(function () {
+    function setupExportBtn(btnId) {
+        const btn = document.getElementById(btnId);
+        if (!btn) return;
+        btn.addEventListener('click', function () {
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Tayyorlanmoqda...';
+            fetch(btn.dataset.startUrl)
+                .then(r => r.json())
+                .then(({task_id}) => poll(task_id))
+                .catch(() => reset());
+            function poll(task_id) {
+                fetch(btn.dataset.statusBase.replace('PLACEHOLDER', task_id))
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.status === 'done') {
+                            window.location.href = btn.dataset.downloadBase.replace('PLACEHOLDER', data.filename);
+                            setTimeout(reset, 3000);
+                        } else if (data.status === 'error') {
+                            alert("Excel xato: " + (data.error || 'Noma\'lum xato'));
+                            reset();
+                        } else {
+                            setTimeout(() => poll(task_id), 2000);
+                        }
+                    })
+                    .catch(() => setTimeout(() => poll(task_id), 3000));
+            }
+            function reset() { btn.disabled = false; btn.innerHTML = '📥 Excel'; }
+        });
+    }
+    setupExportBtn('exportServicesBtn');
+    setupExportBtn('exportMedicineBtn');
+})();
 </script>
 {% endblock %}
