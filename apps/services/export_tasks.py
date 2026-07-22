@@ -1,23 +1,20 @@
 """
 Background Excel export tasks (Celery + pandas).
 """
-import io
 import os
 import uuid
 import logging
 
 from celery import shared_task
 from django.conf import settings
-from django.db.models import Sum, Q, F, ExpressionWrapper, DecimalField, Count
 
 logger = logging.getLogger(__name__)
 
-EXPORT_DIR = os.path.join(settings.MEDIA_ROOT, 'temp_exports')
-
 
 def _export_dir():
-    os.makedirs(EXPORT_DIR, exist_ok=True)
-    return EXPORT_DIR
+    d = os.path.join(settings.MEDIA_ROOT, 'temp_exports')
+    os.makedirs(d, exist_ok=True)
+    return d
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -32,13 +29,9 @@ def generate_services_excel(self, filters: dict) -> str:
     Qaytaradi: fayl nomi (MEDIA_ROOT/temp_exports/ papkasida).
     """
     import pandas as pd
-    import openpyxl
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     from openpyxl.utils import get_column_letter
-    from openpyxl.cell.cell import WriteOnlyCell
     from apps.services.models import PatientService
-
-    _pxq = ExpressionWrapper(F('price') * F('quantity'), output_field=DecimalField())
 
     qs = PatientService.objects.exclude(status='cancelled').values(
         'ordered_at',
