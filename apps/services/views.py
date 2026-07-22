@@ -558,6 +558,73 @@ def export_services_excel(request):
     return response
 
 
+# ==================== BACKGROUND EXCEL EXPORT ====================
+
+@login_required
+@role_required('admin', 'statistician')
+def export_services_start(request):
+    """Xizmatlar Excel task'ini Celery'ga yuboradi → {task_id}"""
+    from .export_tasks import generate_services_excel
+    filters = {k: v for k, v in {
+        'date_from':        request.GET.get('date_from'),
+        'date_to':          request.GET.get('date_to'),
+        'category':         request.GET.get('svc_category') or request.GET.get('category'),
+        'patient_category': request.GET.get('patient_category'),
+        'visit_type':       request.GET.get('visit_type'),
+    }.items() if v}
+    task = generate_services_excel.delay(filters)
+    return JsonResponse({'task_id': task.id})
+
+
+@login_required
+@role_required('admin', 'statistician')
+def export_medicine_start(request):
+    """Dori Excel task'ini Celery'ga yuboradi → {task_id}"""
+    from .export_tasks import generate_medicine_excel
+    filters = {k: v for k, v in {
+        'date_from':        request.GET.get('date_from'),
+        'date_to':          request.GET.get('date_to'),
+        'medicine':         request.GET.get('medicine'),
+        'patient_category': request.GET.get('patient_category'),
+        'visit_type':       request.GET.get('visit_type'),
+    }.items() if v}
+    task = generate_medicine_excel.delay(filters)
+    return JsonResponse({'task_id': task.id})
+
+
+@login_required
+def export_task_status(request, task_id):
+    """Celery task holati → {status:'pending'|'done'|'error', filename?, error?}"""
+    from celery.result import AsyncResult
+    result = AsyncResult(task_id)
+    if result.state == 'SUCCESS':
+        return JsonResponse({'status': 'done', 'filename': result.result})
+    if result.state == 'FAILURE':
+        return JsonResponse({'status': 'error', 'error': str(result.info)})
+    return JsonResponse({'status': 'pending'})
+
+
+@login_required
+def export_file_download(request, filename):
+    """temp_exports papkasidagi faylni yuklaydi."""
+    import os, re
+    from django.conf import settings
+    from django.http import Http404
+    if not re.match(r'^[a-z_]+[0-9a-f]+\.xlsx$', filename):
+        raise Http404
+    filepath = os.path.join(settings.MEDIA_ROOT, 'temp_exports', filename)
+    if not os.path.exists(filepath):
+        raise Http404
+    display = 'xizmatlar_hisoboti.xlsx' if filename.startswith('services') else 'dori_statistika.xlsx'
+    with open(filepath, 'rb') as f:
+        response = HttpResponse(
+            f.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+    response['Content-Disposition'] = f'attachment; filename="{display}"'
+    return response
+
+
 # ==================== DORI-DARMON ====================
 
 @login_required

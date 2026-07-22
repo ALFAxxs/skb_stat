@@ -40,8 +40,14 @@ urlpatterns = [
     # Operatsiya belgilash
     path('mark-operations/', views.mark_operations, name='mark_operations'),
 
-    # Export
+    # Export (legacy — to'g'ridan-to'g'ri)
     path('export/excel/', views.export_services_excel, name='export_services_excel'),
+
+    # Background export (Celery)
+    path('export/excel/start/', views.export_services_start, name='export_services_start'),
+    path('medicine/export/excel/start/', views.export_medicine_start, name='export_medicine_start'),
+    path('export/status/<str:task_id>/', views.export_task_status, name='export_task_status'),
+    path('export/download/<str:filename>/', views.export_file_download, name='export_file_download'),
 
     # Paket tizimi
     path('packages/',                         views.package_list,            name='package_list'),
