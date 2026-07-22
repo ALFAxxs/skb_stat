@@ -415,7 +415,9 @@ def service_statistics(request):
 @login_required
 @role_required('admin', 'statistician')
 def export_services_excel(request):
-    """Xizmatlar hisobotini Excel ga export"""
+    """Xizmatlar hisobotini Excel ga export (write_only + iterator — katta ma'lumot uchun)"""
+    from openpyxl.cell.cell import WriteOnlyCell
+
     qs = PatientService.objects.exclude(status='cancelled').select_related(
         'service__category', 'patient_card', 'ordered_by', 'performed_by'
     )
@@ -432,126 +434,127 @@ def export_services_excel(request):
     if patient_cat: qs = qs.filter(patient_category_at_order=patient_cat)
     if visit_type:  qs = qs.filter(patient_card__visit_type=visit_type)
 
-    wb = openpyxl.Workbook()
-
-    header_font = Font(bold=True, color='FFFFFF', size=10)
-    header_fill = PatternFill('solid', fgColor='1F4E79')
-    center = Alignment(horizontal='center', vertical='center', wrap_text=True)
-    border = Border(
-        left=Side(style='thin'), right=Side(style='thin'),
-        top=Side(style='thin'), bottom=Side(style='thin')
+    # Avval aggregate querylarni bajarib olamiz (iterator ishlatilmaydi)
+    _pxq = ExpressionWrapper(F('price') * F('quantity'), output_field=DecimalField())
+    totals_agg = qs.aggregate(
+        total=Sum(_pxq),
+        count=Sum('quantity'),
+        railway=Sum(_pxq, filter=Q(patient_category_at_order='railway')),
+        nonresident=Sum(_pxq, filter=Q(patient_category_at_order='non_resident')),
+    )
+    cat_data = list(
+        qs.annotate(_pxq=_pxq).values('service__category__name')
+        .annotate(count=Sum('quantity'), total=Sum('_pxq'))
+        .order_by('-total')
     )
 
+    # write_only=True — katta fayl uchun xotira samarali rejim
+    wb = openpyxl.Workbook(write_only=True)
+
+    H_FONT  = Font(bold=True, color='FFFFFF', size=10)
+    H_FILL  = PatternFill('solid', fgColor='1F4E79')
+    CENTER  = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    LEFT    = Alignment(horizontal='left', vertical='center', wrap_text=True)
+    BRD     = Border(left=Side(style='thin'), right=Side(style='thin'),
+                     top=Side(style='thin'), bottom=Side(style='thin'))
+    PAY_YES = PatternFill('solid', fgColor='C6EFCE')
+    PAY_NO  = PatternFill('solid', fgColor='FFC7CE')
+
+    def _hcell(ws, value):
+        c = WriteOnlyCell(ws, value=value)
+        c.font = H_FONT; c.fill = H_FILL; c.alignment = CENTER; c.border = BRD
+        return c
+
+    def _dcell(ws, value, alignment=None, fill=None):
+        c = WriteOnlyCell(ws, value=value)
+        c.alignment = alignment or LEFT
+        c.border = BRD
+        if fill:
+            c.fill = fill
+        return c
+
     # ===== 1-sahifa: Xizmatlar ro'yxati =====
-    ws = wb.active
-    ws.title = "Xizmatlar ro'yxati"
+    ws = wb.create_sheet("Xizmatlar ro'yxati")
+    col_widths = [4, 16, 25, 16, 18, 30, 8, 12, 12, 14, 10, 22, 22, 30]
+    for i, w in enumerate(col_widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
 
     headers = [
         '№', 'Sana', 'Bemor', 'Bemor kategoriyasi',
         'Kategoriya', 'Xizmat', 'Miqdori',
         'Narx', 'Jami', 'Holat', "To'langan",
-        'Buyurtma bergan', 'Bajargan', 'Natija'
+        'Buyurtma bergan', 'Bajargan', 'Natija',
     ]
-    ws.row_dimensions[1].height = 35
-    for col, h in enumerate(headers, 1):
-        cell = ws.cell(row=1, column=col, value=h)
-        cell.font = header_font
-        cell.fill = header_fill
-        cell.alignment = center
-        cell.border = border
+    ws.append([_hcell(ws, h) for h in headers])
 
     cat_display = {
         'railway': "Temir yo'lchi", 'paid': 'Pullik',
         'non_resident': 'Norezident', 'foreign': 'Chet el',
     }
+    num_fmt = Alignment(horizontal='right', vertical='center')
 
-    for i, ps in enumerate(qs.order_by('-ordered_at'), 1):
-        row_data = [
-            i,
-            ps.ordered_at.strftime('%d.%m.%Y %H:%M'),
-            ps.patient_card.full_name,
-            cat_display.get(ps.patient_category_at_order, ps.patient_category_at_order),
-            ps.service.category.name,
-            ps.service.name,
-            ps.quantity,
-            float(ps.price),
-            float(ps.total_price),
-            ps.get_status_display(),
-            'Ha' if ps.is_paid else "Yo'q",
-            str(ps.ordered_by) if ps.ordered_by else '—',
-            str(ps.performed_by) if ps.performed_by else '—',
-            ps.result or '—',
+    # iterator(chunk_size=500) — DB dan 500 ta satrdan yuklab ishlaydi
+    for i, ps in enumerate(qs.order_by('-ordered_at').iterator(chunk_size=500), 1):
+        paid_fill = PAY_YES if ps.is_paid else PAY_NO
+        row = [
+            _dcell(ws, i, CENTER),
+            _dcell(ws, ps.ordered_at.strftime('%d.%m.%Y %H:%M'), CENTER),
+            _dcell(ws, ps.patient_card.full_name),
+            _dcell(ws, cat_display.get(ps.patient_category_at_order, ps.patient_category_at_order), CENTER),
+            _dcell(ws, ps.service.category.name),
+            _dcell(ws, ps.service.name),
+            _dcell(ws, ps.quantity, CENTER),
+            _dcell(ws, float(ps.price), num_fmt),
+            _dcell(ws, float(ps.total_price), num_fmt),
+            _dcell(ws, ps.get_status_display(), CENTER),
+            _dcell(ws, 'Ha' if ps.is_paid else "Yo'q", CENTER, paid_fill),
+            _dcell(ws, str(ps.ordered_by) if ps.ordered_by else '—'),
+            _dcell(ws, str(ps.performed_by) if ps.performed_by else '—'),
+            _dcell(ws, ps.result or '—'),
         ]
-        for col, val in enumerate(row_data, 1):
-            cell = ws.cell(row=i + 1, column=col, value=val)
-            cell.alignment = Alignment(vertical='center', wrap_text=True)
-            cell.border = border
-            if col == 11:
-                cell.fill = PatternFill('solid', fgColor='C6EFCE' if ps.is_paid else 'FFC7CE')
-
-    col_widths = [4, 16, 25, 16, 18, 30, 8, 12, 12, 14, 10, 22, 22, 30]
-    for i, w in enumerate(col_widths, 1):
-        ws.column_dimensions[get_column_letter(i)].width = w
+        ws.append(row)
 
     # ===== 2-sahifa: Kategoriya statistikasi =====
     ws2 = wb.create_sheet("Kategoriyalar")
-    ws2['A1'] = "Xizmat kategoriyalari bo'yicha statistika"
-    ws2['A1'].font = Font(bold=True, size=13, color='1F4E79')
-
-    h2 = ['Kategoriya', 'Xizmatlar soni', "Jami summa (so'm)", "To'langan (so'm)"]
-    for col, h in enumerate(h2, 1):
-        cell = ws2.cell(row=3, column=col, value=h)
-        cell.font = header_font
-        cell.fill = header_fill
-        cell.alignment = center
-        cell.border = border
-
-    from django.db.models import ExpressionWrapper, DecimalField, F
-    _pxq_cat = ExpressionWrapper(F('price') * F('quantity'), output_field=DecimalField())
-    cat_data = qs.annotate(_pxq=_pxq_cat).values('service__category__name').annotate(
-        count=Sum('quantity'),
-        total=Sum('_pxq'),
-    ).order_by('-total')
-
-    for i, row in enumerate(cat_data, 4):
-        ws2.cell(row=i, column=1, value=row['service__category__name']).border = border
-        ws2.cell(row=i, column=2, value=row['count']).border = border
-        ws2.cell(row=i, column=3, value=float(row['total'] or 0)).border = border
-
     for col, w in enumerate([25, 15, 20, 20], 1):
         ws2.column_dimensions[get_column_letter(col)].width = w
 
+    ws2.append([_hcell(ws2, h) for h in
+                ['Kategoriya', 'Xizmatlar soni', "Jami summa (so'm)"]])
+    for row in cat_data:
+        ws2.append([
+            _dcell(ws2, row['service__category__name']),
+            _dcell(ws2, row['count'] or 0, CENTER),
+            _dcell(ws2, float(row['total'] or 0), num_fmt),
+        ])
+
     # ===== 3-sahifa: Umumiy hisobot =====
     ws3 = wb.create_sheet("Umumiy hisobot")
-    ws3['A1'] = "Umumiy moliyaviy hisobot"
-    ws3['A1'].font = Font(bold=True, size=13, color='1F4E79')
-
-    totals_agg = qs.aggregate(
-        total=Sum(ExpressionWrapper(F('price') * F('quantity'), output_field=DecimalField())),
-        count=Sum('quantity'),
-        railway=Sum(ExpressionWrapper(F('price') * F('quantity'), output_field=DecimalField()), filter=Q(patient_category_at_order='railway')),
-        nonresident=Sum(ExpressionWrapper(F('price') * F('quantity'), output_field=DecimalField()), filter=Q(
-            patient_category_at_order='non_resident'
-        )),
-    )
-    summary = [
-        ('Jami xizmatlar soni', totals_agg['count'] or 0),
-        ("Jami summa (so'm)", float(totals_agg['total'] or 0)),
-        ("Temir yo'lchilar daromadi (so'm)", float(totals_agg['railway'] or 0)),
-        ("Norezidentlar daromadi (so'm)", float(totals_agg['nonresident'] or 0)),
-    ]
-    for i, (label, val) in enumerate(summary, 3):
-        ws3.cell(row=i, column=1, value=label).font = Font(bold=True)
-        ws3.cell(row=i, column=2, value=val)
-
     ws3.column_dimensions['A'].width = 35
     ws3.column_dimensions['B'].width = 20
 
+    ws3.append([_hcell(ws3, 'Ko\'rsatkich'), _hcell(ws3, 'Qiymat')])
+    bold_font = Font(bold=True)
+    summary = [
+        ('Jami xizmatlar soni',              totals_agg['count'] or 0),
+        ("Jami summa (so'm)",                float(totals_agg['total'] or 0)),
+        ("Temir yo'lchilar daromadi (so'm)", float(totals_agg['railway'] or 0)),
+        ("Norezidentlar daromadi (so'm)",    float(totals_agg['nonresident'] or 0)),
+    ]
+    for label, val in summary:
+        lc = WriteOnlyCell(ws3, value=label); lc.font = bold_font; lc.border = BRD
+        vc = WriteOnlyCell(ws3, value=val); vc.border = BRD; vc.alignment = num_fmt
+        ws3.append([lc, vc])
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
     response = HttpResponse(
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        buf.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     )
     response['Content-Disposition'] = 'attachment; filename="xizmatlar_hisoboti.xlsx"'
-    wb.save(response)
     return response
 
 
@@ -820,11 +823,10 @@ def medicine_statistics(request):
 
 @login_required
 def export_medicine_excel(request):
-    """Dori statistikasi Excel"""
+    """Dori statistikasi Excel (write_only + iterator — katta ma'lumot uchun)"""
     from .models import PatientMedicine
     from django.db.models import Sum, Count
-    import openpyxl
-    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.cell.cell import WriteOnlyCell
 
     date_from   = request.GET.get('date_from', '')
     date_to     = request.GET.get('date_to', '')
@@ -839,126 +841,110 @@ def export_medicine_excel(request):
     if patient_cat: qs = qs.filter(patient_card__patient_category=patient_cat)
     if visit_type:  qs = qs.filter(patient_card__visit_type=visit_type)
 
+    # Aggregate querylarni oldindan bajarib olamiz (iterator ishlatilmaydi)
+    top = list(
+        qs.values('medicine__name', 'medicine__unit')
+        .annotate(
+            tq=Sum('quantity'),
+            tp=Sum(ExpressionWrapper(F('price') * F('quantity'), output_field=DecimalField())),
+            pc=Count('patient_card', distinct=True),
+        )
+        .order_by('-tp')
+    )
+    grand = sum(float(r['tp'] or 0) for r in top)
+
+    # Stillar
     GOLD  = PatternFill('solid', fgColor='856404')
     LGOLD = PatternFill('solid', fgColor='FFF8E1')
     WHITE = PatternFill('solid', fgColor='FFFFFF')
     WFONT = Font(color='FFFFFF', bold=True, size=10)
-    BOLD  = Font(bold=True, size=10)
     NORM  = Font(size=10)
     CENTER = Alignment(horizontal='center', vertical='center')
     LEFT   = Alignment(horizontal='left',   vertical='center')
     RIGHT  = Alignment(horizontal='right',  vertical='center')
-    brd = Side(style='thin', color='CCCCCC')
-    BRD = Border(left=brd, right=brd, top=brd, bottom=brd)
+    brd_s  = Side(style='thin', color='CCCCCC')
+    BRD    = Border(left=brd_s, right=brd_s, top=brd_s, bottom=brd_s)
 
-    wb = openpyxl.Workbook()
-
-    # Sheet 1 - Umumiy hisobot
-    ws1 = wb.active
-    ws1.title = "Hisobot"
-    ws1.column_dimensions['A'].width = 5
-    ws1.column_dimensions['B'].width = 35
-    ws1.column_dimensions['C'].width = 12
-    ws1.column_dimensions['D'].width = 14
-    ws1.column_dimensions['E'].width = 14
-    ws1.column_dimensions['F'].width = 18
-
-    ws1.merge_cells('A1:F1')
-    c = ws1.cell(row=1, column=1, value="DORI-DARMONLAR STATISTIKASI")
-    c.fill = GOLD; c.font = Font(color='FFFFFF', bold=True, size=13)
-    c.alignment = CENTER
-    ws1.row_dimensions[1].height = 30
-
-    if date_from or date_to:
-        ws1.merge_cells('A2:F2')
-        c = ws1.cell(row=2, column=1,
-            value=f"Davr: {date_from or '—'} dan {date_to or '—'} gacha")
-        c.font = BOLD; c.alignment = CENTER
-        ws1.row_dimensions[2].height = 18
-
-    heads = ['№', 'Dori nomi', 'Birlik', 'Jami miqdor', 'Bemorlar', "Jami summa (so'm)"]
-    for col, h in enumerate(heads, 1):
-        c = ws1.cell(row=3, column=col, value=h)
+    def _h(ws, val):
+        c = WriteOnlyCell(ws, value=val)
         c.fill = GOLD; c.font = WFONT; c.alignment = CENTER; c.border = BRD
-    ws1.row_dimensions[3].height = 22
+        return c
 
-    top = list(
-        qs.values('medicine__name', 'medicine__unit')
-        .annotate(tq=Sum('quantity'), tp=Sum(ExpressionWrapper(F('price') * F('quantity'), output_field=DecimalField())), pc=Count('patient_card', distinct=True))
-        .order_by('-tp')
-    )
+    def _c(ws, val, aln=None, fill=None, fmt=None):
+        c = WriteOnlyCell(ws, value=val)
+        c.font = NORM; c.border = BRD
+        c.alignment = aln or LEFT
+        if fill: c.fill = fill
+        if fmt:  c.number_format = fmt
+        return c
 
-    grand = 0
+    wb = openpyxl.Workbook(write_only=True)
+
+    # ===== Sheet 1: Dorilar bo'yicha umumiy =====
+    ws1 = wb.create_sheet("Hisobot")
+    for col_l, w in zip('ABCDEF', [5, 35, 12, 14, 14, 18]):
+        ws1.column_dimensions[col_l].width = w
+
+    title_val = "DORI-DARMONLAR STATISTIKASI"
+    if date_from or date_to:
+        title_val += f"  |  Davr: {date_from or '—'} — {date_to or '—'}"
+    title_c = WriteOnlyCell(ws1, value=title_val)
+    title_c.fill = GOLD; title_c.font = Font(color='FFFFFF', bold=True, size=13)
+    title_c.alignment = CENTER
+    ws1.append([title_c, None, None, None, None, None])
+
+    ws1.append([_h(ws1, h) for h in
+                ['№', 'Dori nomi', 'Birlik', 'Jami miqdor', 'Bemorlar', "Jami summa (so'm)"]])
+
     for ri, row in enumerate(top, 1):
         tp = float(row['tp'] or 0)
-        grand += tp
-        data = [ri, row['medicine__name'], row['medicine__unit'],
-                float(row['tq'] or 0), row['pc'], tp]
-        for col, val in enumerate(data, 1):
-            c = ws1.cell(row=ri+3, column=col, value=val)
-            c.font = NORM
-            c.alignment = CENTER if col in (1,3,4,5) else (RIGHT if col==6 else LEFT)
-            c.border = BRD
-            if col == 6: c.number_format = '#,##0'
-            c.fill = LGOLD if ri % 2 == 0 else WHITE
-        ws1.row_dimensions[ri+3].height = 18
+        fill = LGOLD if ri % 2 == 0 else WHITE
+        ws1.append([
+            _c(ws1, ri, CENTER, fill),
+            _c(ws1, row['medicine__name'], LEFT, fill),
+            _c(ws1, row['medicine__unit'], CENTER, fill),
+            _c(ws1, float(row['tq'] or 0), CENTER, fill),
+            _c(ws1, row['pc'], CENTER, fill),
+            _c(ws1, tp, RIGHT, fill, '#,##0'),
+        ])
 
-    last = len(top) + 4
-    ws1.merge_cells(start_row=last, start_column=1, end_row=last, end_column=5)
-    c = ws1.cell(row=last, column=1, value="JAMI:")
-    c.fill = GOLD; c.font = WFONT; c.alignment = LEFT; c.border = BRD
-    c6 = ws1.cell(row=last, column=6, value=grand)
-    c6.fill = GOLD; c6.font = WFONT; c6.alignment = RIGHT
-    c6.border = BRD; c6.number_format = '#,##0'
-    ws1.row_dimensions[last].height = 24
+    jami_c = WriteOnlyCell(ws1, value='JAMI:')
+    jami_c.fill = GOLD; jami_c.font = WFONT; jami_c.alignment = LEFT; jami_c.border = BRD
+    grand_c = WriteOnlyCell(ws1, value=grand)
+    grand_c.fill = GOLD; grand_c.font = WFONT; grand_c.alignment = RIGHT
+    grand_c.border = BRD; grand_c.number_format = '#,##0'
+    ws1.append([jami_c, None, None, None, None, grand_c])
 
-    # Sheet 2 - Batafsil ro'yxat
+    # ===== Sheet 2: Batafsil ro'yxat =====
     ws2 = wb.create_sheet("Batafsil")
-    ws2.column_dimensions['A'].width = 5
-    ws2.column_dimensions['B'].width = 30
-    ws2.column_dimensions['C'].width = 30
-    ws2.column_dimensions['D'].width = 12
-    ws2.column_dimensions['E'].width = 14
-    ws2.column_dimensions['F'].width = 14
-    ws2.column_dimensions['G'].width = 20
-    ws2.column_dimensions['H'].width = 20
+    for col_l, w in zip('ABCDEFGH', [5, 30, 30, 12, 14, 14, 20, 20]):
+        ws2.column_dimensions[col_l].width = w
 
-    ws2.merge_cells('A1:H1')
-    c = ws2.cell(row=1, column=1, value="BATAFSIL RO'YXAT")
-    c.fill = GOLD; c.font = Font(color='FFFFFF', bold=True, size=12)
-    c.alignment = CENTER
-    ws2.row_dimensions[1].height = 26
+    ws2.append([_h(ws2, h) for h in
+                ['№', 'Bemor', 'Dori nomi', 'Birlik', 'Miqdori', 'Narxi', 'Jami', 'Sana']])
 
-    heads2 = ['№', 'Bemor', 'Dori nomi', 'Birlik', 'Miqdori', "Narxi", "Jami", 'Sana']
-    for col, h in enumerate(heads2, 1):
-        c = ws2.cell(row=2, column=col, value=h)
-        c.fill = GOLD; c.font = WFONT; c.alignment = CENTER; c.border = BRD
-    ws2.row_dimensions[2].height = 22
+    for ri, pm in enumerate(qs.order_by('-ordered_at').iterator(chunk_size=500), 1):
+        fill = LGOLD if ri % 2 == 0 else WHITE
+        ws2.append([
+            _c(ws2, ri,                               CENTER, fill),
+            _c(ws2, pm.patient_card.full_name,        LEFT,   fill),
+            _c(ws2, pm.medicine.name,                 LEFT,   fill),
+            _c(ws2, pm.medicine.unit,                 CENTER, fill),
+            _c(ws2, float(pm.quantity),               CENTER, fill),
+            _c(ws2, float(pm.price),                  RIGHT,  fill, '#,##0'),
+            _c(ws2, float(pm.total_price),            RIGHT,  fill, '#,##0'),
+            _c(ws2, pm.ordered_at.strftime('%d.%m.%Y'), CENTER, fill),
+        ])
 
-    for ri, pm in enumerate(qs.order_by('-ordered_at'), 1):
-        data = [
-            ri,
-            pm.patient_card.full_name,
-            pm.medicine.name,
-            pm.medicine.unit,
-            float(pm.quantity),
-            float(pm.price),
-            float(pm.total_price),
-            pm.ordered_at.strftime('%d.%m.%Y'),
-        ]
-        for col, val in enumerate(data, 1):
-            c = ws2.cell(row=ri+2, column=col, value=val)
-            c.font = NORM; c.border = BRD
-            c.alignment = CENTER if col in (1,4,5,8) else (RIGHT if col in (6,7) else LEFT)
-            if col in (6,7): c.number_format = '#,##0'
-            c.fill = LGOLD if ri % 2 == 0 else WHITE
-        ws2.row_dimensions[ri+2].height = 17
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
 
     response = HttpResponse(
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        buf.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     )
     response['Content-Disposition'] = 'attachment; filename="dori_statistika.xlsx"'
-    wb.save(response)
     return response
 
 

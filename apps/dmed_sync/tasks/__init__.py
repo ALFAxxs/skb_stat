@@ -5,6 +5,8 @@ import asyncio
 import logging
 import traceback
 
+from asgiref.sync import sync_to_async
+
 from ..models import DMEDSyncRecord
 from ..browser import dmed_session
 
@@ -23,10 +25,12 @@ def _role_for(entity_type: str) -> str:
 async def _run_one(record: DMEDSyncRecord):
     """Bitta DMEDSyncRecord ni sinxronlaydi."""
     if record.attempts >= MAX_ATTEMPTS:
-        record.mark_failed(f'Maksimal urinishlar soni ({MAX_ATTEMPTS}) oshib ketdi')
+        await sync_to_async(record.mark_failed)(
+            f'Maksimal urinishlar soni ({MAX_ATTEMPTS}) oshib ketdi'
+        )
         return
 
-    record.mark_running()
+    await sync_to_async(record.mark_running)()
     role = _role_for(record.entity_type)
 
     try:
@@ -36,13 +40,19 @@ async def _run_one(record: DMEDSyncRecord):
             if record.entity_type == DMEDSyncRecord.ENTITY_PATIENT:
                 from apps.patients.models import PatientCard
                 from .patient import sync_patient
-                obj = PatientCard.objects.get(pk=record.entity_id)
+                obj = await sync_to_async(PatientCard.objects.get)(pk=record.entity_id)
                 dmed_id = await sync_patient(page, obj)
 
             elif record.entity_type == DMEDSyncRecord.ENTITY_VISIT:
                 from apps.patients.models import PatientCard
                 from .visit import sync_visit
-                obj = PatientCard.objects.get(pk=record.entity_id)
+                # attending_doctor va xizmatlarni oldindan yuklash
+                obj = await sync_to_async(
+                    lambda: PatientCard.objects
+                    .select_related('attending_doctor')
+                    .prefetch_related('patientservice_set__service')
+                    .get(pk=record.entity_id)
+                )()
                 dmed_id = await sync_visit(page, obj)
 
             elif record.entity_type == DMEDSyncRecord.ENTITY_SERVICE:
@@ -51,29 +61,33 @@ async def _run_one(record: DMEDSyncRecord):
                     from apps.billing.models import PatientService
                 except ImportError:
                     from apps.patients.models import PatientService
-                obj = PatientService.objects.get(pk=record.entity_id)
+                obj = await sync_to_async(
+                    PatientService.objects.select_related('service', 'patient_card').get
+                )(pk=record.entity_id)
                 dmed_id = await sync_patient_service(page, obj)
 
             elif record.entity_type == DMEDSyncRecord.ENTITY_LAB:
                 from .lab import sync_lab_result
                 try:
                     from apps.laboratory.models import LabResult
-                    obj = LabResult.objects.get(pk=record.entity_id)
+                    obj = await sync_to_async(LabResult.objects.get)(pk=record.entity_id)
                 except Exception:
                     from apps.patients.models import LabTestResultLog
-                    obj = LabTestResultLog.objects.get(pk=record.entity_id)
+                    obj = await sync_to_async(LabTestResultLog.objects.get)(pk=record.entity_id)
                 dmed_id = await sync_lab_result(page, obj)
 
             else:
-                record.mark_failed(f"Noma'lum entity turi: {record.entity_type}")
+                await sync_to_async(record.mark_failed)(
+                    f"Noma'lum entity turi: {record.entity_type}"
+                )
                 return
 
-            record.mark_done(dmed_id=dmed_id)
+            await sync_to_async(record.mark_done)(dmed_id=dmed_id)
 
     except Exception as exc:
         err = traceback.format_exc()
         logger.error(f"DMED sync xato [{record}]: {err}")
-        record.mark_failed(str(exc)[:500])
+        await sync_to_async(record.mark_failed)(str(exc)[:500])
 
 
 def run_pending():

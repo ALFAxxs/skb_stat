@@ -1,10 +1,7 @@
 """
-DMED — Bemor kartasini sinxronlash.
-
-TODO: Har bir `page.fill(...)` va `page.click(...)` qatoridagi selector'ni
-      DMED'ning haqiqiy HTML'iga qarab to'ldiring.
-      Buning uchun: DMED'ni brauzerda oching → F12 → Elements →
-      kerakli input'ni toping → id yoki name atributini nusxa oling.
+DMED — Bemor JSHSHIR orqali topish.
+appointments/create sahifasida JSHSHIR kiritib qidiradi,
+tibbiy karta raqamini (DMED ID) qaytaradi.
 """
 import logging
 from playwright.async_api import Page
@@ -14,64 +11,62 @@ logger = logging.getLogger('dmed_sync')
 
 async def sync_patient(page: Page, patient) -> str:
     """
-    PatientCard ob'ektini DMED'ga yuboradi.
-    Qaytaradi: DMED tomonidan berilgan ID (str) yoki ''.
+    DMED'da bemor mavjudligini JSHSHIR orqali tekshiradi.
+    Tibbiy karta raqamini qaytaradi (keyingi sync'lar uchun DMED ID).
     """
     from django.conf import settings
-    DMED_URL = getattr(settings, 'DMED_URL', '')
+    DMED_URL = getattr(settings, 'DMED_URL', '') or 'https://mis.dmed.uz'
 
-    # ── 1. DMED'da bemor bor-yo'qligini JSHSHIR orqali tekshirish ──────────
-    # TODO: DMED qidiruv sahifasining URL va selectorlarini yozing
-    # await page.goto(f"{DMED_URL}/patients/search?inn={patient.JSHSHIR}")
-    # existing_row = await page.query_selector('TODO: jadval qatori selector')
-    # if existing_row:
-    #     dmed_id = await existing_row.get_attribute('data-id')  # TODO
-    #     logger.info(f"Bemor #{patient.pk} allaqachon DMED da: {dmed_id}")
-    #     return dmed_id
+    jshshir = (patient.JSHSHIR or '').strip()
+    if not jshshir or len(jshshir) != 14:
+        raise ValueError(
+            f"Bemor #{patient.pk} da to'g'ri JSHSHIR yo'q: '{jshshir}'"
+        )
 
-    # ── 2. Yangi bemor qo'shish sahifasini ochish ──────────────────────────
-    await page.goto(f"{DMED_URL}/patients/new", wait_until='networkidle')  # TODO: URL
+    # ── 1. Qabul yaratish sahifasini ochish ───────────────────────────────
+    await page.goto(
+        f"{DMED_URL}/appointments/create",
+        wait_until='networkidle',
+        timeout=20_000,
+    )
 
-    # ── 3. Maydonlarni to'ldirish ─────────────────────────────────────────
-    # TODO: quyidagi selector'larni DMED'ga mos ravishda o'zgartiring
+    # "Hujjatlar bo'yicha qidirish" tab default active,
+    # "Hujjat turi" = JSHSHIR default tanlangan
+    jshshir_input = page.locator('input[data-maska="##############"]').first
+    await jshshir_input.wait_for(state='visible', timeout=10_000)
+    await jshshir_input.click()
+    await page.keyboard.press('Control+a')
+    await page.keyboard.type(jshshir)
 
-    # F.I.SH
-    await page.fill('TODO_FULLNAME_SELECTOR', patient.full_name)
+    # ── 2. "Topish" tugmasi ───────────────────────────────────────────────
+    search_btn = page.locator(
+        '.select-patient-form__search-btns .el-button--primary'
+    ).first
+    await search_btn.click()
 
-    # Tug'ilgan sana (format DMED talab qilganidek: 'DD.MM.YYYY' yoki 'YYYY-MM-DD')
-    birth = patient.birth_date.strftime('%d.%m.%Y') if patient.birth_date else ''
-    await page.fill('TODO_BIRTHDATE_SELECTOR', birth)
+    # ── 3. Bemor ma'lumotlari chiqishini kutish ───────────────────────────
+    # Tibbiy karta raqami linki 'disabled' holdan 'enabled' ga o'tadi
+    try:
+        await page.wait_for_function(
+            """() => {
+                const btn = document.querySelector(
+                    '.selected-patient-info .el-button.is-link'
+                );
+                return btn && !btn.disabled && btn.textContent.trim() !== '-';
+            }""",
+            timeout=15_000,
+        )
+    except Exception:
+        raise ValueError(
+            f"Bemor #{patient.pk} DMED'da topilmadi (JSHSHIR: {jshshir})"
+        )
 
-    # Jinsi
-    # TODO: DMED radio/select selector
-    # gender_val = 'male' if patient.gender == 'M' else 'female'
-    # await page.select_option('TODO_GENDER_SELECTOR', gender_val)
+    # ── 4. Tibbiy karta raqamini olish (DMED ID) ─────────────────────────
+    card_btn = page.locator('.selected-patient-info .el-button.is-link')
+    dmed_id = (await card_btn.inner_text()).strip()
 
-    # JSHSHIR
-    if patient.JSHSHIR:
-        await page.fill('TODO_JSHSHIR_SELECTOR', patient.JSHSHIR)
-
-    # Pasport seriya
-    if patient.passport_serial:
-        await page.fill('TODO_PASSPORT_SELECTOR', patient.passport_serial)
-
-    # Telefon
-    if patient.phone:
-        await page.fill('TODO_PHONE_SELECTOR', patient.phone)
-
-    # Manzil / viloyat / tuman
-    # TODO: dropdown'lar bo'lsa select_option ishlatiladi
-    # await page.select_option('TODO_REGION_SELECTOR', patient.region.name if patient.region else '')
-
-    # ── 4. Saqlash ────────────────────────────────────────────────────────
-    await page.click('TODO_SAVE_BUTTON_SELECTOR')
-    await page.wait_for_load_state('networkidle')
-
-    # ── 5. DMED dan qaytgan ID ni olish ───────────────────────────────────
-    # TODO: muvaffaqiyatli saqlanganda DMED URL'ga ID qo'shishi mumkin
-    # Masalan: /patients/12345 → '12345'
-    # dmed_id = page.url.split('/')[-1]
-
-    dmed_id = ''  # TODO: haqiqiy ID ni oling
-    logger.info(f"Bemor #{patient.pk} DMED ga yuborildi. DMED ID: {dmed_id or '?'}")
+    logger.info(
+        f"Bemor #{patient.pk} ({patient.full_name}) DMED'da topildi. "
+        f"Tibbiy karta: {dmed_id}"
+    )
     return dmed_id
