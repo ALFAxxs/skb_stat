@@ -4,6 +4,7 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Avg, Q
 from django.db.models.functions import TruncMonth
+from django.http import JsonResponse
 from apps.patients.models import (
     PatientCard, Department,
     Organization, HospitalType
@@ -325,3 +326,29 @@ def statistics_dashboard(request):
         'services_grand_total': services_grand_total,
         'org_dept_stats': org_dept_stats,
     })
+
+
+@login_required
+@role_required('admin', 'statistician')
+def export_patients_start(request):
+    """Bemorlar Excel task'ini Celery'ga yuboradi → {task_id}"""
+    from .export_tasks import generate_patients_excel
+    filters = {k: v for k, v in {
+        'year':             request.GET.get('year'),
+        'month':            request.GET.get('month'),
+        'department':       request.GET.get('department'),
+        'doctor':           request.GET.get('doctor'),
+        'outcome':          request.GET.get('outcome'),
+        'status':           request.GET.get('status'),
+        'gender':           request.GET.get('gender'),
+        'patient_category': request.GET.get('patient_category'),
+        'resident_status':  request.GET.get('resident_status'),
+        'referral_type':    request.GET.get('referral_type'),
+        'date_from':        request.GET.get('date_from'),
+        'date_to':          request.GET.get('date_to'),
+        'age_group':        request.GET.get('age_group'),
+        'org':              request.GET.get('org'),
+        'visit_type':       request.GET.get('visit_type'),
+    }.items() if v}
+    task = generate_patients_excel.delay(filters, request.user.pk)
+    return JsonResponse({'task_id': task.id})

@@ -478,7 +478,12 @@ def export_file_download(request, filename):
     filepath = os.path.join(settings.MEDIA_ROOT, 'temp_exports', filename)
     if not os.path.exists(filepath):
         raise Http404
-    display = 'xizmatlar_hisoboti.xlsx' if filename.startswith('services') else 'dori_statistika.xlsx'
+    if filename.startswith('services'):
+        display = 'xizmatlar_hisoboti.xlsx'
+    elif filename.startswith('patients'):
+        display = 'bemorlar_royxati.xlsx'
+    else:
+        display = 'dori_statistika.xlsx'
     with open(filepath, 'rb') as f:
         response = HttpResponse(
             f.read(),

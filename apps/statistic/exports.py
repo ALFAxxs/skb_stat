@@ -1,6 +1,5 @@
 # apps/statistic/exports.py
 
-import io
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
@@ -10,10 +9,10 @@ from django.http import HttpResponse
 from apps.patients.models import PatientCard
 
 
-def get_filtered_queryset(request):
-    from apps.users.decorators import department_filter
+# ── Queryset yordamchilari ────────────────────────────────────────────────────
 
-    qs = PatientCard.objects.select_related(
+def _base_patient_qs():
+    return PatientCard.objects.select_related(
         'department', 'attending_doctor', 'referral_organization',
         'country', 'region', 'district', 'city',
         'discharge_conclusion'
@@ -21,77 +20,59 @@ def get_filtered_queryset(request):
         'operations__operation_type'
     ).order_by('admission_date')
 
-    # Rol bo'yicha cheklash
-    qs = department_filter(qs, request.user)
 
-    # Barcha filterlar
-    year = request.GET.get('year')
-    month = request.GET.get('month')
-    dept = request.GET.get('department')
-    doctor = request.GET.get('doctor')
-    outcome = request.GET.get('outcome')
-    status = request.GET.get('status')
-    gender = request.GET.get('gender')
-    patient_category = request.GET.get('patient_category')
-    resident_status = request.GET.get('resident_status')
-    referral_type = request.GET.get('referral_type')
-    date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date_to')
+def _apply_patient_filters(qs, params):
+    """params — request.GET (QueryDict) yoki oddiy dict bo'lishi mumkin."""
+    year             = params.get('year')
+    month            = params.get('month')
+    dept             = params.get('department')
+    doctor           = params.get('doctor')
+    outcome          = params.get('outcome')
+    status           = params.get('status')
+    gender           = params.get('gender')
+    patient_category = params.get('patient_category')
+    resident_status  = params.get('resident_status')
+    referral_type    = params.get('referral_type')
+    date_from        = params.get('date_from')
+    date_to          = params.get('date_to')
 
-    if year:
-        qs = qs.filter(admission_date__year=year)
-    if month:
-        qs = qs.filter(admission_date__month=month)
-    if dept:
-        qs = qs.filter(department_id=dept)
-    if doctor:
-        qs = qs.filter(attending_doctor_id=doctor)
-    if outcome:
-        qs = qs.filter(outcome=outcome)
-    if status:
-        qs = qs.filter(status=status)
-    if gender:
-        qs = qs.filter(gender=gender)
-    if patient_category:
-        qs = qs.filter(patient_category=patient_category)
-    if resident_status:
-        qs = qs.filter(resident_status=resident_status)
-    if referral_type:
-        qs = qs.filter(referral_type=referral_type)
+    if year:             qs = qs.filter(admission_date__year=year)
+    if month:            qs = qs.filter(admission_date__month=month)
+    if dept:             qs = qs.filter(department_id=dept)
+    if doctor:           qs = qs.filter(attending_doctor_id=doctor)
+    if outcome:          qs = qs.filter(outcome=outcome)
+    if status:           qs = qs.filter(status=status)
+    if gender:           qs = qs.filter(gender=gender)
+    if patient_category: qs = qs.filter(patient_category=patient_category)
+    if resident_status:  qs = qs.filter(resident_status=resident_status)
+    if referral_type:    qs = qs.filter(referral_type=referral_type)
 
-    # Sana filteri — "Yakunlangan" status yoki yakun (outcome) tanlanganda
-    # chiqish sanasi bo'yicha, aks holda registratsiya (qabul) sanasi bo'yicha
     date_field = 'discharge_date' if (status == 'completed' or outcome) else 'admission_date'
-    if date_from:
-        qs = qs.filter(**{f'{date_field}__date__gte': date_from})
-    if date_to:
-        qs = qs.filter(**{f'{date_field}__date__lte': date_to})
+    if date_from: qs = qs.filter(**{f'{date_field}__date__gte': date_from})
+    if date_to:   qs = qs.filter(**{f'{date_field}__date__lte': date_to})
 
-    from datetime import date as dt_date, timedelta
-    age_group = request.GET.get('age_group', '')
-    if age_group == 'under16':
+    age_group = params.get('age_group', '')
+    if age_group in ('under16', 'adult'):
         from datetime import date
         from dateutil.relativedelta import relativedelta
-        # Python darajasida 16 yoshgacha filtrlash
-        today = date.today()
-        cutoff = today - relativedelta(years=16)  # 16 yil oldingi sana
-        qs = qs.filter(birth_date__isnull=False, birth_date__gt=cutoff)
-    elif age_group == 'adult':
-        from datetime import date
-        from dateutil.relativedelta import relativedelta
-        today = date.today()
-        cutoff = today - relativedelta(years=16)
-        qs = qs.filter(birth_date__isnull=False, birth_date__lte=cutoff)
+        cutoff = date.today() - relativedelta(years=16)
+        if age_group == 'under16':
+            qs = qs.filter(birth_date__isnull=False, birth_date__gt=cutoff)
+        else:
+            qs = qs.filter(birth_date__isnull=False, birth_date__lte=cutoff)
 
-    org_id = request.GET.get('org')
-    if org_id:
-        qs = qs.filter(workplace_org_id=org_id)
-
-    visit_type = request.GET.get('visit_type')
-    if visit_type:
-        qs = qs.filter(visit_type=visit_type)
+    org_id     = params.get('org')
+    visit_type = params.get('visit_type')
+    if org_id:     qs = qs.filter(workplace_org_id=org_id)
+    if visit_type: qs = qs.filter(visit_type=visit_type)
 
     return qs
+
+
+def get_filtered_queryset(request):
+    from apps.users.decorators import department_filter
+    qs = department_filter(_base_patient_qs(), request.user)
+    return _apply_patient_filters(qs, request.GET)
 
 
 def get_stats_queryset(request):
@@ -99,28 +80,26 @@ def get_stats_queryset(request):
     qs = PatientCard.objects.all()
     year = request.GET.get('year')
     dept = request.GET.get('department')
-    if year:
-        qs = qs.filter(admission_date__year=year)
-    if dept:
-        qs = qs.filter(department_id=dept)
+    if year: qs = qs.filter(admission_date__year=year)
+    if dept: qs = qs.filter(department_id=dept)
     return qs
 
 
 def get_full_address(patient):
     parts = filter(None, [
-        str(patient.country) if patient.country else '',
-        str(patient.region) if patient.region else '',
+        str(patient.country)  if patient.country  else '',
+        str(patient.region)   if patient.region   else '',
         str(patient.district) if patient.district else '',
-        str(patient.city) if patient.city else '',
+        str(patient.city)     if patient.city     else '',
         patient.street_address or '',
     ])
     return ', '.join(parts) or '—'
 
 
-def export_excel(request):
-    qs = get_filtered_queryset(request)
-    qs_stats = get_stats_queryset(request)
+# ── Ish kitobi qurilishi (view va Celery task ikkisi ham ishlatadi) ────────────
 
+def _build_workbook(qs, qs_stats):
+    """qs va qs_stats bo'yicha openpyxl Workbook qaytaradi."""
     wb = openpyxl.Workbook()
 
     # ==================== STIL O'ZGARUVCHILARI ====================
@@ -515,7 +494,7 @@ def export_excel(request):
     c23u.number_format = '#,##0'
     ws4.row_dimensions[r4].height = 24
 
-        # ==================== 5-SAHIFA: BEMOR + XIZMATLAR ====================
+    # ==================== 5-SAHIFA: BEMOR + XIZMATLAR ====================
     from apps.services.models import ServiceCategory
 
     ws5 = wb.create_sheet("Bemor + Xizmatlar")
@@ -655,7 +634,6 @@ def export_excel(request):
 
     # ==================== 6-SAHIFA: TASHKILOT BO'YICHA ====================
     from apps.patients.models import Organization
-    from apps.services.models import PatientService
 
     ws6 = wb.create_sheet("Tashkilotlar")
     ws6.column_dimensions['A'].width = 5
@@ -792,7 +770,6 @@ def export_excel(request):
                  value="Tashkilotga biriktirilgan bemorlar yo'q").border = border
 
     # ==================== DORI SHEETI ====================
-    from apps.services.models import PatientMedicine
     from django.db.models import Sum as MSum
 
     ws_med = wb.create_sheet("Dori-darmonlar")
@@ -817,7 +794,7 @@ def export_excel(request):
     ws_med.row_dimensions[2].height = 24
 
     _pxq_med = ExpressionWrapper(F('price') * F('quantity'), output_field=DecimalField())
-    top_meds = (
+    top_meds = list(
         PatientMedicine.objects
         .filter(patient_card__in=qs)
         .values('medicine__name', 'medicine__unit')
@@ -845,7 +822,7 @@ def export_excel(request):
         ws_med.row_dimensions[ri+2].height = 18
 
     # Jami qator
-    last_r = len(list(top_meds)) + 3
+    last_r = len(top_meds) + 3
     ws_med.merge_cells(start_row=last_r, start_column=1, end_row=last_r, end_column=5)
     c = ws_med.cell(row=last_r, column=1, value="JAMI:")
     c.fill = header_fill; c.font = header_font; c.border = border
@@ -856,7 +833,15 @@ def export_excel(request):
     c6.border = border
     ws_med.row_dimensions[last_r].height = 24
 
-    # ==================== JAVOB ====================
+    return wb
+
+
+# ── View (to'g'ridan-to'g'ri yuklab olish — eskirgan, faqat backward compat) ──
+
+def export_excel(request):
+    qs      = get_filtered_queryset(request)
+    qs_stats = get_stats_queryset(request)
+    wb = _build_workbook(qs, qs_stats)
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
