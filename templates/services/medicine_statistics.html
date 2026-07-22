@@ -218,12 +218,8 @@ new Chart(document.getElementById('trendChart'), {
                 .then(r => r.json())
                 .then(data => {
                     if (data.status === 'done') {
-                        const a = document.createElement('a');
-                        a.href = btn.dataset.downloadBase.replace('PLACEHOLDER', data.filename);
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        reset();
+                        window.location.href = btn.dataset.downloadBase.replace('PLACEHOLDER', data.filename);
+                        setTimeout(reset, 3000);
                     } else if (data.status === 'error') {
                         alert("Excel yaratishda xato: " + (data.error || 'Noma\'lum xato'));
                         reset();
