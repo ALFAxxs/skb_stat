@@ -82,7 +82,7 @@ TELEGRAM_BOT_TOKEN  = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 TELEGRAM_BOT_SECRET = os.environ.get('TELEGRAM_BOT_SECRET', 'change-me-in-production')
 
 # ── DMED RPA Sinxronizatsiya ──────────────────────────────────────────────────
-DMED_SYNC_ENABLED   = os.environ.get('DMED_SYNC_ENABLED', 'False') == 'True'
+DMED_SYNC_ENABLED   = os.environ.get('DMED_SYNC_ENABLED', 'True') == 'True'
 DMED_URL            = os.environ.get('DMED_URL', '')       # https://dmed.uz
 DMED_HEADLESS       = os.environ.get('DMED_HEADLESS', 'True') == 'True'
 DMED_ALERT_CHAT_ID  = os.environ.get('DMED_ALERT_CHAT_ID', '')  # Telegram chat ID
@@ -95,6 +95,15 @@ DMED_ROLE_MAP = {
     'lab_result':       'Laborant',
     'diagnostic':       'Shifokor',
     'consultation':     'Shifokor',
+}
+
+# visit_type → DMED appointments/create radio value
+# 2073 = Kasalxona 🛏  |  1859 = Maslahatlar 🩺  |  2628 = Konsultatsiya
+# 3096 = Diagnostika 🔬 |  1896 = Laboratoriya 🧪 |  265  = Xizmatlar ⚕️
+# 2656 = Operatsiya 🛏️ |  3179 = Fizioterapiya 🚹 |  2703 = Tor mutaxassis 🏥
+DMED_SERVICE_CATEGORY_MAP = {
+    'inpatient':  '2073',  # Kasalxona
+    'ambulatory': '1859',  # Maslahatlar
 }
 
 # Redis

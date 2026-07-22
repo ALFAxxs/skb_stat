@@ -6,12 +6,17 @@ Login OTP (PINFL + SMS) talab qilgani uchun:
   - Keyin: saqlanган storage_state orqali avtomatik ishlaydi
   - Session tugasa → Telegram xabar → qayta dmed_login
 """
+from __future__ import annotations
+
 import json
 import logging
 from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING
 
 from django.conf import settings
-from playwright.async_api import async_playwright, Page, BrowserContext
+
+if TYPE_CHECKING:
+    from playwright.async_api import Page, BrowserContext
 
 logger = logging.getLogger('dmed_sync')
 
@@ -109,6 +114,7 @@ async def dmed_session(role: str = ''):
             await page.goto(DMED_URL + '/patients/new')
             ...
     """
+    from playwright.async_api import async_playwright
     from .models import DMEDSession
 
     async with async_playwright() as pw:
