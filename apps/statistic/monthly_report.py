@@ -608,6 +608,61 @@ def sheet_xizmatlar(wb, qs, year, month, S_):
         cell.alignment = S_['C'] if ci == 1 else (S_['L'] if ci == 2 else S_['R'])
         if ci > 2: cell.number_format = '#,##0'
     ws.row_dimensions[r].height = 22
+    r += 1
+
+    # ── To'lovlar holati (oylik hisobot uchun xulosa) ──
+    from apps.billing.models import Invoice, Payment
+    from django.db.models import Sum as _BSum
+    patient_ids = list(qs.values_list('pk', flat=True))
+    total_paid_month = float(
+        Payment.objects.filter(invoice__patient_card_id__in=patient_ids)
+        .aggregate(t=_BSum('amount'))['t'] or 0
+    )
+    invoice_stats = (
+        Invoice.objects.filter(patient_card_id__in=patient_ids)
+        .values('status').annotate(cnt=Count('id'))
+    )
+    inv_by_status = {row['status']: row['cnt'] for row in invoice_stats}
+    total_with_inv = sum(inv_by_status.values())
+    total_pts = len(patient_ids)
+
+    pay_block = [
+        ("", ""),
+        ("— TO'LOVLAR HOLATI —", ""),
+        ("To'liq to'langan bemorlar",   inv_by_status.get('paid', 0)),
+        ("Qisman to'langan bemorlar",   inv_by_status.get('partial', 0)),
+        ("To'lanmagan bemorlar",         inv_by_status.get('unpaid', 0)),
+        ("Hisob yo'q",                  total_pts - total_with_inv),
+        ("Jami to'langan summa (so'm)", round(total_paid_month, 0)),
+        ("Hisoblangan jami (so'm)",      round(grand[3], 0)),
+        ("Qolgan qarz (so'm)",           max(0, round(grand[3] - total_paid_month, 0))),
+    ]
+    PAY_FILLS = {
+        "To'liq to'langan bemorlar":   S_['GREEN'],
+        "Qisman to'langan bemorlar":   S_['YELL'],
+        "To'lanmagan bemorlar":         PatternFill('solid', fgColor='FFC7CE'),
+        "Jami to'langan summa (so'm)": S_['GREEN'],
+        "Qolgan qarz (so'm)":           PatternFill('solid', fgColor='FFC7CE'),
+    }
+    for label, val in pay_block:
+        _safe_cell(ws, r, 1, '')
+        _safe_cell(ws, r, 2, label)
+        try:
+            ws.merge_cells(start_row=r, start_column=3, end_row=r, end_column=6)
+        except Exception:
+            pass
+        _safe_cell(ws, r, 3, val if val != "" else None)
+        for ci in (1, 2, 3):
+            cell = _safe_cell(ws, r, ci)
+            cell.font = S_['BOLD'] if label else S_['NORM']
+            cell.border = S_['thin']
+            if label in PAY_FILLS:
+                cell.fill = PAY_FILLS[label]
+            cell.alignment = S_['L'] if ci == 2 else S_['C']
+        if isinstance(val, (int, float)) and val:
+            _safe_cell(ws, r, 3).number_format = '#,##0'
+        ws.row_dimensions[r].height = 16
+        r += 1
 
 
 # ==================== ASOSIY FUNKSIYA ====================

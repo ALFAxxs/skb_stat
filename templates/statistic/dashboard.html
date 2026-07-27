@@ -432,6 +432,54 @@
     </div>
 </div>
 
+<!-- TO'LOVLAR STATISTIKASI -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <strong>💳 {% trans "To'lovlar holati" %}</strong>
+        <span class="badge bg-success fs-6">{{ billing_total_paid|floatformat:0 }} so'm</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="row g-0 text-center">
+            <div class="col-md-3 border-end p-3">
+                <div class="text-muted small mb-1">To'liq to'langan</div>
+                <div class="fw-bold text-success fs-4">{{ billing_paid_count }}</div>
+                <div class="text-muted" style="font-size:0.75rem">{% trans "ta bemor" %}</div>
+            </div>
+            <div class="col-md-3 border-end p-3">
+                <div class="text-muted small mb-1">Qisman to'langan</div>
+                <div class="fw-bold text-warning fs-4">{{ billing_partial_count }}</div>
+                <div class="text-muted" style="font-size:0.75rem">{% trans "ta bemor" %}</div>
+            </div>
+            <div class="col-md-3 border-end p-3">
+                <div class="text-muted small mb-1">To'lanmagan</div>
+                <div class="fw-bold text-danger fs-4">{{ billing_unpaid_count }}</div>
+                <div class="text-muted" style="font-size:0.75rem">{% trans "ta bemor" %}</div>
+            </div>
+            <div class="col-md-3 p-3">
+                <div class="text-muted small mb-1">Hisob yo'q</div>
+                <div class="fw-bold text-secondary fs-4">{{ billing_no_invoice }}</div>
+                <div class="text-muted" style="font-size:0.75rem">{% trans "ta bemor" %}</div>
+            </div>
+        </div>
+        <div class="row g-0 border-top text-center">
+            <div class="col-md-4 p-3 border-end">
+                <div class="text-muted small mb-1">Hisoblangan jami</div>
+                <div class="fw-bold text-info">{{ billing_accrued|floatformat:0 }} so'm</div>
+            </div>
+            <div class="col-md-4 p-3 border-end">
+                <div class="text-muted small mb-1">To'langan</div>
+                <div class="fw-bold text-success">{{ billing_total_paid|floatformat:0 }} so'm</div>
+            </div>
+            <div class="col-md-4 p-3">
+                <div class="text-muted small mb-1">Qolgan qarz</div>
+                <div class="fw-bold {% if billing_outstanding > 0 %}text-danger{% else %}text-success{% endif %}">
+                    {{ billing_outstanding|floatformat:0 }} so'm
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- DORI STATISTIKASI -->
 {% if top_medicines %}
 <div class="card border-0 shadow-sm mb-4">

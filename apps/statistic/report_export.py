@@ -123,11 +123,13 @@ def _workplace(patient):
 
 # ==================== SHEETLAR ====================
 
-def _sheet_statsionar(wb, qs, S, filter_text):
+def _sheet_statsionar(wb, qs, S, filter_text, pay_lookup=None):
     """1-Sheet: Statsionar bemorlar ro'yxati"""
     from django.db.models import Count
+    from openpyxl.styles import PatternFill as _PF
+    from .billing_utils import STATUS_COLOR
     ws = wb.create_sheet("1. Statsionar bemorlar")
-    ncols = 16
+    ncols = 18
     r = _hdr(ws, 1, "STATSIONAR BEMORLAR RO'YXATI", ncols)
     r = _info(ws, r, "Davr:", filter_text, ncols)
     r = _info(ws, r, "Jami:", qs.filter(visit_type='inpatient').count(), ncols)
@@ -136,20 +138,24 @@ def _sheet_statsionar(wb, qs, S, filter_text):
         '№', 'F.I.Sh', "Tug'ilgan sana", 'Yosh', 'Jinsi',
         'Bayonnoma', 'JSHSHIR', 'Yashash manzili',
         'Qabul sanasi', 'Chiqish sanasi', "Bo'lim", 'Shifokor',
-        'Tashxis', 'Bemor turi', 'Yotoq kun', 'Natija'
+        'Tashxis', 'Bemor turi', 'Yotoq kun', 'Natija',
+        "To'lov holati", "To'langan (so'm)",
     ]
-    widths = [5, 28, 13, 6, 7, 14, 16, 30, 13, 13, 18, 20, 30, 13, 9, 14]
+    widths = [5, 28, 13, 6, 7, 14, 16, 30, 13, 13, 18, 20, 30, 13, 9, 14, 18, 16]
     aligns = ['center','left','center','center','center',
               'center','center','left','center','center',
-              'left','left','left','center','center','left']
+              'left','left','left','center','center','left',
+              'center','right']
     r = _col_hdrs(ws, r, headers, widths, S)
 
     patients = qs.filter(visit_type='inpatient').select_related(
         'department','attending_doctor','region','district'
     ).order_by('admission_date')
 
+    pay = pay_lookup or {}
     for i, p in enumerate(patients, 1):
         age = _age(p)
+        pi = pay.get(p.pk, {'status': "Hisob yo'q", 'status_code': 'none', 'paid': 0.0})
         vals = [
             i, p.full_name,
             p.birth_date.strftime('%d.%m.%Y') if p.birth_date else '—',
@@ -165,30 +171,42 @@ def _sheet_statsionar(wb, qs, S, filter_text):
             p.get_patient_category_display(),
             p.days_in_hospital or 0,
             p.get_outcome_display() if p.outcome else '—',
+            pi['status'],
+            pi['paid'] if pi['paid'] else '',
         ]
-        r = _row(ws, r, vals, S, aligns, nums={15}, even=(i%2==0))
+        start_row = r
+        r = _row(ws, r, vals, S, aligns, nums={15, 18}, even=(i%2==0))
+        # To'lov holati rangi
+        pay_cell = ws.cell(row=start_row, column=17)
+        pay_cell.fill = _PF('solid', fgColor=STATUS_COLOR.get(pi['status_code'], 'F2F3F4'))
 
     _total(ws, r, [f'JAMI: {patients.count()} ta bemor'] + ['']*(ncols-1), S)
 
 
-def _sheet_ambulatory(wb, qs, S, filter_text):
+def _sheet_ambulatory(wb, qs, S, filter_text, pay_lookup=None):
     """2-Sheet: Ambulator bemorlar ro'yxati"""
+    from openpyxl.styles import PatternFill as _PF
+    from .billing_utils import STATUS_COLOR
     ws = wb.create_sheet("2. Ambulator bemorlar")
-    ncols = 12
+    ncols = 14
     r = _hdr(ws, 1, "AMBULATOR BEMORLAR RO'YXATI", ncols, '145A32')
     r = _info(ws, r, "Davr:", filter_text, ncols)
     r = _info(ws, r, "Jami:", qs.filter(visit_type='ambulatory').count(), ncols)
 
     headers = ['№', 'F.I.Sh', "Tug'ilgan sana", 'Yosh', 'Jinsi',
                'Bayonnoma', 'JSHSHIR', 'Telefon',
-               'Qabul sanasi', 'Bemor turi', 'Tashxis', 'Natija']
-    widths = [5, 28, 13, 6, 7, 14, 16, 14, 13, 13, 30, 14]
+               'Qabul sanasi', 'Bemor turi', 'Tashxis', 'Natija',
+               "To'lov holati", "To'langan (so'm)"]
+    widths = [5, 28, 13, 6, 7, 14, 16, 14, 13, 13, 30, 14, 18, 16]
     aligns = ['center','left','center','center','center',
-              'center','center','center','center','center','left','left']
+              'center','center','center','center','center','left','left',
+              'center','right']
     r = _col_hdrs(ws, r, headers, widths, S, '145A32')
 
     patients = qs.filter(visit_type='ambulatory').order_by('admission_date')
+    pay = pay_lookup or {}
     for i, p in enumerate(patients, 1):
+        pi = pay.get(p.pk, {'status': "Hisob yo'q", 'status_code': 'none', 'paid': 0.0})
         vals = [
             i, p.full_name,
             p.birth_date.strftime('%d.%m.%Y') if p.birth_date else '—',
@@ -199,8 +217,13 @@ def _sheet_ambulatory(wb, qs, S, filter_text):
             p.get_patient_category_display(),
             p.admission_diagnosis or '—',
             p.get_outcome_display() if p.outcome else '—',
+            pi['status'],
+            pi['paid'] if pi['paid'] else '',
         ]
-        r = _row(ws, r, vals, S, aligns, even=(i%2==0))
+        start_row = r
+        r = _row(ws, r, vals, S, aligns, nums={14}, even=(i%2==0))
+        pay_cell = ws.cell(row=start_row, column=13)
+        pay_cell.fill = _PF('solid', fgColor=STATUS_COLOR.get(pi['status_code'], 'F2F3F4'))
 
     _total(ws, r, [f'JAMI: {patients.count()} ta bemor'] + ['']*(ncols-1), S, '145A32')
 
@@ -511,47 +534,105 @@ def _filter_text_from_params(params) -> str:
     return ' | '.join(parts) if parts else 'Barcha davr'
 
 
+def _sheet_payments_summary(wb, qs, S, filter_text, pay_lookup):
+    """9-Sheet: To'lovlar holati xulosasi"""
+    from django.db.models import Count
+    from openpyxl.styles import PatternFill as _PF
+    from .billing_utils import STATUS_COLOR, STATUS_DISPLAY, payment_summary_from_lookup
+
+    ws = wb.create_sheet("9. To'lovlar")
+    ncols = 4
+    r = _hdr(ws, 1, "TO'LOVLAR HOLATI XULOSASI", ncols, '145A32')
+    r = _info(ws, r, "Davr:", filter_text, ncols)
+    total_patients = qs.count()
+    r = _info(ws, r, "Jami bemorlar:", total_patients, ncols)
+
+    headers = ["To'lov holati", "Bemorlar soni", "Ulushi (%)", "To'langan summa (so'm)"]
+    widths  = [22, 14, 12, 22]
+    r = _col_hdrs(ws, r, headers, widths, S, '145A32')
+
+    psum = payment_summary_from_lookup(pay_lookup)
+    rows = [
+        ('paid',      STATUS_DISPLAY['paid'],      psum['paid'],     'C6EFCE'),
+        ('partial',   STATUS_DISPLAY['partial'],   psum['partial'],  'FFEB9C'),
+        ('unpaid',    STATUS_DISPLAY['unpaid'],     psum['unpaid'],   'FFC7CE'),
+        ('none',      STATUS_DISPLAY['none'],       psum['none'],     'F2F3F4'),
+        ('cancelled', STATUS_DISPLAY['cancelled'],  psum.get('cancelled',0), 'D9D9D9'),
+    ]
+
+    for i, (sc, label, cnt, color) in enumerate(rows, 1):
+        pct = round(cnt / total_patients * 100, 1) if total_patients else 0
+        # paid sum only for paid/partial rows
+        paid_sum = sum(
+            info['paid'] for info in pay_lookup.values() if info['status_code'] == sc
+        )
+        vals = [label, cnt, pct, paid_sum if paid_sum else '']
+        aligns = ['left', 'center', 'center', 'right']
+        start = r
+        r = _row(ws, r, vals, S, aligns, nums={2, 4}, even=(i%2==0))
+        ws.cell(row=start, column=1).fill = _PF('solid', fgColor=color)
+
+    # Umumiy jami
+    _total(ws, r, [
+        'JAMI:',
+        total_patients,
+        '100%',
+        round(psum['total_paid'], 0),
+    ], S, '145A32')
+
+
 def _build_full_report_workbook(qs, filter_text: str):
     """qs va filter_text bo'yicha to'liq hisobot Workbook qaytaradi."""
+    from .billing_utils import build_payment_lookup
     S = _styles()
     wb = openpyxl.Workbook()
     wb.remove(wb.active)  # bo'sh sheet'ni o'chirish
+
+    # To'lov ma'lumotlarini batch olish (barcha sheetlar uchun)
+    _patient_ids = list(qs.values_list('pk', flat=True))
+    pay_lookup = build_payment_lookup(_patient_ids)
+
+    from .billing_utils import payment_summary_from_lookup
+    psum = payment_summary_from_lookup(pay_lookup)
 
     # Mundarija sheet
     ws0 = wb.create_sheet("Mundarija")
     _hdr(ws0, 1, "SKB SHIFOXONASI — TO'LIQ HISOBOTLAR", 3)
     _info(ws0, 2, "Davr:", filter_text, 3)
     _info(ws0, 3, "Jami bemorlar:", qs.count(), 3)
-    ws0.cell(row=5, column=1, value="Sheet").font = Font(bold=True)
-    ws0.cell(row=5, column=2, value="Hisobot nomi").font = Font(bold=True)
-    ws0.cell(row=5, column=3, value="Bemorlar soni").font = Font(bold=True)
+    _info(ws0, 4, "Jami to'langan (so'm):", round(psum['total_paid'], 0), 3)
+    ws0.cell(row=6, column=1, value="Sheet").font = Font(bold=True)
+    ws0.cell(row=6, column=2, value="Hisobot nomi").font = Font(bold=True)
+    ws0.cell(row=6, column=3, value="Bemorlar soni").font = Font(bold=True)
     sheets_info = [
-        ("1. Statsionar", "Statsionar bemorlar ro'yxati", qs.filter(visit_type='inpatient').count()),
-        ("2. Ambulator", "Ambulator bemorlar ro'yxati", qs.filter(visit_type='ambulatory').count()),
+        ("1. Statsionar", "Statsionar bemorlar ro'yxati (+ to'lov)", qs.filter(visit_type='inpatient').count()),
+        ("2. Ambulator", "Ambulator bemorlar ro'yxati (+ to'lov)", qs.filter(visit_type='ambulatory').count()),
         ("3. Kategoriyalar", "Bemorlar kategoriya bo'yicha", qs.count()),
         ("4. Xizmatlar", "Xizmatlar va daromad hisoboti", '—'),
         ("5. Dorilar", "Dori-darmonlar hisoboti", '—'),
         ("6. Operatsiyalar", "Operatsiyalar hisoboti", '—'),
         ("7. Yosh guruhlari", "Yosh bo'yicha taqsimot", qs.count()),
         ("8. TY tashkilotlar", "Temir yo'l tashkilotlari", qs.filter(workplace_org__isnull=False).count()),
+        ("9. To'lovlar", "To'lovlar holati xulosasi", '—'),
     ]
-    for i, (code, name, cnt) in enumerate(sheets_info, 6):
+    for i, (code, name, cnt) in enumerate(sheets_info, 7):
         ws0.cell(row=i, column=1, value=code)
         ws0.cell(row=i, column=2, value=name)
         ws0.cell(row=i, column=3, value=cnt)
     ws0.column_dimensions['A'].width = 18
-    ws0.column_dimensions['B'].width = 35
+    ws0.column_dimensions['B'].width = 40
     ws0.column_dimensions['C'].width = 15
 
     # Sheetlarni yaratish
-    _sheet_statsionar(wb, qs, S, filter_text)
-    _sheet_ambulatory(wb, qs, S, filter_text)
+    _sheet_statsionar(wb, qs, S, filter_text, pay_lookup)
+    _sheet_ambulatory(wb, qs, S, filter_text, pay_lookup)
     _sheet_categories(wb, qs, S, filter_text)
     _sheet_services(wb, qs, S, filter_text)
     _sheet_medicines(wb, qs, S, filter_text)
     _sheet_operations(wb, qs, S, filter_text)
     _sheet_age_groups(wb, qs, S, filter_text)
     _sheet_organizations(wb, qs, S, filter_text)
+    _sheet_payments_summary(wb, qs, S, filter_text, pay_lookup)
 
     return wb
 

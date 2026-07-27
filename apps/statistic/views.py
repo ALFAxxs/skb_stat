@@ -248,6 +248,35 @@ def statistics_dashboard(request):
         ['t'] or 0
     )
 
+    # ==================== TO'LOVLAR STATISTIKASI ====================
+    from apps.billing.models import Invoice, Payment as _BPay
+    from django.db.models import Sum as _BSum, ExpressionWrapper as _BEW, DecimalField as _BDC, F as _BF
+
+    _billing_inv = (
+        Invoice.objects.filter(patient_card__in=qs)
+        .values('status').annotate(cnt=Count('id'))
+    )
+    billing_by_status     = {row['status']: row['cnt'] for row in _billing_inv}
+    billing_invoice_total = sum(billing_by_status.values())
+    billing_paid_count    = billing_by_status.get('paid', 0)
+    billing_partial_count = billing_by_status.get('partial', 0)
+    billing_unpaid_count  = billing_by_status.get('unpaid', 0)
+    billing_no_invoice    = max(0, total - billing_invoice_total)
+    billing_total_paid    = float(
+        _BPay.objects.filter(invoice__patient_card__in=qs)
+        .aggregate(t=_BSum('amount'))['t'] or 0
+    )
+    # Hisoblangan jami (xizmatlar + dorilar)
+    _pxq = _BEW(_BF('price') * _BF('quantity'), output_field=_BDC())
+    from apps.services.models import PatientService as _PSvc, PatientMedicine as _PMed
+    billing_accrued = (
+        float(_PSvc.objects.filter(patient_card__in=qs).exclude(status='cancelled')
+              .aggregate(t=_BSum(_pxq))['t'] or 0)
+        + float(_PMed.objects.filter(patient_card__in=qs)
+                .aggregate(t=_BSum(_pxq))['t'] or 0)
+    )
+    billing_outstanding = max(0.0, billing_accrued - billing_total_paid)
+
     # ==================== IJTIMOIY HOLAT ====================
     social_stats = (
         qs.values('social_status')
@@ -325,6 +354,15 @@ def statistics_dashboard(request):
         'medicines_grand_total': float(medicines_grand_total),
         'services_grand_total': services_grand_total,
         'org_dept_stats': org_dept_stats,
+
+        # To'lovlar
+        'billing_paid_count':    billing_paid_count,
+        'billing_partial_count': billing_partial_count,
+        'billing_unpaid_count':  billing_unpaid_count,
+        'billing_no_invoice':    billing_no_invoice,
+        'billing_total_paid':    billing_total_paid,
+        'billing_accrued':       billing_accrued,
+        'billing_outstanding':   billing_outstanding,
     })
 
 
