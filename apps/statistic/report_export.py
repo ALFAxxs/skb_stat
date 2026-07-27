@@ -140,14 +140,14 @@ def _sheet_statsionar(wb, qs, S, filter_text, pay_lookup=None):
         'Bayonnoma', 'JSHSHIR', 'Yashash manzili',
         'Qabul sanasi', 'Chiqish sanasi', "Bo'lim", 'Shifokor',
         'Tashxis', 'Bemor turi', 'Yotoq kun', 'Natija',
-        "To'lov holati", "To'langan (so'm)", "To'lov usuli", "Chegirma (so'm)",
+        "To'lov holati", "To'langan (so'm)", "To'lov usuli", "Kassir", "Chegirma (so'm)",
     ]
     ncols = len(headers)
-    widths = [5, 28, 13, 6, 7, 14, 16, 30, 13, 13, 18, 20, 30, 13, 9, 14, 18, 16, 18, 14]
+    widths = [5, 28, 13, 6, 7, 14, 16, 30, 13, 13, 18, 20, 30, 13, 9, 14, 18, 16, 18, 20, 14]
     aligns = ['center','left','center','center','center',
               'center','center','left','center','center',
               'left','left','left','center','center','left',
-              'center','right','left','right']
+              'center','right','left','left','right']
     r = _col_hdrs(ws, r, headers, widths, S)
 
     patients = qs.filter(visit_type='inpatient').select_related(
@@ -157,7 +157,7 @@ def _sheet_statsionar(wb, qs, S, filter_text, pay_lookup=None):
     pay = pay_lookup or {}
     for i, p in enumerate(patients, 1):
         age = _age(p)
-        pi = pay.get(p.pk, {'status': "Hisob yo'q", 'status_code': 'none', 'paid': 0.0, 'methods': '', 'discount': 0.0})
+        pi = pay.get(p.pk, {'status': "To'lanmagan", 'status_code': 'none', 'paid': 0.0, 'methods': '', 'cashier': '', 'discount': 0.0})
         vals = [
             i, p.full_name,
             p.birth_date.strftime('%d.%m.%Y') if p.birth_date else '—',
@@ -176,10 +176,11 @@ def _sheet_statsionar(wb, qs, S, filter_text, pay_lookup=None):
             pi['status'],
             pi['paid'] if pi['paid'] else '',
             pi.get('methods', ''),
+            pi.get('cashier', ''),
             pi.get('discount') or '',
         ]
         start_row = r
-        r = _row(ws, r, vals, S, aligns, nums={15, 18, 20}, even=(i%2==0))
+        r = _row(ws, r, vals, S, aligns, nums={15, 18, 21}, even=(i%2==0))
         # To'lov holati rangi
         ws.cell(row=start_row, column=17).fill = _PF('solid', fgColor=STATUS_COLOR.get(pi['status_code'], 'F2F3F4'))
 
@@ -199,18 +200,18 @@ def _sheet_ambulatory(wb, qs, S, filter_text, pay_lookup=None):
     headers = ['№', 'F.I.Sh', "Tug'ilgan sana", 'Yosh', 'Jinsi',
                'Bayonnoma', 'JSHSHIR', 'Telefon',
                'Qabul sanasi', 'Bemor turi', 'Tashxis', 'Natija',
-               "To'lov holati", "To'langan (so'm)", "To'lov usuli", "Chegirma (so'm)"]
+               "To'lov holati", "To'langan (so'm)", "To'lov usuli", "Kassir", "Chegirma (so'm)"]
     ncols = len(headers)
-    widths = [5, 28, 13, 6, 7, 14, 16, 14, 13, 13, 30, 14, 18, 16, 18, 14]
+    widths = [5, 28, 13, 6, 7, 14, 16, 14, 13, 13, 30, 14, 18, 16, 18, 20, 14]
     aligns = ['center','left','center','center','center',
               'center','center','center','center','center','left','left',
-              'center','right','left','right']
+              'center','right','left','left','right']
     r = _col_hdrs(ws, r, headers, widths, S, '145A32')
 
     patients = qs.filter(visit_type='ambulatory').order_by('admission_date')
     pay = pay_lookup or {}
     for i, p in enumerate(patients, 1):
-        pi = pay.get(p.pk, {'status': "Hisob yo'q", 'status_code': 'none', 'paid': 0.0, 'methods': '', 'discount': 0.0})
+        pi = pay.get(p.pk, {'status': "To'lanmagan", 'status_code': 'none', 'paid': 0.0, 'methods': '', 'cashier': '', 'discount': 0.0})
         vals = [
             i, p.full_name,
             p.birth_date.strftime('%d.%m.%Y') if p.birth_date else '—',
@@ -224,10 +225,11 @@ def _sheet_ambulatory(wb, qs, S, filter_text, pay_lookup=None):
             pi['status'],
             pi['paid'] if pi['paid'] else '',
             pi.get('methods', ''),
+            pi.get('cashier', ''),
             pi.get('discount') or '',
         ]
         start_row = r
-        r = _row(ws, r, vals, S, aligns, nums={14, 16}, even=(i%2==0))
+        r = _row(ws, r, vals, S, aligns, nums={14, 17}, even=(i%2==0))
         ws.cell(row=start_row, column=13).fill = _PF('solid', fgColor=STATUS_COLOR.get(pi['status_code'], 'F2F3F4'))
 
     _total(ws, r, [f'JAMI: {patients.count()} ta bemor'] + ['']*(ncols-1), S, '145A32')

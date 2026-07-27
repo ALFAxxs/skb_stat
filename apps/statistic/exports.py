@@ -123,7 +123,7 @@ def _build_workbook(qs, qs_stats):
         "Qayta/Birinchi", "Yotgan kunlar", "Yakun", "Chiqish xulosasi",
         "Chiqgan sana", "Klinik tashxis (MKB-10)", "Shifokor",
         "Jarrohlik amaliyotlari",
-        "To'lov holati", "To'langan (so'm)", "To'lov usuli", "Chegirma (so'm)",
+        "To'lov holati", "To'langan (so'm)", "To'lov usuli", "Kassir", "Chegirma (so'm)",
     ]
 
     ws.row_dimensions[1].height = 40
@@ -186,6 +186,7 @@ def _build_workbook(qs, qs_stats):
             _pay.get(patient.pk, {}).get('status', "To'lanmagan"),
             _pay.get(patient.pk, {}).get('paid') or '',
             _pay.get(patient.pk, {}).get('methods', ''),
+            _pay.get(patient.pk, {}).get('cashier', ''),
             _pay.get(patient.pk, {}).get('discount') or '',
         ]
 
@@ -206,7 +207,7 @@ def _build_workbook(qs, qs_stats):
             if col_num == 27:
                 _sc = _pay.get(patient.pk, {}).get('status_code', 'none')
                 cell.fill = PatternFill("solid", fgColor=STATUS_COLOR.get(_sc, 'F2F3F4'))
-            if col_num in (28, 30) and isinstance(value, (int, float)) and value:
+            if col_num in (28, 31) and isinstance(value, (int, float)) and value:
                 cell.number_format = '#,##0'
 
     # Ustun kengliklari
@@ -214,7 +215,7 @@ def _build_workbook(qs, qs_stats):
         4, 14, 25, 8, 13, 10, 30, 15, 12, 16,
         22, 25, 18, 11, 8, 18, 18, 14, 12, 14,
         18, 18, 16, 22, 40,
-        18, 16, 18, 14,
+        18, 16, 18, 20, 14,
     ]
     for i, width in enumerate(col_widths, 1):
         ws.column_dimensions[get_column_letter(i)].width = width
@@ -292,7 +293,7 @@ def _build_workbook(qs, qs_stats):
     op_headers = [
         "№", "Bemor", "Bayonnoma №", "Sana",
         "Amaliyot nomi", "Narkoz", "Asorati",
-        "To'lov holati", "To'langan (so'm)", "To'lov usuli", "Chegirma (so'm)",
+        "To'lov holati", "To'langan (so'm)", "To'lov usuli", "Kassir", "Chegirma (so'm)",
     ]
     for col_num, header in enumerate(op_headers, 1):
         cell = ws3.cell(row=1, column=col_num, value=header)
@@ -317,6 +318,7 @@ def _build_workbook(qs, qs_stats):
                 _pi3.get('status', "To'lanmagan"),
                 _pi3.get('paid') or '',
                 _pi3.get('methods', ''),
+                _pi3.get('cashier', ''),
                 _pi3.get('discount') or '',
             ]
             for col_num, value in enumerate(op_data, 1):
@@ -325,14 +327,14 @@ def _build_workbook(qs, qs_stats):
                 cell.border = border
                 if col_num == 8:
                     cell.fill = PatternFill("solid", fgColor=STATUS_COLOR.get(_pi3.get('status_code', 'none'), 'F2F3F4'))
-                if col_num in (9, 11) and isinstance(value, (int, float)) and value:
+                if col_num in (9, 12) and isinstance(value, (int, float)) and value:
                     cell.number_format = '#,##0'
             op_row += 1
 
     if op_row == 2:
         ws3.cell(row=2, column=1, value="Jarrohlik amaliyotlari yo'q")
 
-    op_col_widths = [4, 25, 14, 12, 35, 15, 25, 18, 16, 18, 14]
+    op_col_widths = [4, 25, 14, 12, 35, 15, 25, 18, 16, 18, 20, 14]
     for i, width in enumerate(op_col_widths, 1):
         ws3.column_dimensions[get_column_letter(i)].width = width
 
@@ -349,11 +351,11 @@ def _build_workbook(qs, qs_stats):
         'Yotoq kun', 'Yil boshidan', 'Jami tashriflar',
         'Xizmat turi', "Xizmat summasi",
         'Dori nomi', "Dori summasi",
-        "To'lov holati", "To'langan (so'm)", "To'lov usuli", "Chegirma (so'm)",
+        "To'lov holati", "To'langan (so'm)", "To'lov usuli", "Kassir", "Chegirma (so'm)",
     ]
-    NCOLS = len(BEM_HEADS)  # 26
+    NCOLS = len(BEM_HEADS)  # 27
 
-    col_widths_4 = [4, 22, 16, 12, 12, 14, 25, 14, 22, 20, 14, 22, 25, 16, 12, 9, 11, 12, 22, 14, 22, 14, 18, 16, 18, 14]
+    col_widths_4 = [4, 22, 16, 12, 12, 14, 25, 14, 22, 20, 14, 22, 25, 16, 12, 9, 11, 12, 22, 14, 22, 14, 18, 16, 18, 20, 14]
     for ci, w in enumerate(col_widths_4, 1):
         ws4.column_dimensions[get_column_letter(ci)].width = w
 
@@ -499,10 +501,11 @@ def _build_workbook(qs, qs_stats):
                     _c24.value = _pi['paid']
                     _c24.number_format = '#,##0'
                 ws4.cell(row=r4, column=25).value = _pi.get('methods', '')
-                _c26 = ws4.cell(row=r4, column=26)
+                ws4.cell(row=r4, column=26).value = _pi.get('cashier', '')
+                _c27 = ws4.cell(row=r4, column=27)
                 if _pi.get('discount'):
-                    _c26.value = _pi['discount']
-                    _c26.number_format = '#,##0'
+                    _c27.value = _pi['discount']
+                    _c27.number_format = '#,##0'
 
             # Xizmat
             if ri < len(svc_items):
@@ -584,7 +587,7 @@ def _build_workbook(qs, qs_stats):
         'Qabulxona tashxisi', "Bo'lim", 'Bemor turi',
         'Yotoq kun', 'Yil boshidan', 'Jami tashriflar',
     ]
-    all_headers = FIXED + cat_names + ["Dori-darmonlar (so'm)", "JAMI (so'm)", "To'lov holati", "To'langan (so'm)", "To'lov usuli", "Chegirma (so'm)"]
+    all_headers = FIXED + cat_names + ["Dori-darmonlar (so'm)", "JAMI (so'm)", "To'lov holati", "To'langan (so'm)", "To'lov usuli", "Kassir", "Chegirma (so'm)"]
     total_cols5 = len(all_headers)
 
     # Ustun kengliklari
@@ -678,15 +681,16 @@ def _build_workbook(qs, qs_stats):
         row_data.append(med_total if med_total else '')
         row_data.append(patient_total if patient_total else '')
         # To'lov holati, usuli va chegirma
-        _pi5 = _pay.get(patient.pk, {'status': "To'lanmagan", 'status_code': 'none', 'paid': 0.0, 'methods': '', 'discount': 0.0})
+        _pi5 = _pay.get(patient.pk, {'status': "To'lanmagan", 'status_code': 'none', 'paid': 0.0, 'methods': '', 'cashier': '', 'discount': 0.0})
         row_data.append(_pi5['status'])
         row_data.append(_pi5['paid'] if _pi5['paid'] else '')
         row_data.append(_pi5.get('methods', ''))
+        row_data.append(_pi5.get('cashier', ''))
         row_data.append(_pi5.get('discount') or '')
 
         # To'lov holati ustun indeksi (1-indexed): len(FIXED)+len(cat_names)+3
         _pay_status_col = len(FIXED) + len(cat_names) + 3
-        _num_cols_end   = {len(FIXED) + len(cat_names) + 2, len(FIXED) + len(cat_names) + 4, len(all_headers)}
+        _num_cols_end   = {len(FIXED) + len(cat_names) + 2, len(FIXED) + len(cat_names) + 5, len(all_headers)}
         for col, val in enumerate(row_data, 1):
             c = ws5.cell(row=r5, column=col, value=val)
             c.border = border

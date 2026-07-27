@@ -91,6 +91,25 @@ def build_payment_lookup(patient_ids):
         if label not in methods_map[pid]:
             methods_map[pid].append(label)
 
+    # Kassirlar: {patient_id: ['Ism Familiya', ...]}
+    cashier_raw = (
+        Payment.objects.filter(invoice__patient_card_id__in=patient_ids)
+        .exclude(cashier__isnull=True)
+        .values('invoice__patient_card_id',
+                'cashier__first_name', 'cashier__last_name', 'cashier__username')
+        .distinct()
+    )
+    cashier_map: dict[int, list] = {}
+    for row in cashier_raw:
+        pid = row['invoice__patient_card_id']
+        fname = row['cashier__first_name'] or ''
+        lname = row['cashier__last_name'] or ''
+        name = f"{fname} {lname}".strip() or (row['cashier__username'] or '')
+        if name:
+            cashier_map.setdefault(pid, [])
+            if name not in cashier_map[pid]:
+                cashier_map[pid].append(name)
+
     result = {}
     for pid in patient_ids:
         sc = inv_map.get(pid, 'none')
@@ -101,6 +120,7 @@ def build_payment_lookup(patient_ids):
             'paid':        max(0.0, paid),
             'discount':    float(discount_map.get(pid, 0) or 0),
             'methods':     ', '.join(methods_map.get(pid, [])),
+            'cashier':     ', '.join(cashier_map.get(pid, [])),
         }
     return result
 
