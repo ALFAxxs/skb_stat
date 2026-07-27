@@ -482,6 +482,10 @@ def export_file_download(request, filename):
         display = 'xizmatlar_hisoboti.xlsx'
     elif filename.startswith('patients'):
         display = 'bemorlar_royxati.xlsx'
+    elif filename.startswith('fullreport'):
+        display = 'skb_hisobot.xlsx'
+    elif filename.startswith('monthly'):
+        display = 'oylik_hisobot.xlsx'
     else:
         display = 'dori_statistika.xlsx'
     with open(filepath, 'rb') as f:
@@ -758,7 +762,14 @@ def medicine_statistics(request):
 
 @login_required
 def export_medicine_excel(request):
-    """Dori statistikasi Excel (write_only + iterator — katta ma'lumot uchun)"""
+    """Eski to'g'ridan-to'g'ri dori export → statistika sahifasiga yo'naltiradi."""
+    params = request.GET.urlencode()
+    return redirect(f'/services/medicine/statistics/?{params}' if params else '/services/medicine/statistics/')
+
+
+@login_required
+def _export_medicine_excel_legacy(request):
+    """Eski sinxron dori export — saqlangan, lekin ishlatilmaydi."""
     from .models import PatientMedicine
     from django.db.models import Sum, Count
     from openpyxl.cell.cell import WriteOnlyCell

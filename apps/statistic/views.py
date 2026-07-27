@@ -328,6 +328,26 @@ def statistics_dashboard(request):
     })
 
 
+def _collect_stat_filters(request) -> dict:
+    return {k: v for k, v in {
+        'year':             request.GET.get('year'),
+        'month':            request.GET.get('month'),
+        'department':       request.GET.get('department'),
+        'doctor':           request.GET.get('doctor'),
+        'outcome':          request.GET.get('outcome'),
+        'status':           request.GET.get('status'),
+        'gender':           request.GET.get('gender'),
+        'patient_category': request.GET.get('patient_category'),
+        'resident_status':  request.GET.get('resident_status'),
+        'referral_type':    request.GET.get('referral_type'),
+        'date_from':        request.GET.get('date_from'),
+        'date_to':          request.GET.get('date_to'),
+        'age_group':        request.GET.get('age_group'),
+        'org':              request.GET.get('org'),
+        'visit_type':       request.GET.get('visit_type'),
+    }.items() if v}
+
+
 @login_required
 @role_required('admin', 'statistician')
 def export_patients_start(request):
@@ -351,4 +371,27 @@ def export_patients_start(request):
         'visit_type':       request.GET.get('visit_type'),
     }.items() if v}
     task = generate_patients_excel.delay(filters, request.user.pk)
+    return JsonResponse({'task_id': task.id})
+
+
+@login_required
+@role_required('admin', 'statistician')
+def export_full_report_start(request):
+    """To'liq hisobot (8 sheet) task'ini Celery'ga yuboradi → {task_id}"""
+    from .export_tasks import generate_full_report_excel
+    filters = _collect_stat_filters(request)
+    task = generate_full_report_excel.delay(filters, request.user.pk)
+    return JsonResponse({'task_id': task.id})
+
+
+@login_required
+@role_required('admin', 'statistician')
+def export_monthly_report_start(request):
+    """Oylik rasmiy hisobot task'ini Celery'ga yuboradi → {task_id}"""
+    from .export_tasks import generate_monthly_report_excel
+    from datetime import date as _date
+    filters = _collect_stat_filters(request)
+    year  = int(request.GET.get('year', '')  or _date.today().year)
+    month = int(request.GET.get('month', '') or _date.today().month)
+    task = generate_monthly_report_excel.delay(filters, year, month, request.user.pk)
     return JsonResponse({'task_id': task.id})

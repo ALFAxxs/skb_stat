@@ -40,3 +40,56 @@ def generate_patients_excel(self, filters: dict, user_id: int) -> str:
     filepath = os.path.join(_export_dir(), filename)
     wb.save(filepath)
     return filename
+
+
+@shared_task(bind=True, max_retries=0, time_limit=600, soft_time_limit=560,
+             name='statistic.export_full_report_excel')
+def generate_full_report_excel(self, filters: dict, user_id: int) -> str:
+    """To'liq hisobot (8 sheet) Excel faylini Celery'da yaratadi."""
+    from apps.users.models import CustomUser
+    from apps.users.decorators import department_filter
+    from .exports import _base_patient_qs, _apply_patient_filters
+    from .report_export import _build_full_report_workbook, _filter_text_from_params
+
+    user = CustomUser.objects.get(pk=user_id)
+    qs = department_filter(_base_patient_qs(), user)
+    qs = _apply_patient_filters(qs, filters)
+    qs = qs.select_related(
+        'department', 'attending_doctor', 'workplace_org',
+        'region', 'district', 'parent_workplace_org'
+    )
+    filter_text = _filter_text_from_params(filters)
+    wb = _build_full_report_workbook(qs, filter_text)
+
+    filename = f'fullreport_{uuid.uuid4().hex[:12]}.xlsx'
+    filepath = os.path.join(_export_dir(), filename)
+    wb.save(filepath)
+    return filename
+
+
+@shared_task(bind=True, max_retries=0, time_limit=600, soft_time_limit=560,
+             name='statistic.export_monthly_report_excel')
+def generate_monthly_report_excel(self, filters: dict, year: int, month: int, user_id: int) -> str:
+    """Oylik rasmiy hisobot Excel faylini Celery'da yaratadi."""
+    from apps.users.models import CustomUser
+    from apps.users.decorators import department_filter
+    from .exports import _base_patient_qs, _apply_patient_filters
+    from .monthly_report import _build_monthly_report_workbook
+
+    user = CustomUser.objects.get(pk=user_id)
+    qs = department_filter(_base_patient_qs(), user)
+    qs = _apply_patient_filters(qs, filters)
+    if not filters.get('year'):
+        qs = qs.filter(admission_date__year=year)
+    if not filters.get('month'):
+        qs = qs.filter(admission_date__month=month)
+    qs = qs.select_related(
+        'department', 'attending_doctor', 'workplace_org',
+        'region', 'district', 'discharge_conclusion'
+    )
+    wb = _build_monthly_report_workbook(qs, year, month)
+
+    filename = f'monthly_{uuid.uuid4().hex[:12]}.xlsx'
+    filepath = os.path.join(_export_dir(), filename)
+    wb.save(filepath)
+    return filename

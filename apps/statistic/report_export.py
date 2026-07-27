@@ -495,29 +495,24 @@ def _sheet_organizations(wb, qs, S, filter_text):
 
 # ==================== ASOSIY FUNKSIYA ====================
 
-@login_required
-def export_full_report(request):
-    """Barcha hisobotlar — bitta Excel faylda"""
-    qs = get_filtered_queryset(request)
-    qs = qs.select_related(
-        'department', 'attending_doctor', 'workplace_org',
-        'region', 'district', 'parent_workplace_org'
-    )
+_MONTHS_STR = {str(i): m for i, m in enumerate(
+    ['Yanvar','Fevral','Mart','Aprel','May','Iyun',
+     'Iyul','Avgust','Sentabr','Oktabr','Noyabr','Dekabr'], 1)}
+_CATS_STR = {'railway':"Temir yo'lchi", 'paid':'Pullik', 'non_resident':'Norezident'}
 
-    filter_text = ''
-    MONTHS = {str(i): m for i, m in enumerate(
-        ['Yanvar','Fevral','Mart','Aprel','May','Iyun',
-         'Iyul','Avgust','Sentabr','Oktabr','Noyabr','Dekabr'], 1)}
-    CATS = {'railway':"Temir yo'lchi", 'paid':'Pullik', 'non_resident':'Norezident'}
+
+def _filter_text_from_params(params) -> str:
     parts = []
-    if request.GET.get('year'):  parts.append(f"Yil: {request.GET['year']}")
-    if request.GET.get('month'): parts.append(f"Oy: {MONTHS.get(request.GET['month'],'')}")
-    if request.GET.get('date_from'): parts.append(f"Dan: {request.GET['date_from']}")
-    if request.GET.get('date_to'):   parts.append(f"Gacha: {request.GET['date_to']}")
-    if request.GET.get('patient_category'):
-        parts.append(f"Kategoriya: {CATS.get(request.GET['patient_category'],'')}")
-    filter_text = ' | '.join(parts) if parts else 'Barcha davr'
+    if params.get('year'):             parts.append(f"Yil: {params['year']}")
+    if params.get('month'):            parts.append(f"Oy: {_MONTHS_STR.get(params['month'],'')}")
+    if params.get('date_from'):        parts.append(f"Dan: {params['date_from']}")
+    if params.get('date_to'):          parts.append(f"Gacha: {params['date_to']}")
+    if params.get('patient_category'): parts.append(f"Kategoriya: {_CATS_STR.get(params['patient_category'],'')}")
+    return ' | '.join(parts) if parts else 'Barcha davr'
 
+
+def _build_full_report_workbook(qs, filter_text: str):
+    """qs va filter_text bo'yicha to'liq hisobot Workbook qaytaradi."""
     S = _styles()
     wb = openpyxl.Workbook()
     wb.remove(wb.active)  # bo'sh sheet'ni o'chirish
@@ -558,6 +553,19 @@ def export_full_report(request):
     _sheet_age_groups(wb, qs, S, filter_text)
     _sheet_organizations(wb, qs, S, filter_text)
 
+    return wb
+
+
+@login_required
+def export_full_report(request):
+    """To'liq hisobotlar — bitta Excel faylda."""
+    qs = get_filtered_queryset(request)
+    qs = qs.select_related(
+        'department', 'attending_doctor', 'workplace_org',
+        'region', 'district', 'parent_workplace_org'
+    )
+    filter_text = _filter_text_from_params(request.GET)
+    wb = _build_full_report_workbook(qs, filter_text)
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )

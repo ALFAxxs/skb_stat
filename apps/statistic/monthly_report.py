@@ -612,9 +612,20 @@ def sheet_xizmatlar(wb, qs, year, month, S_):
 
 # ==================== ASOSIY FUNKSIYA ====================
 
+def _build_monthly_report_workbook(qs, year: int, month: int):
+    """qs, yil va oy bo'yicha oylik hisobot Workbook qaytaradi."""
+    S_ = S()
+    wb = openpyxl.Workbook()
+    wb.remove(wb.active)
+    sheet_orinlar_fondi(wb, qs, year, month, S_)
+    sheet_operatsiyalar(wb, qs, year, month, S_)
+    sheet_xizmatlar(wb, qs, year, month, S_)
+    return wb
+
+
 @login_required
 def export_monthly_report(request):
-    """Oylik rasmiy hisobotlar"""
+    """Oylik rasmiy hisobotlar."""
     year_raw  = request.GET.get('year', '').strip()
     month_raw = request.GET.get('month', '').strip()
     year  = int(year_raw)  if year_raw  else date.today().year
@@ -625,22 +636,12 @@ def export_monthly_report(request):
         qs = qs.filter(admission_date__year=year)
     if not request.GET.get('month'):
         qs = qs.filter(admission_date__month=month)
-
     qs = qs.select_related(
         'department', 'attending_doctor', 'workplace_org',
         'region', 'district', 'discharge_conclusion'
     )
 
-    S_ = S()
-    wb = openpyxl.Workbook()
-    wb.remove(wb.active)
-
-    month_name = MONTHS_UZ.get(month, str(month))
-
-    sheet_orinlar_fondi(wb, qs, year, month, S_)
-    sheet_operatsiyalar(wb, qs, year, month, S_)
-    sheet_xizmatlar(wb, qs, year, month, S_)
-
+    wb = _build_monthly_report_workbook(qs, year, month)
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
