@@ -9,16 +9,17 @@ from django.utils.translation import gettext_lazy as _
 
 class CustomUser(AbstractUser):
     ROLE_CHOICES = [
-        ('admin', _('Administrator')),
-        ('doctor', _('Shifokor')),
-        ('statistician', _('Statistik')),
-        ('reception', _('Qabulxona')),
-        ('laborant', _('Laborant')),
-        ('nurse', _('Hamshira')),
-        ('head_nurse', _('Katta hamshira')),
+        ('admin',         _('Administrator')),
+        ('doctor',        _('Shifokor')),
+        ('statistician',  _('Statistik')),
+        ('reception',     _('Qabulxona')),
+        ('kassir',        _('Kassir')),
+        ('laborant',      _('Laborant')),
+        ('nurse',         _('Hamshira')),
+        ('head_nurse',    _('Katta hamshira')),
         ('diagnostician', _('Diagnost')),
-        ('viewer', _("Faqat ko'rish")),
-        ('old', 'old'),
+        ('viewer',        _("Faqat ko'rish")),
+        ('old',           'old'),
     ]
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='viewer')
     department = models.ForeignKey(

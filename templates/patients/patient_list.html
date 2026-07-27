@@ -76,7 +76,7 @@
                     </select>
                 </div>
 
-                {% if request.user.role in 'admin,reception,statistician' or request.user.is_superuser %}
+                {% if request.user.role in 'admin,reception,statistician,kassir' or request.user.is_superuser %}
                 <div class="col-md-2 col-6">
                     <select name="department" class="form-select form-select-sm">
                         <option value="">{% trans "Barcha bo'limlar" %}</option>
@@ -226,8 +226,14 @@
                     <div class="d-flex gap-1">
                         <a href="{{ patient_url }}"
                            class="btn btn-sm btn-info py-0 px-2" title="{% trans "Ko'rish" %}">👁</a>
+                        {% if request.user.role != 'kassir' %}
                         <a href="{% url 'patient_edit' patient.pk %}"
                            class="btn btn-sm btn-warning py-0 px-2" title="{% trans "Tahrirlash" %}">✏️</a>
+                        {% endif %}
+                        {% if request.user.role in 'admin,reception,kassir' or request.user.is_superuser %}
+                        <a href="{% url 'invoice_detail' patient.pk %}"
+                           class="btn btn-sm btn-success py-0 px-2" title="{% trans "To'lov" %}">💳</a>
+                        {% endif %}
                         {% if request.user.role == 'admin' or request.user.is_superuser %}
                         <a href="{% url 'patient_delete' patient.pk %}"
                            class="btn btn-sm btn-danger py-0 px-2" title="{% trans "O'chirish" %}">🗑</a>

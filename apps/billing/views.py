@@ -18,7 +18,7 @@ from .models import Invoice, Payment, Discount, Refund, Consumable, PatientConsu
 
 logger = logging.getLogger(__name__)
 
-FINANCE_ROLES = ('admin', 'statistician', 'reception')
+FINANCE_ROLES = ('admin', 'statistician', 'reception', 'kassir')
 
 
 def _bounded_decimal(value, max_digits, decimal_places):

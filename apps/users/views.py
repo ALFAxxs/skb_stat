@@ -39,6 +39,8 @@ def login_view(request):
             return redirect('nurse_dashboard')
         if user.role == 'diagnostician':
             return redirect('diagnostic_queue')
+        if user.role == 'kassir':
+            return redirect('patient_list')
         return redirect('patient_list')
     return render(request, 'users/login.html', {'form': form})
 
