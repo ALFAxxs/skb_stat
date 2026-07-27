@@ -477,6 +477,20 @@
                 </div>
             </div>
         </div>
+        {% if billing_methods %}
+        <div class="border-top px-3 py-2">
+            <div class="text-muted small fw-bold mb-2">To'lov usullari bo'yicha:</div>
+            <div class="d-flex flex-wrap gap-2">
+                {% for m in billing_methods %}
+                <div class="border rounded px-3 py-1 bg-light d-flex align-items-center gap-2">
+                    <span class="fw-semibold small">{{ m.label }}</span>
+                    <span class="badge bg-secondary">{{ m.cnt }} ta</span>
+                    <span class="text-success small fw-bold">{{ m.total|floatformat:0 }} so'm</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 

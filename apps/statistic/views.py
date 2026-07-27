@@ -277,6 +277,27 @@ def statistics_dashboard(request):
     )
     billing_outstanding = max(0.0, billing_accrued - billing_total_paid)
 
+    # To'lov usullari bo'yicha breakdown
+    from apps.billing.models import Payment as _BPay2
+    _meth_qs = (
+        _BPay2.objects.filter(invoice__patient_card__in=qs)
+        .values('method')
+        .annotate(cnt=Count('id'), total=_BSum('amount'))
+        .order_by('-total')
+    )
+    METHOD_LABELS = {
+        'cash': 'Naqd', 'card': 'Plastik karta',
+        'bank_transfer': "Bank o'tkazmasi", 'insurance': "Sug'urta",
+    }
+    billing_methods = [
+        {
+            'label': METHOD_LABELS.get(r['method'], r['method']),
+            'cnt':   r['cnt'],
+            'total': float(r['total'] or 0),
+        }
+        for r in _meth_qs
+    ]
+
     # ==================== IJTIMOIY HOLAT ====================
     social_stats = (
         qs.values('social_status')
@@ -363,6 +384,7 @@ def statistics_dashboard(request):
         'billing_total_paid':    billing_total_paid,
         'billing_accrued':       billing_accrued,
         'billing_outstanding':   billing_outstanding,
+        'billing_methods':       billing_methods,
     })
 
 

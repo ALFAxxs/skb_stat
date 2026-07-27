@@ -11,6 +11,7 @@ from dateutil.relativedelta import relativedelta
 
 from apps.patients.models import PatientCard
 from .exports import get_filtered_queryset
+from .billing_utils import METHOD_DISPLAY
 
 
 # ==================== STILLAR ====================
@@ -139,13 +140,14 @@ def _sheet_statsionar(wb, qs, S, filter_text, pay_lookup=None):
         'Bayonnoma', 'JSHSHIR', 'Yashash manzili',
         'Qabul sanasi', 'Chiqish sanasi', "Bo'lim", 'Shifokor',
         'Tashxis', 'Bemor turi', 'Yotoq kun', 'Natija',
-        "To'lov holati", "To'langan (so'm)",
+        "To'lov holati", "To'langan (so'm)", "To'lov usuli", "Chegirma (so'm)",
     ]
-    widths = [5, 28, 13, 6, 7, 14, 16, 30, 13, 13, 18, 20, 30, 13, 9, 14, 18, 16]
+    ncols = len(headers)
+    widths = [5, 28, 13, 6, 7, 14, 16, 30, 13, 13, 18, 20, 30, 13, 9, 14, 18, 16, 18, 14]
     aligns = ['center','left','center','center','center',
               'center','center','left','center','center',
               'left','left','left','center','center','left',
-              'center','right']
+              'center','right','left','right']
     r = _col_hdrs(ws, r, headers, widths, S)
 
     patients = qs.filter(visit_type='inpatient').select_related(
@@ -155,7 +157,7 @@ def _sheet_statsionar(wb, qs, S, filter_text, pay_lookup=None):
     pay = pay_lookup or {}
     for i, p in enumerate(patients, 1):
         age = _age(p)
-        pi = pay.get(p.pk, {'status': "Hisob yo'q", 'status_code': 'none', 'paid': 0.0})
+        pi = pay.get(p.pk, {'status': "Hisob yo'q", 'status_code': 'none', 'paid': 0.0, 'methods': '', 'discount': 0.0})
         vals = [
             i, p.full_name,
             p.birth_date.strftime('%d.%m.%Y') if p.birth_date else '—',
@@ -173,12 +175,13 @@ def _sheet_statsionar(wb, qs, S, filter_text, pay_lookup=None):
             p.get_outcome_display() if p.outcome else '—',
             pi['status'],
             pi['paid'] if pi['paid'] else '',
+            pi.get('methods', ''),
+            pi.get('discount') or '',
         ]
         start_row = r
-        r = _row(ws, r, vals, S, aligns, nums={15, 18}, even=(i%2==0))
+        r = _row(ws, r, vals, S, aligns, nums={15, 18, 20}, even=(i%2==0))
         # To'lov holati rangi
-        pay_cell = ws.cell(row=start_row, column=17)
-        pay_cell.fill = _PF('solid', fgColor=STATUS_COLOR.get(pi['status_code'], 'F2F3F4'))
+        ws.cell(row=start_row, column=17).fill = _PF('solid', fgColor=STATUS_COLOR.get(pi['status_code'], 'F2F3F4'))
 
     _total(ws, r, [f'JAMI: {patients.count()} ta bemor'] + ['']*(ncols-1), S)
 
@@ -196,17 +199,18 @@ def _sheet_ambulatory(wb, qs, S, filter_text, pay_lookup=None):
     headers = ['№', 'F.I.Sh', "Tug'ilgan sana", 'Yosh', 'Jinsi',
                'Bayonnoma', 'JSHSHIR', 'Telefon',
                'Qabul sanasi', 'Bemor turi', 'Tashxis', 'Natija',
-               "To'lov holati", "To'langan (so'm)"]
-    widths = [5, 28, 13, 6, 7, 14, 16, 14, 13, 13, 30, 14, 18, 16]
+               "To'lov holati", "To'langan (so'm)", "To'lov usuli", "Chegirma (so'm)"]
+    ncols = len(headers)
+    widths = [5, 28, 13, 6, 7, 14, 16, 14, 13, 13, 30, 14, 18, 16, 18, 14]
     aligns = ['center','left','center','center','center',
               'center','center','center','center','center','left','left',
-              'center','right']
+              'center','right','left','right']
     r = _col_hdrs(ws, r, headers, widths, S, '145A32')
 
     patients = qs.filter(visit_type='ambulatory').order_by('admission_date')
     pay = pay_lookup or {}
     for i, p in enumerate(patients, 1):
-        pi = pay.get(p.pk, {'status': "Hisob yo'q", 'status_code': 'none', 'paid': 0.0})
+        pi = pay.get(p.pk, {'status': "Hisob yo'q", 'status_code': 'none', 'paid': 0.0, 'methods': '', 'discount': 0.0})
         vals = [
             i, p.full_name,
             p.birth_date.strftime('%d.%m.%Y') if p.birth_date else '—',
@@ -219,11 +223,12 @@ def _sheet_ambulatory(wb, qs, S, filter_text, pay_lookup=None):
             p.get_outcome_display() if p.outcome else '—',
             pi['status'],
             pi['paid'] if pi['paid'] else '',
+            pi.get('methods', ''),
+            pi.get('discount') or '',
         ]
         start_row = r
-        r = _row(ws, r, vals, S, aligns, nums={14}, even=(i%2==0))
-        pay_cell = ws.cell(row=start_row, column=13)
-        pay_cell.fill = _PF('solid', fgColor=STATUS_COLOR.get(pi['status_code'], 'F2F3F4'))
+        r = _row(ws, r, vals, S, aligns, nums={14, 16}, even=(i%2==0))
+        ws.cell(row=start_row, column=13).fill = _PF('solid', fgColor=STATUS_COLOR.get(pi['status_code'], 'F2F3F4'))
 
     _total(ws, r, [f'JAMI: {patients.count()} ta bemor'] + ['']*(ncols-1), S, '145A32')
 
@@ -553,16 +558,15 @@ def _sheet_payments_summary(wb, qs, S, filter_text, pay_lookup):
 
     psum = payment_summary_from_lookup(pay_lookup)
     rows = [
-        ('paid',      STATUS_DISPLAY['paid'],      psum['paid'],     'C6EFCE'),
-        ('partial',   STATUS_DISPLAY['partial'],   psum['partial'],  'FFEB9C'),
-        ('unpaid',    STATUS_DISPLAY['unpaid'],     psum['unpaid'],   'FFC7CE'),
-        ('none',      STATUS_DISPLAY['none'],       psum['none'],     'F2F3F4'),
-        ('cancelled', STATUS_DISPLAY['cancelled'],  psum.get('cancelled',0), 'D9D9D9'),
+        ('paid',      STATUS_DISPLAY['paid'],      psum['paid'],           'C6EFCE'),
+        ('partial',   STATUS_DISPLAY['partial'],   psum['partial'],        'FFEB9C'),
+        ('unpaid',    STATUS_DISPLAY['unpaid'],     psum['unpaid'],         'FFC7CE'),
+        ('none',      STATUS_DISPLAY['none'],       psum['none'],           'F2F3F4'),
+        ('cancelled', STATUS_DISPLAY['cancelled'],  psum.get('cancelled',0),'D9D9D9'),
     ]
 
     for i, (sc, label, cnt, color) in enumerate(rows, 1):
         pct = round(cnt / total_patients * 100, 1) if total_patients else 0
-        # paid sum only for paid/partial rows
         paid_sum = sum(
             info['paid'] for info in pay_lookup.values() if info['status_code'] == sc
         )
@@ -573,12 +577,59 @@ def _sheet_payments_summary(wb, qs, S, filter_text, pay_lookup):
         ws.cell(row=start, column=1).fill = _PF('solid', fgColor=color)
 
     # Umumiy jami
-    _total(ws, r, [
-        'JAMI:',
-        total_patients,
-        '100%',
-        round(psum['total_paid'], 0),
-    ], S, '145A32')
+    _total(ws, r, ['JAMI:', total_patients, '100%', round(psum['total_paid'], 0)], S, '145A32')
+    r += 1
+
+    # To'lov usullari bo'yicha breakdown
+    if psum['by_method']:
+        r += 1
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=4)
+        c = ws.cell(row=r, column=1, value="TO'LOV USULLARI BO'YICHA")
+        c.fill = _PF('solid', fgColor='1A5276')
+        c.font = Font(color='FFFFFF', bold=True, size=10)
+        c.alignment = Alignment(horizontal='center', vertical='center')
+        ws.row_dimensions[r].height = 22
+        r += 1
+        meth_hdrs = ["To'lov usuli", "To'lovlar soni", "Bemorlar soni", "Jami summa (so'm)"]
+        for ci, h in enumerate(meth_hdrs, 1):
+            c = ws.cell(row=r, column=ci, value=h)
+            c.fill = _PF('solid', fgColor='1A5276')
+            c.font = Font(color='FFFFFF', bold=True, size=10)
+            c.alignment = Alignment(horizontal='center', vertical='center')
+        ws.row_dimensions[r].height = 22
+        r += 1
+
+        from apps.billing.models import Payment as _P
+        from django.db.models import Count as _Cnt
+        meth_stats = (
+            _P.objects.filter(invoice__patient_card_id__in=list(pay_lookup.keys()))
+            .values('method')
+            .annotate(cnt=_Cnt('id'), pts=_Cnt('invoice__patient_card_id', distinct=True))
+        )
+        meth_total_amt = {row['method']: psum['by_method'].get(
+            METHOD_DISPLAY.get(row['method'], row['method']), 0
+        ) for row in meth_stats}
+
+        for i, row in enumerate(meth_stats, 1):
+            label = METHOD_DISPLAY.get(row['method'], row['method'])
+            amt   = psum['by_method'].get(label, 0)
+            vals  = [label, row['cnt'], row['pts'], round(amt, 0)]
+            aligns = ['left', 'center', 'center', 'right']
+            r = _row(ws, r, vals, S, aligns, nums={2, 3, 4}, even=(i%2==0))
+
+    # Chegirma umumiy
+    if psum['total_discount']:
+        r += 1
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=3)
+        disc_cell = ws.cell(row=r, column=1, value="Jami chegirma summasi (so'm):")
+        disc_cell.font = Font(bold=True, size=10)
+        disc_cell.fill = _PF('solid', fgColor='FFEB9C')
+        amt_cell = ws.cell(row=r, column=4, value=round(psum['total_discount'], 0))
+        amt_cell.font = Font(bold=True, size=10)
+        amt_cell.fill = _PF('solid', fgColor='FFEB9C')
+        amt_cell.number_format = '#,##0'
+        amt_cell.alignment = Alignment(horizontal='right', vertical='center')
+        ws.row_dimensions[r].height = 20
 
 
 def _build_full_report_workbook(qs, filter_text: str):
