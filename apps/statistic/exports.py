@@ -183,7 +183,7 @@ def _build_workbook(qs, qs_stats):
             patient.clinical_main_diagnosis or '',
             str(patient.attending_doctor) if patient.attending_doctor else '',
             operations_text,
-            _pay.get(patient.pk, {}).get('status', "Hisob yo'q"),
+            _pay.get(patient.pk, {}).get('status', "To'lanmagan"),
             _pay.get(patient.pk, {}).get('paid') or '',
             _pay.get(patient.pk, {}).get('methods', ''),
             _pay.get(patient.pk, {}).get('discount') or '',
@@ -291,7 +291,8 @@ def _build_workbook(qs, qs_stats):
 
     op_headers = [
         "№", "Bemor", "Bayonnoma №", "Sana",
-        "Amaliyot nomi", "Narkoz", "Asorati"
+        "Amaliyot nomi", "Narkoz", "Asorati",
+        "To'lov holati", "To'langan (so'm)", "To'lov usuli", "Chegirma (so'm)",
     ]
     for col_num, header in enumerate(op_headers, 1):
         cell = ws3.cell(row=1, column=col_num, value=header)
@@ -302,6 +303,7 @@ def _build_workbook(qs, qs_stats):
 
     op_row = 2
     for patient in qs:
+        _pi3 = _pay.get(patient.pk, {})
         for op in patient.operations.all():
             name = str(op.operation_type) if op.operation_type else op.operation_name or '—'
             op_data = [
@@ -312,17 +314,25 @@ def _build_workbook(qs, qs_stats):
                 name,
                 op.get_anesthesia_display() if op.anesthesia else '—',
                 op.complication or '—',
+                _pi3.get('status', "To'lanmagan"),
+                _pi3.get('paid') or '',
+                _pi3.get('methods', ''),
+                _pi3.get('discount') or '',
             ]
             for col_num, value in enumerate(op_data, 1):
                 cell = ws3.cell(row=op_row, column=col_num, value=value)
                 cell.alignment = Alignment(vertical='center', wrap_text=True)
                 cell.border = border
+                if col_num == 8:
+                    cell.fill = PatternFill("solid", fgColor=STATUS_COLOR.get(_pi3.get('status_code', 'none'), 'F2F3F4'))
+                if col_num in (9, 11) and isinstance(value, (int, float)) and value:
+                    cell.number_format = '#,##0'
             op_row += 1
 
     if op_row == 2:
         ws3.cell(row=2, column=1, value="Jarrohlik amaliyotlari yo'q")
 
-    op_col_widths = [4, 25, 14, 12, 35, 15, 25]
+    op_col_widths = [4, 25, 14, 12, 35, 15, 25, 18, 16, 18, 14]
     for i, width in enumerate(op_col_widths, 1):
         ws3.column_dimensions[get_column_letter(i)].width = width
 
@@ -480,7 +490,7 @@ def _build_workbook(qs, qs_stats):
                 for col, val in enumerate(vals, 1):
                     ws4.cell(row=r4, column=col).value = val
                 # To'lov holati (col 23-24)
-                _pi = _pay.get(patient.pk, {'status': "Hisob yo'q", 'status_code': 'none', 'paid': 0.0})
+                _pi = _pay.get(patient.pk, {'status': "To'lanmagan", 'status_code': 'none', 'paid': 0.0})
                 _c23 = ws4.cell(row=r4, column=23)
                 _c23.value = _pi['status']
                 _c23.fill = PatternFill('solid', fgColor=STATUS_COLOR.get(_pi['status_code'], 'F2F3F4'))
@@ -668,7 +678,7 @@ def _build_workbook(qs, qs_stats):
         row_data.append(med_total if med_total else '')
         row_data.append(patient_total if patient_total else '')
         # To'lov holati, usuli va chegirma
-        _pi5 = _pay.get(patient.pk, {'status': "Hisob yo'q", 'status_code': 'none', 'paid': 0.0, 'methods': '', 'discount': 0.0})
+        _pi5 = _pay.get(patient.pk, {'status': "To'lanmagan", 'status_code': 'none', 'paid': 0.0, 'methods': '', 'discount': 0.0})
         row_data.append(_pi5['status'])
         row_data.append(_pi5['paid'] if _pi5['paid'] else '')
         row_data.append(_pi5.get('methods', ''))
@@ -722,9 +732,17 @@ def _build_workbook(qs, qs_stats):
     ws6.column_dimensions['F'].width = 20
     ws6.column_dimensions['G'].width = 20
     ws6.column_dimensions['H'].width = 20
+    ws6.column_dimensions['I'].width = 18
+    ws6.column_dimensions['J'].width = 18
+
+    # Har bir tashkilot uchun to'langan summani _pay dan hisoblash
+    _org_paid_map: dict = {}
+    for _p in qs:
+        if _p.workplace_org_id and _p.pk in _pay:
+            _org_paid_map[_p.workplace_org_id] = _org_paid_map.get(_p.workplace_org_id, 0.0) + _pay[_p.pk]['paid']
 
     # Sarlavha
-    ws6.merge_cells('A1:H1')
+    ws6.merge_cells('A1:J1')
     c = ws6.cell(row=1, column=1, value="TASHKILOT BO'YICHA STATISTIKA")
     c.fill = header_fill; c.font = header_font
     c.alignment = center; c.border = border
@@ -733,7 +751,8 @@ def _build_workbook(qs, qs_stats):
     # Ustun sarlavhalar
     h6 = [
         '№', 'Tashkilot', 'Korxona kodi', 'Filial kodi',
-        'Bemorlar', "Bo'lim bo'yicha", 'Tashxis', "Xizmatlar summasi (so'm)"
+        'Bemorlar', "Bo'lim bo'yicha", 'Tashxis', "Xizmatlar summasi (so'm)",
+        "To'langan (so'm)", "Qolgan qarz (so'm)",
     ]
     for col, h in enumerate(h6, 1):
         c = ws6.cell(row=2, column=col, value=h)
@@ -758,6 +777,7 @@ def _build_workbook(qs, qs_stats):
     r6 = 3
     grand_patients = 0
     grand_svc_total = 0
+    grand_paid_total6 = 0.0
 
     for num, org in enumerate(org_qs, 1):
         org_id = org['workplace_org__id']
@@ -776,6 +796,11 @@ def _build_workbook(qs, qs_stats):
         ).aggregate(t=Sum(_pxq_s6))['t'] or 0
         svc_total = float(svc_total)
         grand_svc_total += svc_total
+
+        # To'langan summa (oldindan hisoblangan _org_paid_map dan)
+        org_paid = _org_paid_map.get(org_id, 0.0)
+        org_qolgan = max(0.0, svc_total - org_paid)
+        grand_paid_total6 += org_paid
 
         # Bo'lim taqsimoti
         dept_dist = list(
@@ -803,18 +828,24 @@ def _build_workbook(qs, qs_stats):
             num, full_name,
             org['workplace_org__enterprise_code'] or '—',
             org['workplace_org__branch_code'] or '—',
-            p_count, dept_str, diag_str, svc_total
+            p_count, dept_str, diag_str, svc_total,
+            org_paid if org_paid else '',
+            org_qolgan if org_qolgan else '',
         ]
 
         for col, val in enumerate(row6, 1):
             c = ws6.cell(row=r6, column=col, value=val)
             c.alignment = Alignment(
-                horizontal='right' if col in (5, 8) else 'left',
+                horizontal='right' if col in (5, 8, 9, 10) else 'left',
                 vertical='center', wrap_text=True
             )
             c.border = border
-            if col == 8:
+            if col in (8, 9, 10) and isinstance(val, (int, float)) and val:
                 c.number_format = '#,##0'
+            if col == 9 and isinstance(val, (int, float)) and val:
+                c.fill = PatternFill('solid', fgColor='C6EFCE')
+            if col == 10 and isinstance(val, (int, float)) and val:
+                c.fill = PatternFill('solid', fgColor='FFC7CE')
             if num % 2 == 0 and col < 6:
                 c.fill = PatternFill('solid', fgColor='F8F9FA')
 
@@ -840,10 +871,24 @@ def _build_workbook(qs, qs_stats):
     c8.number_format = '#,##0'
     c8.alignment = Alignment(horizontal='right', vertical='center')
     c8.border = border
+
+    c9 = ws6.cell(row=r6, column=9, value=grand_paid_total6 if grand_paid_total6 else '')
+    c9.fill = header_fill; c9.font = header_font
+    if grand_paid_total6: c9.number_format = '#,##0'
+    c9.alignment = Alignment(horizontal='right', vertical='center')
+    c9.border = border
+
+    grand_qolgan6 = max(0.0, grand_svc_total - grand_paid_total6)
+    c10 = ws6.cell(row=r6, column=10, value=grand_qolgan6 if grand_qolgan6 else '')
+    c10.fill = header_fill; c10.font = header_font
+    if grand_qolgan6: c10.number_format = '#,##0'
+    c10.alignment = Alignment(horizontal='right', vertical='center')
+    c10.border = border
+
     ws6.row_dimensions[r6].height = 25
 
     if r6 == 3:
-        ws6.merge_cells('A3:H3')
+        ws6.merge_cells('A3:J3')
         ws6.cell(row=3, column=1,
                  value="Tashkilotga biriktirilgan bemorlar yo'q").border = border
 

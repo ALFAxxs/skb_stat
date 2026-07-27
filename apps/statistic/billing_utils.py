@@ -8,7 +8,7 @@ STATUS_DISPLAY = {
     'partial':   "Qisman to'langan",
     'paid':      "To'liq to'langan",
     'cancelled': "Bekor qilingan",
-    'none':      "Hisob yo'q",
+    'none':      "To'lanmagan",   # invoice yo'q = to'lanmagan
 }
 
 # openpyxl PatternFill uchun fgColor kodlari
