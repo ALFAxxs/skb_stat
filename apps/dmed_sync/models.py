@@ -83,6 +83,11 @@ class DMEDSyncRecord(models.Model):
         self.error  = error[:2000]
         self.save(update_fields=['status', 'error'])
 
+    def mark_skip(self, reason: str = ''):
+        self.status = self.STATUS_SKIP
+        self.error  = reason[:2000]
+        self.save(update_fields=['status', 'error'])
+
     @classmethod
     def enqueue(cls, entity_type: str, entity_id: int, entity_repr: str = '') -> 'DMEDSyncRecord':
         """Mavjud bo'lsa qayta pending ga tushiradi, yo'qsa yangi yaratadi."""

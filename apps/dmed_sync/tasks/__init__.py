@@ -47,13 +47,18 @@ async def _run_one(record: DMEDSyncRecord):
             elif record.entity_type == DMEDSyncRecord.ENTITY_VISIT:
                 from apps.patients.models import PatientCard
                 from .visit import sync_visit
-                # attending_doctor va xizmatlarni oldindan yuklash
                 obj = await sync_to_async(
                     lambda: PatientCard.objects
                     .select_related('attending_doctor')
                     .prefetch_related('patient_services__service')
                     .get(pk=record.entity_id)
                 )()
+                jshshir = (obj.JSHSHIR or '').strip()
+                if not jshshir or len(jshshir) != 14 or not jshshir.isdigit():
+                    await sync_to_async(record.mark_skip)(
+                        f"JSHSHIR (PINFL) yo'q — bemor #{obj.pk} {obj.full_name}"
+                    )
+                    return
                 dmed_id = await sync_visit(page, obj)
 
             elif record.entity_type == DMEDSyncRecord.ENTITY_SERVICE:

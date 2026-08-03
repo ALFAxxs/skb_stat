@@ -11,20 +11,29 @@ Oqim:
 
 Settings (conf/settings.py):
   DMED_SERVICE_CATEGORY_MAP = {
-      'inpatient':  '2073',  # Kasalxona 🛏
-      'ambulatory': '1859',  # Maslahatlar 🩺
+      'inpatient':  '2073',  # Kasalxona
+      'ambulatory': '1859',  # Maslahatlar
   }
 """
 import logging
+from asgiref.sync import sync_to_async
 from playwright.async_api import Page
 
 logger = logging.getLogger('dmed_sync')
 
-# DMED radio value → xizmat kategoriyasi
 DEFAULT_CATEGORY_MAP = {
-    'inpatient':  '2073',  # Kasalxona 🛏
-    'ambulatory': '1859',  # Maslahatlar 🩺
+    'inpatient':  '2073',
+    'ambulatory': '1859',
 }
+
+
+async def _wait_for_page_ready(page: Page, timeout: int = 10_000):
+    """Sahifa networkidle ga o'rniga aktiv so'rovlar tugashini kutadi."""
+    try:
+        await page.wait_for_load_state('domcontentloaded', timeout=timeout)
+    except Exception:
+        pass
+    await page.wait_for_timeout(800)
 
 
 async def _select_price_category(page: Page):
@@ -34,47 +43,52 @@ async def _select_price_category(page: Page):
     ).first
     await price_input.wait_for(state='visible', timeout=10_000)
     await price_input.click()
+    await page.wait_for_timeout(500)
 
     first_opt = page.locator(
         '.el-select-dropdown:not([style*="display: none"]) .el-select-dropdown__item'
     ).first
-    await first_opt.wait_for(state='visible', timeout=10_000)
+    await first_opt.wait_for(state='visible', timeout=8_000)
     await first_opt.click()
+    await page.wait_for_timeout(300)
 
 
 async def _select_service_radio(page: Page, radio_value: str):
     """Xizmat kategoriyasi radio tugmasini JS orqali bosadi (Element UI)."""
-    await page.evaluate(
-        f'document.querySelector(\'input.el-radio__original[value="{radio_value}"]\').click()'
-    )
-    # Xizmatlar ro'yxati yuklanishini kutish
-    await page.wait_for_load_state('networkidle', timeout=10_000)
+    try:
+        await page.evaluate(
+            f'document.querySelector(\'input.el-radio__original[value="{radio_value}"]\').click()'
+        )
+    except Exception as exc:
+        logger.warning(f'Radio value {radio_value} topilmadi: {exc}')
+    await page.wait_for_timeout(1500)
 
 
 async def _select_doctor(page: Page, doctor_name: str):
     """Shifokorni izlash — ism bo'yicha qidiradi va birinchi natijani tanlaydi."""
-    doctor_input = page.locator('.create-appointment__select-doctor .el-select__input')
-    await doctor_input.wait_for(state='visible', timeout=10_000)
-    await doctor_input.click()
-    await doctor_input.type(doctor_name[:15], delay=60)  # 15 harf qidiruv uchun yetarli
+    try:
+        doctor_input = page.locator('.create-appointment__select-doctor .el-select__input')
+        await doctor_input.wait_for(state='visible', timeout=8_000)
+        await doctor_input.click()
+        await doctor_input.type(doctor_name[:15], delay=60)
+        await page.wait_for_timeout(1000)
 
-    first_opt = page.locator(
-        '.el-select-dropdown:not([style*="display: none"]) .el-select-dropdown__item'
-    ).first
-    await first_opt.wait_for(state='visible', timeout=10_000)
-    await first_opt.click()
+        first_opt = page.locator(
+            '.el-select-dropdown:not([style*="display: none"]) .el-select-dropdown__item'
+        ).first
+        await first_opt.wait_for(state='visible', timeout=6_000)
+        await first_opt.click()
+        await page.wait_for_timeout(500)
+    except Exception as exc:
+        logger.warning(f"Shifokor '{doctor_name}' DMED da topilmadi: {exc}")
 
 
 async def _select_services(page: Page, service_names: list[str]):
-    """
-    Xizmatlar checkboxlarini nomlar bo'yicha tanlaydi.
-    Mos kelmaganlarni o'tkazib yuboradi.
-    """
+    """Xizmatlar checkboxlarini nomlar bo'yicha tanlaydi."""
     if not service_names:
         return
 
     for name in service_names:
-        # Xizmat nomi bo'yicha label topish (qisman moslik)
         checkbox_label = page.locator(
             f'.appointment-service-list .el-checkbox__label:has-text("{name[:20]}")'
         ).first
@@ -96,22 +110,24 @@ async def sync_visit(page: Page, patient) -> str:
     category_map = getattr(settings, 'DMED_SERVICE_CATEGORY_MAP', DEFAULT_CATEGORY_MAP)
 
     jshshir = (patient.JSHSHIR or '').strip()
-    if not jshshir or len(jshshir) != 14:
+    if not jshshir or len(jshshir) != 14 or not jshshir.isdigit():
         raise ValueError(f"Bemor #{patient.pk} JSHSHIR yo'q: '{jshshir}'")
 
     # ── 1. Sahifani ochish ─────────────────────────────────────────────────
     await page.goto(
         f"{DMED_URL}/appointments/create",
-        wait_until='networkidle',
-        timeout=20_000,
+        wait_until='domcontentloaded',
+        timeout=30_000,
     )
+    await page.wait_for_timeout(1000)
 
     # ── 2. JSHSHIR kiritish va qidirish ───────────────────────────────────
     jshshir_input = page.locator('input[data-maska="##############"]').first
-    await jshshir_input.wait_for(state='visible', timeout=10_000)
+    await jshshir_input.wait_for(state='visible', timeout=12_000)
     await jshshir_input.click()
     await page.keyboard.press('Control+a')
     await page.keyboard.type(jshshir)
+    await page.wait_for_timeout(300)
 
     search_btn = page.locator(
         '.select-patient-form__search-btns .el-button--primary'
@@ -135,7 +151,7 @@ async def sync_visit(page: Page, patient) -> str:
     await _select_price_category(page)
 
     # ── 4. Xizmat kategoriyasi radio ──────────────────────────────────────
-    visit_type = getattr(patient, 'visit_type', 'ambulatory')
+    visit_type = getattr(patient, 'visit_type', 'ambulatory') or 'ambulatory'
     radio_value = category_map.get(visit_type, '1859')
     await _select_service_radio(page, radio_value)
 
@@ -144,40 +160,32 @@ async def sync_visit(page: Page, patient) -> str:
     if patient.attending_doctor:
         doc = patient.attending_doctor
         doctor_name = (
-            doc.get_full_name()
+            doc.get_full_name().strip()
             if hasattr(doc, 'get_full_name')
             else str(doc)
         )
     if doctor_name:
         await _select_doctor(page, doctor_name)
-        # Doctor tanlanib xizmatlar yuklanishini kutish
-        await page.wait_for_load_state('networkidle', timeout=8_000)
+        await page.wait_for_timeout(1000)
 
-    # ── 6. Xizmatlar checkboxlari ─────────────────────────────────────────
-    # __init__.py da prefetch_related qilingan, shuning uchun DB ga qayta murojaat yo'q
-    service_names = []
-    try:
-        from asgiref.sync import sync_to_async
-        ps_list = await sync_to_async(
-            lambda: list(patient.patientservice_set.select_related('service').all())
-        )()
-        for ps in ps_list:
-            if ps.service and ps.service.name:
-                service_names.append(ps.service.name)
-    except Exception:
-        pass
-
+    # ── 6. Xizmatlar — prefetch cache dan (qo'shimcha DB so'rovi yo'q) ────
+    service_names = await sync_to_async(
+        lambda: [
+            ps.service.name
+            for ps in patient.patient_services.all()
+            if ps.service and ps.service.name
+        ]
+    )()
     if service_names:
         await _select_services(page, service_names)
 
     # ── 7. Saqlash ────────────────────────────────────────────────────────
-    # Saqlash tugmasini topish (oxirgi primary tugma, disabled emas)
     save_btn = page.locator(
         'button.el-button--primary:not(.is-plain):not(.is-disabled)'
     ).last
     await save_btn.wait_for(state='visible', timeout=8_000)
     await save_btn.click()
-    await page.wait_for_load_state('networkidle', timeout=15_000)
+    await _wait_for_page_ready(page, timeout=15_000)
 
     # ── 8. DMED dan qabul ID ni olish ─────────────────────────────────────
     dmed_id = ''
@@ -187,7 +195,7 @@ async def sync_visit(page: Page, patient) -> str:
             dmed_id = parts[-1]
 
     logger.info(
-        f"Qabul (bemor #{patient.pk}, {patient.full_name}) DMED'ga yuborildi. "
+        f"Qabul (bemor #{patient.pk}, {patient.full_name}, {visit_type}) DMED'ga yuborildi. "
         f"ID: {dmed_id or '?'} | URL: {page.url}"
     )
     return dmed_id

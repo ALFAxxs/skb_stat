@@ -26,9 +26,10 @@ async def sync_patient(page: Page, patient) -> str:
     # ── 1. Qabul yaratish sahifasini ochish ───────────────────────────────
     await page.goto(
         f"{DMED_URL}/appointments/create",
-        wait_until='networkidle',
-        timeout=20_000,
+        wait_until='domcontentloaded',
+        timeout=30_000,
     )
+    await page.wait_for_timeout(1000)
 
     # "Hujjatlar bo'yicha qidirish" tab default active,
     # "Hujjat turi" = JSHSHIR default tanlangan

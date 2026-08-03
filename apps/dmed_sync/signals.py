@@ -9,17 +9,23 @@ from .models import DMEDSyncRecord
 
 # ─── Bemor kartasi ────────────────────────────────────────────────────────────
 def _enqueue_patient(patient):
-    DMEDSyncRecord.enqueue(
-        entity_type=DMEDSyncRecord.ENTITY_PATIENT,
-        entity_id=patient.pk,
-        entity_repr=patient.full_name,
-    )
-    # Visit ma'lumotlari ham bitta kartada — alohida navbatga
-    DMEDSyncRecord.enqueue(
-        entity_type=DMEDSyncRecord.ENTITY_VISIT,
-        entity_id=patient.pk,
-        entity_repr=f"{patient.full_name} — qabul",
-    )
+    jshshir = (patient.JSHSHIR or '').strip()
+    has_pinfl = len(jshshir) == 14 and jshshir.isdigit()
+
+    if has_pinfl:
+        DMEDSyncRecord.enqueue(
+            entity_type=DMEDSyncRecord.ENTITY_PATIENT,
+            entity_id=patient.pk,
+            entity_repr=patient.full_name,
+        )
+
+    # Faqat JSHSHIR bor va ambulator bemorlar uchun qabul navbatga
+    if has_pinfl and getattr(patient, 'visit_type', '') == 'ambulatory':
+        DMEDSyncRecord.enqueue(
+            entity_type=DMEDSyncRecord.ENTITY_VISIT,
+            entity_id=patient.pk,
+            entity_repr=f"{patient.full_name} — ambulator qabul",
+        )
 
 
 # ─── PatientService (billing app yoki patients) ───────────────────────────────
