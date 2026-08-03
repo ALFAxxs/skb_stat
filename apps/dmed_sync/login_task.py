@@ -100,9 +100,11 @@ async def _login_flow(pinfl: str, attempt_id: int, by_user: str):
                 await browser.close()
                 return
 
-            # ── 4. OTP sahifasini kutish ─────────────────────────────────────
+            # ── 4. OTP sahifasini kutish (hidden bo'lsa ham attached) ─────────
             try:
-                await page.wait_for_selector(OTP_SELECTORS[0], timeout=30_000)
+                await page.wait_for_selector(
+                    OTP_SELECTORS[0], state='attached', timeout=30_000
+                )
             except Exception:
                 pass  # sahifa allaqachon yuklangan bo'lishi mumkin
 
@@ -129,19 +131,41 @@ async def _login_flow(pinfl: str, attempt_id: int, by_user: str):
                 await browser.close()
                 return
 
-            # ── 6. OTP kiritish ──────────────────────────────────────────────
+            # ── 6. OTP kiritish (JS orqali — hidden inputlar uchun) ──────────
             await _set_status(attempt_id, 'submitting')
             try:
-                for i, selector in enumerate(OTP_SELECTORS):
-                    el = await page.wait_for_selector(selector, timeout=5_000)
-                    await el.click()
-                    await page.keyboard.press(str(otp_code[i]))
-                    await page.wait_for_timeout(120)
+                import json as _json
+                otp_json = _json.dumps(otp_code)
+                selectors_json = _json.dumps(OTP_SELECTORS)
 
-                otp_btn = page.locator(OTP_SUBMIT_SELECTOR).last
-                await otp_btn.wait_for(state='visible', timeout=10_000)
-                await otp_btn.click()
-                await page.wait_for_load_state('networkidle', timeout=20_000)
+                # OTP inputlari yashirin bo'lishi mumkin → JS bilan to'g'ridan qiymat
+                await page.evaluate(f"""
+                    (function() {{
+                        const otp = {otp_json};
+                        const sels = {selectors_json};
+                        const setter = Object.getOwnPropertyDescriptor(
+                            window.HTMLInputElement.prototype, 'value'
+                        ).set;
+                        sels.forEach((sel, i) => {{
+                            const el = document.querySelector(sel);
+                            if (!el) return;
+                            setter.call(el, otp[i]);
+                            el.dispatchEvent(new Event('input',  {{bubbles: true}}));
+                            el.dispatchEvent(new Event('change', {{bubbles: true}}));
+                        }});
+                    }})();
+                """)
+                await page.wait_for_timeout(800)
+
+                # Tasdiqlash tugmasi — ikkinchisi yoki birinchisi
+                await page.evaluate("""
+                    (function() {
+                        const btns = document.querySelectorAll('button.login__actions-submit');
+                        (btns[1] || btns[0]).click();
+                    })();
+                """)
+                await page.wait_for_load_state('domcontentloaded', timeout=20_000)
+                await page.wait_for_timeout(2000)
             except Exception as exc:
                 await _set_status(attempt_id, 'failed', f'OTP kiritib bo\'lmadi: {exc}')
                 await browser.close()
