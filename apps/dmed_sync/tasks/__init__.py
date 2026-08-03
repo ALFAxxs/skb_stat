@@ -51,7 +51,7 @@ async def _run_one(record: DMEDSyncRecord):
                 obj = await sync_to_async(
                     lambda: PatientCard.objects
                     .select_related('attending_doctor')
-                    .prefetch_related('patientservice_set__service')
+                    .prefetch_related('patient_services__service')
                     .get(pk=record.entity_id)
                 )()
                 dmed_id = await sync_visit(page, obj)
@@ -93,6 +93,10 @@ async def _run_one(record: DMEDSyncRecord):
 
 def run_pending():
     """Pending yozuvlarni ishlatish — worker thread'dan chaqiriladi."""
+    from django.core.cache import cache
+    if cache.get('dmed_sync_paused'):
+        return
+
     qs = list(
         DMEDSyncRecord.objects.filter(
             status__in=[DMEDSyncRecord.STATUS_PENDING, DMEDSyncRecord.STATUS_FAILED]

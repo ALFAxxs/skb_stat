@@ -2,11 +2,13 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('',              views.monitor,          name='dmed_monitor'),
-    path('status.json',   views.status_json,      name='dmed_status_json'),
-    path('run-now/',      views.run_now,           name='dmed_run_now'),
-    path('retry-all/',    views.retry_all_failed,  name='dmed_retry_all'),
-    path('<int:pk>/retry/', views.retry_record,    name='dmed_retry_record'),
+    path('',                  views.monitor,          name='dmed_monitor'),
+    path('status.json',       views.status_json,      name='dmed_status_json'),
+    path('run-now/',          views.run_now,           name='dmed_run_now'),
+    path('retry-all/',        views.retry_all_failed,  name='dmed_retry_all'),
+    path('pause/',            views.toggle_pause,      name='dmed_toggle_pause'),
+    path('reset-running/',    views.reset_running,     name='dmed_reset_running'),
+    path('<int:pk>/retry/',   views.retry_record,      name='dmed_retry_record'),
 
     # Web-based DMED Login
     path('login/',                   views.dmed_login_page,   name='dmed_login_page'),

@@ -45,9 +45,11 @@ def monitor(request):
     }
 
     from django.conf import settings
+    from django.core.cache import cache
     from .models import DMEDSession
     dmed_enabled = getattr(settings, 'DMED_SYNC_ENABLED', False)
     session      = DMEDSession.get_latest()
+    is_paused    = bool(cache.get('dmed_sync_paused', False))
 
     return render(request, 'dmed_sync/monitor.html', {
         'records':        qs,
@@ -58,6 +60,7 @@ def monitor(request):
         'entity_choices': DMEDSyncRecord.ENTITY_CHOICES,
         'dmed_enabled':   dmed_enabled,
         'session':        session,
+        'is_paused':      is_paused,
     })
 
 
@@ -101,13 +104,42 @@ def run_now(request):
 
 
 @_admin_only
+@require_POST
+def toggle_pause(request):
+    """Sinxronizatsiyani to'xtatish / davom ettirish."""
+    from django.core.cache import cache
+    paused = cache.get('dmed_sync_paused', False)
+    if paused:
+        cache.delete('dmed_sync_paused')
+        messages.success(request, 'Sinxronizatsiya davom ettirildi.')
+    else:
+        cache.set('dmed_sync_paused', True, timeout=86400)
+        messages.warning(request, "Sinxronizatsiya to'xtatildi.")
+    return redirect('dmed_monitor')
+
+
+@_admin_only
+@require_POST
+def reset_running(request):
+    """Qotib qolgan 'Jarayonda' yozuvlarni 'Kutilmoqda' ga qaytarish."""
+    n = DMEDSyncRecord.objects.filter(status=DMEDSyncRecord.STATUS_RUNNING).update(
+        status=DMEDSyncRecord.STATUS_PENDING,
+        error='',
+    )
+    messages.success(request, f"{n} ta 'Jarayonda' yozuv qayta navbatga qo'yildi.")
+    return redirect('dmed_monitor')
+
+
+@_admin_only
 def status_json(request):
     """AJAX — monitoring sahifasi uchun live statistika."""
+    from django.core.cache import cache
     return JsonResponse({
         'pending': DMEDSyncRecord.objects.filter(status=DMEDSyncRecord.STATUS_PENDING).count(),
         'running': DMEDSyncRecord.objects.filter(status=DMEDSyncRecord.STATUS_RUNNING).count(),
         'done':    DMEDSyncRecord.objects.filter(status=DMEDSyncRecord.STATUS_DONE).count(),
         'failed':  DMEDSyncRecord.objects.filter(status=DMEDSyncRecord.STATUS_FAILED).count(),
+        'paused':  bool(cache.get('dmed_sync_paused', False)),
     })
 
 

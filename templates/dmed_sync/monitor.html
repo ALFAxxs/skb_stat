@@ -7,17 +7,35 @@
 
   <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <h4 class="mb-0">🔄 DMED Sinxronizatsiya
-      {% if dmed_enabled %}
+      {% if is_paused %}
+        <span class="badge bg-warning text-dark ms-2">⏸ To'xtatilgan</span>
+      {% elif dmed_enabled %}
         <span class="badge bg-success ms-2">● Faol</span>
       {% else %}
         <span class="badge bg-secondary ms-2">○ O'chirilgan</span>
       {% endif %}
     </h4>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap">
       <form method="post" action="{% url 'dmed_run_now' %}">
         {% csrf_token %}
         <button class="btn btn-primary btn-sm">▶ Hozir ishlatish</button>
       </form>
+      <form method="post" action="{% url 'dmed_toggle_pause' %}">
+        {% csrf_token %}
+        {% if is_paused %}
+          <button class="btn btn-success btn-sm">▶ Davom ettirish</button>
+        {% else %}
+          <button class="btn btn-secondary btn-sm"
+                  onclick="return confirm('Sinxronizatsiyani to\'xtatmoqchimisiz?')">⏸ To'xtatish</button>
+        {% endif %}
+      </form>
+      {% if counts.running > 0 %}
+      <form method="post" action="{% url 'dmed_reset_running' %}"
+            onsubmit="return confirm('{{ counts.running }} ta qotib qolgan yozuvni qayta navbatga qo\'yish?')">
+        {% csrf_token %}
+        <button class="btn btn-outline-primary btn-sm">⟳ Jarayondagilarni reset ({{ counts.running }})</button>
+      </form>
+      {% endif %}
       <form method="post" action="{% url 'dmed_retry_all' %}"
             onsubmit="return confirm('Barcha xato yozuvlarni qayta navbatga qo\'yish?')">
         {% csrf_token %}
