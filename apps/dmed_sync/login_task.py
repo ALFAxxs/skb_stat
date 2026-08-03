@@ -52,7 +52,7 @@ async def _login_flow(pinfl: str, attempt_id: int, by_user: str):
 
     try:
         async with async_playwright() as pw:
-            browser = await pw.chromium.launch(headless=True, slow_mo=150)
+            browser = await pw.chromium.launch(headless=True)
             context = await browser.new_context(
                 viewport={'width': 1280, 'height': 900},
                 locale='ru-RU',
@@ -66,7 +66,8 @@ async def _login_flow(pinfl: str, attempt_id: int, by_user: str):
 
             # ── 1. Login sahifasini ochish ───────────────────────────────────
             await _set_status(attempt_id, 'opening')
-            await page.goto(LOGIN_PAGE_URL, wait_until='networkidle', timeout=30_000)
+            await page.goto(LOGIN_PAGE_URL, wait_until='domcontentloaded', timeout=30_000)
+            await page.wait_for_timeout(1500)
 
             # ── 2. "DMED Pro ilovasi" tabiga bosish ─────────────────────────
             try:

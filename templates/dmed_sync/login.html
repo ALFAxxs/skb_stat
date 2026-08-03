@@ -85,6 +85,8 @@
 const CSRF = '{{ csrf_token }}';
 let attemptId = null;
 let pollTimer = null;
+let pollCount = 0;
+const POLL_TIMEOUT = 90; // 90 * 2s = 3 daqiqa
 
 const $ = id => document.getElementById(id);
 
@@ -181,7 +183,16 @@ const STATUS_LABELS = {
 };
 
 function startPolling() {
+  pollCount = 0;
   pollTimer = setInterval(async () => {
+    pollCount++;
+    if (pollCount > POLL_TIMEOUT) {
+      clearInterval(pollTimer);
+      $('status-spinner').classList.add('d-none');
+      $('error-text').textContent = 'Javob kelmadi (3 daqiqa). Celery worker ishlamasligi mumkin. Sahifani yangilab qayta urinib ko\'ring.';
+      $('status-failed').classList.remove('d-none');
+      return;
+    }
     try {
       const resp = await fetch(`/dmed/login/${attemptId}/status/`);
       const data = await resp.json();
