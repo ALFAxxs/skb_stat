@@ -12,7 +12,6 @@ Jarayon:
 import asyncio
 import logging
 
-from asgiref.sync import sync_to_async
 from celery import shared_task
 
 logger = logging.getLogger('dmed_sync')
@@ -30,20 +29,29 @@ OTP_SELECTORS        = [
 OTP_SUBMIT_SELECTOR  = 'button.login__actions-submit'
 
 
-@shared_task(bind=True, time_limit=300, soft_time_limit=270,
+@shared_task(bind=True, time_limit=660, soft_time_limit=600,
              name='dmed_sync.web_login', max_retries=0)
 def dmed_web_login_task(self, pinfl: str, attempt_id: int, by_user: str = 'admin'):
     """Web UI orqali DMED login — headless Playwright."""
+    from django.db import close_old_connections
+    close_old_connections()  # Fork dan keyin eskirgan DB ulanishlarni tozalash
     asyncio.run(_login_flow(pinfl, attempt_id, by_user))
 
 
 async def _set_status(attempt_id: int, status: str, error: str = ''):
-    from .models import DMEDLoginAttempt
-    await sync_to_async(
-        lambda: DMEDLoginAttempt.objects.filter(pk=attempt_id).update(
+    """DB holatini yangilash — run_in_executor orqali (thread deadlock yoq)."""
+    from django.db import close_old_connections
+
+    def _update():
+        close_old_connections()
+        from .models import DMEDLoginAttempt
+        n = DMEDLoginAttempt.objects.filter(pk=attempt_id).update(
             status=status, error=error
         )
-    )()
+        logger.info(f'_set_status #{attempt_id} → {status} ({n} row updated)')
+
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, _update)
 
 
 async def _login_flow(pinfl: str, attempt_id: int, by_user: str):
@@ -100,15 +108,19 @@ async def _login_flow(pinfl: str, attempt_id: int, by_user: str):
 
             await _set_status(attempt_id, 'waiting_otp')
 
-            # ── 5. Frontend dan OTP ni kutish (max 3 daqiqa) ────────────────
+            # ── 5. Frontend dan OTP ni kutish (max 5 daqiqa) ────────────────
+            def _get_otp():
+                from django.db import close_old_connections
+                close_old_connections()
+                from .models import DMEDLoginAttempt as _M
+                row = _M.objects.values('otp_code').filter(pk=attempt_id).first()
+                return row.get('otp_code', '') if row else ''
+
             otp_code = ''
-            for _ in range(90):
-                row = await sync_to_async(
-                    lambda: DMEDLoginAttempt.objects.values('otp_code')
-                            .filter(pk=attempt_id).first()
-                )()
-                if row and row.get('otp_code'):
-                    otp_code = row['otp_code']
+            loop2 = asyncio.get_event_loop()
+            for _ in range(150):   # 150 × 2s = 5 daqiqa
+                otp_code = await loop2.run_in_executor(None, _get_otp)
+                if otp_code:
                     break
                 await asyncio.sleep(2)
 
@@ -139,7 +151,13 @@ async def _login_flow(pinfl: str, attempt_id: int, by_user: str):
             storage_state = await context.storage_state()
             await browser.close()
 
-            await sync_to_async(DMEDSession.save_state)(storage_state, logged_in_by=by_user)
+            def _save_session():
+                from django.db import close_old_connections
+                close_old_connections()
+                from .models import DMEDSession as _S
+                _S.save_state(storage_state, logged_in_by=by_user)
+
+            await loop2.run_in_executor(None, _save_session)
             await _set_status(attempt_id, 'done')
             logger.info(f'DMED web login muvaffaqiyatli — {by_user}')
 
