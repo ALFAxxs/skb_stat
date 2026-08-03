@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% block title %}Bemorlarni sync navbatiga qo'shish{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <a href="{% url 'dmed_monitor' %}" class="text-muted text-decoration-none">← Monitor</a>
+    <span class="text-muted">/</span>
+    <h5 class="mb-0">Bemorlarni DMED sync navbatiga qo'shish</h5>
+  </div>
+
+  <!-- Filtr -->
+  <form method="get" class="card shadow-sm border-0 mb-3">
+    <div class="card-body py-3 d-flex flex-wrap gap-3 align-items-end">
+      <div>
+        <label class="form-label small fw-semibold mb-1">Sana (qabul qilingan)</label>
+        <input type="date" name="date" value="{{ date_str }}"
+               class="form-control form-control-sm" style="width:160px;">
+      </div>
+      <div>
+        <label class="form-label small fw-semibold mb-1">Tashrif turi</label>
+        <select name="visit_type" class="form-select form-select-sm" style="width:180px;">
+          <option value="">— Barchasi —</option>
+          <option value="ambulatory" {% if visit_type == 'ambulatory' %}selected{% endif %}>Ambulator</option>
+          <option value="inpatient"  {% if visit_type == 'inpatient' %}selected{% endif %}>Statsionar</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">Qidirish</button>
+    </div>
+  </form>
+
+  {% if rows %}
+  <!-- Tanlash paneli -->
+  <form method="post" action="{% url 'dmed_enqueue_patients_run' %}" id="enqueue-form">
+    {% csrf_token %}
+
+    <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+      <div class="text-muted small">
+        Jami: <strong>{{ total }}</strong> bemor (JSHSHIR bor)
+        <span id="sel-info" class="ms-2 text-primary fw-semibold d-none">
+          — <span id="sel-count">0</span> ta tanlandi
+        </span>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleAll(true)">Barchasini belgilash</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleAll(false)">Bekor qilish</button>
+        <button type="submit" id="btn-enqueue" class="btn btn-success btn-sm" disabled
+                onclick="return confirm(document.getElementById('sel-count').textContent + ' ta bemorni sync navbatiga qo\'yish?')">
+          ▶ Navbatga qo'shish
+        </button>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0" style="font-size:.85rem;">
+          <thead class="table-light">
+            <tr>
+              <th style="width:36px;">
+                <input type="checkbox" id="check-all" title="Barchasini belgilash">
+              </th>
+              <th>Ism-sharif</th>
+              <th>JSHSHIR</th>
+              <th>Tashrif turi</th>
+              <th>Qabul sanasi</th>
+              <th>Shifokor</th>
+              <th>DMED holati</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+            {% with p=row.patient s=row.sync %}
+            <tr class="{% if s and s.status == 'done' %}table-success{% elif s and s.status == 'failed' %}table-danger{% elif s and s.status == 'running' %}table-info{% endif %}">
+              <td>
+                <input type="checkbox" name="pks" value="{{ p.pk }}" class="row-check"
+                       {% if s and s.status == 'done' %}{% endif %}>
+              </td>
+              <td class="fw-semibold">{{ p.full_name }}</td>
+              <td class="font-monospace small">{{ p.JSHSHIR }}</td>
+              <td>
+                <span class="badge {% if p.visit_type == 'ambulatory' %}bg-info text-dark{% else %}bg-secondary{% endif %}">
+                  {{ p.get_visit_type_display }}
+                </span>
+              </td>
+              <td class="small text-nowrap">{{ p.admission_date|date:"d.m.Y H:i" }}</td>
+              <td class="small">{{ p.attending_doctor|default:"—" }}</td>
+              <td>
+                {% if s %}
+                  <span class="badge
+                    {% if s.status == 'done' %}bg-success
+                    {% elif s.status == 'failed' %}bg-danger
+                    {% elif s.status == 'running' %}bg-primary
+                    {% elif s.status == 'skipped' %}bg-secondary
+                    {% else %}bg-warning text-dark{% endif %}">
+                    {{ s.get_status_display }}
+                  </span>
+                  {% if s.dmed_id %}
+                    <span class="text-success small ms-1">ID: {{ s.dmed_id }}</span>
+                  {% endif %}
+                  {% if s.status == 'failed' and s.error %}
+                    <div class="text-danger small" style="max-width:200px;word-break:break-all;">
+                      {{ s.error|truncatechars:80 }}
+                    </div>
+                  {% endif %}
+                {% else %}
+                  <span class="text-muted small">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endwith %}
+            {% empty %}
+            <tr><td colspan="7" class="text-center text-muted py-4">Bemor topilmadi</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </form>
+
+  {% elif date_str or visit_type %}
+  <div class="alert alert-warning">
+    Filtr bo'yicha JSHSHIR bor bemor topilmadi.
+  </div>
+  {% else %}
+  <div class="alert alert-info">
+    Yuqoridagi filtr orqali bemorlarni qidiring.
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+const checkAll = document.getElementById('check-all');
+const btnEnqueue = document.getElementById('btn-enqueue');
+const selInfo = document.getElementById('sel-info');
+const selCount = document.getElementById('sel-count');
+
+function updateSel() {
+  const n = document.querySelectorAll('.row-check:checked').length;
+  selCount.textContent = n;
+  if (n > 0) {
+    selInfo.classList.remove('d-none');
+    btnEnqueue.disabled = false;
+  } else {
+    selInfo.classList.add('d-none');
+    btnEnqueue.disabled = true;
+  }
+  if (checkAll) {
+    const total = document.querySelectorAll('.row-check').length;
+    checkAll.checked = n > 0 && n === total;
+    checkAll.indeterminate = n > 0 && n < total;
+  }
+}
+
+function toggleAll(state) {
+  document.querySelectorAll('.row-check').forEach(c => c.checked = state);
+  if (checkAll) checkAll.checked = state;
+  updateSel();
+}
+
+if (checkAll) {
+  checkAll.addEventListener('change', function() {
+    toggleAll(this.checked);
+  });
+}
+document.querySelectorAll('.row-check').forEach(c =>
+  c.addEventListener('change', updateSel)
+);
+</script>
+{% endblock %}

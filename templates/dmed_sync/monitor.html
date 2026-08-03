@@ -41,6 +41,9 @@
         {% csrf_token %}
         <button class="btn btn-warning btn-sm">↩ Xatolarni qayta yuborish</button>
       </form>
+      <a href="{% url 'dmed_enqueue_patients' %}" class="btn btn-outline-success btn-sm">
+        ＋ Bemorlardan qo'shish
+      </a>
     </div>
   </div>
 
@@ -139,12 +142,29 @@
     </div>
   </form>
 
+  <!-- Belgilangan yozuvlarni sync qilish paneli -->
+  <form method="post" action="{% url 'dmed_sync_selected' %}" id="select-sync-form">
+    {% csrf_token %}
+    <div id="selection-bar" class="d-none alert alert-info py-2 d-flex align-items-center gap-3 mb-2">
+      <strong id="selected-count">0</strong> ta yozuv tanlandi.
+      <button type="submit" class="btn btn-sm btn-primary ms-2"
+              onclick="return confirm('Tanlangan yozuvlarni sync navbatiga qo\'yish?')">
+        ▶ Tanlanganlarni sync qilish
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearAll()">
+        ✕ Bekor qilish
+      </button>
+    </div>
+
   <!-- Jadval -->
   <div class="card shadow-sm">
     <div class="table-responsive">
       <table class="table table-sm table-hover align-middle mb-0" style="font-size:.85rem;">
         <thead class="table-light">
           <tr>
+            <th style="width:36px;">
+              <input type="checkbox" id="check-all" title="Barchasini belgilash">
+            </th>
             <th>ID</th>
             <th>Tur</th>
             <th>Tavsif</th>
@@ -160,6 +180,9 @@
         <tbody>
           {% for r in records %}
           <tr class="{% if r.status == 'failed' %}table-danger{% elif r.status == 'done' %}table-success{% elif r.status == 'running' %}table-info{% endif %}">
+            <td>
+              <input type="checkbox" name="pks" value="{{ r.pk }}" class="row-check">
+            </td>
             <td class="text-muted">{{ r.pk }}</td>
             <td><span class="badge bg-secondary">{{ r.get_entity_type_display }}</span></td>
             <td>{{ r.entity_repr|default:"—"|truncatechars:50 }}</td>
@@ -190,28 +213,60 @@
             </td>
           </tr>
           {% empty %}
-          <tr><td colspan="10" class="text-center text-muted py-4">Yozuvlar yo'q</td></tr>
+          <tr><td colspan="11" class="text-center text-muted py-4">Yozuvlar yo'q</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
   </div>
+  </form>
 
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-// Har 15 soniyada statistika yangilanadi
+// ── Checkbox tanlash ─────────────────────────────────────────────────────────
+const checkAll  = document.getElementById('check-all');
+const selBar    = document.getElementById('selection-bar');
+const selCount  = document.getElementById('selected-count');
+
+function updateBar() {
+  const checked = document.querySelectorAll('.row-check:checked');
+  const n = checked.length;
+  selCount.textContent = n;
+  if (n > 0) {
+    selBar.classList.remove('d-none');
+    selBar.classList.add('d-flex');
+  } else {
+    selBar.classList.add('d-none');
+    selBar.classList.remove('d-flex');
+  }
+}
+
+function clearAll() {
+  document.querySelectorAll('.row-check').forEach(c => c.checked = false);
+  if (checkAll) checkAll.checked = false;
+  updateBar();
+}
+
+if (checkAll) {
+  checkAll.addEventListener('change', function() {
+    document.querySelectorAll('.row-check').forEach(c => c.checked = this.checked);
+    updateBar();
+  });
+}
+document.querySelectorAll('.row-check').forEach(c =>
+  c.addEventListener('change', updateBar)
+);
+
+// ── Avtomatik yangilash ──────────────────────────────────────────────────────
 (function () {
   function refresh() {
     fetch("{% url 'dmed_status_json' %}")
       .then(r => r.json())
       .then(d => {
-        // Sahifani to'liq reload qilish o'rniga faqat son'larni yangilaymiz
-        // (oddiy yondashuv)
         if (d.running > 0 || d.pending > 0) {
-          // Jarayon davom etyapti — avtomatik reload
           setTimeout(() => location.reload(), 5000);
         }
       }).catch(() => {});

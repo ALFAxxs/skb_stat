@@ -105,6 +105,93 @@ def run_now(request):
 
 @_admin_only
 @require_POST
+def sync_selected(request):
+    """POST: Belgilangan DMEDSyncRecord larni darhol pending ga o'tkazish."""
+    raw_pks = request.POST.getlist('pks')
+    pks = [int(pk) for pk in raw_pks if pk.isdigit()]
+    if not pks:
+        messages.warning(request, 'Hech narsa tanlanmadi.')
+        return redirect('dmed_monitor')
+    n = DMEDSyncRecord.objects.filter(pk__in=pks).update(
+        status=DMEDSyncRecord.STATUS_PENDING,
+        attempts=0,
+        error='',
+    )
+    messages.success(request, f'{n} ta yozuv sync navbatiga qo\'yildi.')
+    return redirect('dmed_monitor')
+
+
+@_admin_only
+def enqueue_patients_page(request):
+    """GET: PatientCard larni filterlash va sync navbatiga qo'shish."""
+    from apps.patients.models import PatientCard
+    date_str   = request.GET.get('date', '')
+    visit_type = request.GET.get('visit_type', 'ambulatory')
+
+    qs = PatientCard.objects.select_related('attending_doctor').filter(
+        JSHSHIR__regex=r'^\d{14}$'
+    )
+    if visit_type:
+        qs = qs.filter(visit_type=visit_type)
+    if date_str:
+        try:
+            from datetime import datetime
+            d = datetime.strptime(date_str, '%Y-%m-%d').date()
+            qs = qs.filter(admission_date__date=d)
+        except ValueError:
+            pass
+    qs = qs.order_by('-admission_date')[:500]
+
+    # Har bir bemor uchun oxirgi DMED sync holati
+    pks = [p.pk for p in qs]
+    sync_map = {
+        r.entity_id: r
+        for r in DMEDSyncRecord.objects.filter(
+            entity_type=DMEDSyncRecord.ENTITY_VISIT,
+            entity_id__in=pks,
+        )
+    }
+
+    rows = [{'patient': p, 'sync': sync_map.get(p.pk)} for p in qs]
+
+    return render(request, 'dmed_sync/enqueue_patients.html', {
+        'rows':       rows,
+        'date_str':   date_str,
+        'visit_type': visit_type,
+        'total':      len(rows),
+    })
+
+
+@_admin_only
+@require_POST
+def enqueue_patients_run(request):
+    """POST: Tanlangan PatientCard larni DMED ENTITY_VISIT navbatiga qo'shish."""
+    raw_pks = request.POST.getlist('pks')
+    pks = [int(pk) for pk in raw_pks if pk.isdigit()]
+    if not pks:
+        messages.warning(request, 'Hech narsa tanlanmadi.')
+        return redirect('dmed_enqueue_patients')
+
+    from apps.patients.models import PatientCard
+    patients = PatientCard.objects.filter(pk__in=pks)
+    count = 0
+    for p in patients:
+        jshshir = (p.JSHSHIR or '').strip()
+        if len(jshshir) != 14 or not jshshir.isdigit():
+            continue
+        vt = p.visit_type or 'ambulatory'
+        DMEDSyncRecord.enqueue(
+            entity_type=DMEDSyncRecord.ENTITY_VISIT,
+            entity_id=p.pk,
+            entity_repr=f"{p.full_name} — {p.get_visit_type_display()}",
+        )
+        count += 1
+    messages.success(request, f'{count} ta bemor DMED sync navbatiga qo\'yildi.')
+    return redirect('dmed_monitor')
+
+
+@_admin_only
+@require_POST
 def toggle_pause(request):
     """Sinxronizatsiyani to'xtatish / davom ettirish."""
     from django.core.cache import cache
