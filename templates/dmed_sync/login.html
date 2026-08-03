@@ -81,6 +81,39 @@
 
 </div>
 
+<!-- ── Qo'lda yuklash (lokal kompyuterdan) ──────────────────────────────── -->
+<div class="card shadow-sm border-0 mt-4">
+  <div class="card-body p-4">
+    <h6 class="card-title mb-1">Yoki: sessiyani qo'lda yuklash</h6>
+    <p class="text-muted small mb-3">
+      Lokal kompyuterda <code>python dmed_export_session.py</code> ni ishga tushiring,
+      keyin hosil bo'lgan <code>dmed_session.json</code> faylini tanlang yoki ichidagi JSON ni joylashtiring.
+    </p>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold">JSON fayl (dmed_session.json)</label>
+      <input type="file" id="session-file" class="form-control" accept=".json">
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label text-muted small">Yoki JSON matnini to'g'ridan joylashtiring</label>
+      <textarea id="session-json" class="form-control font-monospace"
+                rows="4" placeholder='{"cookies": [...], "origins": [...]}'
+                style="font-size:0.75rem;"></textarea>
+    </div>
+
+    <div id="import-error" class="text-danger small mb-2 d-none"></div>
+    <div id="import-ok" class="alert alert-success d-none">
+      ✅ Session muvaffaqiyatli yuklandi! Sinxronizatsiya ishlay boshlaydi.
+      <br><a href="{% url 'dmed_monitor' %}" class="alert-link">Monitor →</a>
+    </div>
+
+    <button id="btn-import" class="btn btn-outline-primary">
+      Sessiyani yuklash
+    </button>
+  </div>
+</div>
+
 <script>
 const CSRF = '{{ csrf_token }}';
 let attemptId = null;
@@ -170,6 +203,58 @@ $('btn-send-otp').addEventListener('click', async () => {
     $('btn-send-otp').disabled = false;
     $('btn-send-otp').textContent = 'Tasdiqlash';
   }
+});
+
+// ── Fayl tanlash → textarea ga o'qish ────────────────────────────────────
+$('session-file').addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => { $('session-json').value = e.target.result; };
+  reader.readAsText(file);
+});
+
+// ── Sessiyani yuklash ─────────────────────────────────────────────────────
+$('btn-import').addEventListener('click', async () => {
+  const raw = $('session-json').value.trim();
+  $('import-error').classList.add('d-none');
+  $('import-ok').classList.add('d-none');
+
+  if (!raw) {
+    $('import-error').textContent = 'JSON bo\'sh — fayl tanlang yoki JSON joylashtiring';
+    $('import-error').classList.remove('d-none');
+    return;
+  }
+
+  try { JSON.parse(raw); }
+  catch(e) {
+    $('import-error').textContent = 'JSON format xato: ' + e.message;
+    $('import-error').classList.remove('d-none');
+    return;
+  }
+
+  $('btn-import').disabled = true;
+  $('btn-import').textContent = 'Yuklanmoqda...';
+
+  const fd = new FormData();
+  fd.append('session_json', raw);
+  fd.append('csrfmiddlewaretoken', CSRF);
+
+  try {
+    const resp = await fetch("{% url 'dmed_session_import' %}", {method:'POST', body: fd});
+    const data = await resp.json();
+    if (data.ok) {
+      $('import-ok').classList.remove('d-none');
+    } else {
+      $('import-error').textContent = data.error || 'Xato yuz berdi';
+      $('import-error').classList.remove('d-none');
+    }
+  } catch(e) {
+    $('import-error').textContent = 'Serverga ulanib bo\'lmadi';
+    $('import-error').classList.remove('d-none');
+  }
+  $('btn-import').disabled = false;
+  $('btn-import').textContent = 'Sessiyani yuklash';
 });
 
 // ── Polling: holat tekshirish ─────────────────────────────────────────────────

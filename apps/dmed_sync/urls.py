@@ -13,4 +13,5 @@ urlpatterns = [
     path('login/start/',             views.dmed_login_start,  name='dmed_login_start'),
     path('login/<int:pk>/status/',   views.dmed_login_status, name='dmed_login_status'),
     path('login/<int:pk>/otp/',      views.dmed_login_otp,    name='dmed_login_otp'),
+    path('login/import/',            views.dmed_session_import, name='dmed_session_import'),
 ]

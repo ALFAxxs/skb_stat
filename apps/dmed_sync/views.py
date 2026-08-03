@@ -2,6 +2,7 @@
 DMED Sync monitoring paneli — admin uchun.
 """
 import asyncio
+import json
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -157,4 +158,28 @@ def dmed_login_otp(request, pk):
 
     attempt.otp_code = otp
     attempt.save(update_fields=['otp_code'])
+    return JsonResponse({'ok': True})
+
+
+@_admin_only
+@require_POST
+def dmed_session_import(request):
+    """POST: Lokal kompyuterdan eksport qilingan session JSON ni saqlash."""
+    raw = request.POST.get('session_json', '').strip()
+    if not raw:
+        return JsonResponse({'ok': False, 'error': 'JSON bo\'sh'})
+
+    try:
+        state = json.loads(raw)
+    except json.JSONDecodeError as e:
+        return JsonResponse({'ok': False, 'error': f'JSON format xato: {e}'})
+
+    if not isinstance(state, dict) or 'cookies' not in state:
+        return JsonResponse({
+            'ok': False,
+            'error': "Noto'g'ri format — Playwright storage_state (cookies + origins) kutilmoqda"
+        })
+
+    from .models import DMEDSession
+    DMEDSession.save_state(state, logged_in_by=request.user.username)
     return JsonResponse({'ok': True})
