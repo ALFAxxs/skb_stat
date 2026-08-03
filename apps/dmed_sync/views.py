@@ -10,7 +10,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_POST
 from django.shortcuts import render
 
-from .models import DMEDSyncRecord
+from .models import DMEDSyncRecord, DMEDLoginAttempt
 
 
 def _admin_only(view_fn):
@@ -108,3 +108,53 @@ def status_json(request):
         'done':    DMEDSyncRecord.objects.filter(status=DMEDSyncRecord.STATUS_DONE).count(),
         'failed':  DMEDSyncRecord.objects.filter(status=DMEDSyncRecord.STATUS_FAILED).count(),
     })
+
+
+# ─── Web-based DMED Login ─────────────────────────────────────────────────────
+
+@_admin_only
+def dmed_login_page(request):
+    """DMED Login sahifasi — PINFL va OTP kiritish."""
+    from .models import DMEDSession
+    session = DMEDSession.get_latest()
+    return render(request, 'dmed_sync/login.html', {'session': session})
+
+
+@_admin_only
+def dmed_login_start(request):
+    """POST: PINFL bilan login boshlash → Celery task ishga tushiradi."""
+    if request.method != 'POST':
+        return JsonResponse({'ok': False})
+
+    pinfl = request.POST.get('pinfl', '').strip()
+    if not pinfl or len(pinfl) != 14 or not pinfl.isdigit():
+        return JsonResponse({'ok': False, 'error': "PINFL 14 ta raqamdan iborat bo'lishi kerak"})
+
+    attempt = DMEDLoginAttempt.objects.create()
+    from .login_task import dmed_web_login_task
+    dmed_web_login_task.delay(pinfl, attempt.id, by_user=request.user.username)
+    return JsonResponse({'ok': True, 'attempt_id': attempt.id})
+
+
+@_admin_only
+def dmed_login_status(request, pk):
+    """GET: Login jarayoni holati (polling uchun)."""
+    attempt = get_object_or_404(DMEDLoginAttempt, pk=pk)
+    return JsonResponse({'status': attempt.status, 'error': attempt.error})
+
+
+@_admin_only
+@require_POST
+def dmed_login_otp(request, pk):
+    """POST: SMS OTP kodni yuborish → task ni davom ettiradi."""
+    attempt = get_object_or_404(DMEDLoginAttempt, pk=pk)
+    if attempt.status != DMEDLoginAttempt.ST_WAIT_OTP:
+        return JsonResponse({'ok': False, 'error': 'SMS kod hali kutilmayapti'})
+
+    otp = request.POST.get('otp', '').strip()
+    if not otp or len(otp) != 5 or not otp.isdigit():
+        return JsonResponse({'ok': False, 'error': '5 ta raqamdan iborat kod kiriting'})
+
+    attempt.otp_code = otp
+    attempt.save(update_fields=['otp_code'])
+    return JsonResponse({'ok': True})

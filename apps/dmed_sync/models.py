@@ -98,6 +98,39 @@ class DMEDSyncRecord(models.Model):
         return obj
 
 
+class DMEDLoginAttempt(models.Model):
+    """Web UI orqali DMED login jarayonini kuzatish."""
+
+    ST_STARTED      = 'started'
+    ST_OPENING      = 'opening'
+    ST_WAIT_OTP     = 'waiting_otp'
+    ST_SUBMITTING   = 'submitting'
+    ST_DONE         = 'done'
+    ST_FAILED       = 'failed'
+
+    STATUS_CHOICES = [
+        (ST_STARTED,    'Boshlandi'),
+        (ST_OPENING,    'Brauzer ochilmoqda'),
+        (ST_WAIT_OTP,   'SMS kod kutilmoqda'),
+        (ST_SUBMITTING, 'Kod tasdiqlanmoqda'),
+        (ST_DONE,       'Muvaffaqiyatli'),
+        (ST_FAILED,     'Xato'),
+    ]
+
+    status     = models.CharField(max_length=20, choices=STATUS_CHOICES, default=ST_STARTED, db_index=True)
+    otp_code   = models.CharField(max_length=10, blank=True)
+    error      = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'DMED Login urinishi'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"DMED Login #{self.pk} — {self.get_status_display()}"
+
+
 class DMEDSession(models.Model):
     """
     Playwright storage_state saqlash.
