@@ -13,6 +13,7 @@ import logging
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING
 
+from asgiref.sync import sync_to_async
 from django.conf import settings
 
 if TYPE_CHECKING:
@@ -62,7 +63,7 @@ async def _select_role(page: Page, role_name: str) -> bool:
 async def _load_saved_state(context: BrowserContext) -> bool:
     """DB dan saqlangan session state ni contextga yuklaydi."""
     from .models import DMEDSession
-    record = DMEDSession.get_latest()
+    record = await sync_to_async(DMEDSession.get_latest)()
     if not record or not record.storage_state_json or not record.is_valid:
         return False
     try:
@@ -143,7 +144,9 @@ async def dmed_session(role: str = ''):
         page: Page = await context.new_page()
 
         if not await _check_session(page):
-            DMEDSession.objects.filter(pk__gt=0).update(is_valid=False)
+            await sync_to_async(
+                lambda: DMEDSession.objects.filter(pk__gt=0).update(is_valid=False)
+            )()
             await browser.close()
             await _notify_session_expired()
             raise RuntimeError(
