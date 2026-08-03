@@ -9,6 +9,7 @@ from asgiref.sync import sync_to_async
 
 from ..models import DMEDSyncRecord
 from ..browser import dmed_session
+from ..login_task import dmed_web_login_task  # noqa: F401 — Celery autodiscovery uchun
 
 logger = logging.getLogger('dmed_sync')
 
