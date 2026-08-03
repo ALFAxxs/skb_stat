@@ -31,7 +31,14 @@ async def sync_patient(page: Page, patient) -> str:
         wait_until='domcontentloaded',
         timeout=30_000,
     )
-    await page.wait_for_timeout(1000)
+    await page.wait_for_timeout(800)
+
+    # Redirect tekshiruvi (session tugagan bo'lishi mumkin)
+    if '/auth/' in page.url:
+        raise RuntimeError(
+            f"Bemor #{patient.pk}: /appointments/create ga o'tishda redirect "
+            f"({page.url}). Session muddati tugagan."
+        )
 
     # ── 2. JSHSHIR kiritish, qidirish, natijani kutish ────────────────────
     await fill_jshshir_and_search(page, jshshir, patient.pk)

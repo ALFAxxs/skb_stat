@@ -42,20 +42,48 @@ async def _check_session(page: Page) -> bool:
 async def _select_role(page: Page, role_name: str) -> bool:
     """
     /auth/role-selection sahifasida kerakli rolni tanlaydi.
-    Karta matni bo'yicha qidiradi (masalan: 'Menejer', 'Laborant').
+    Topilmasa — birinchi mavjud karta bosiladi (fallback).
     """
     try:
+        # Agar allaqachon dashboard da bo'lsak — rol tanlash shart emas
+        if '/auth/' not in page.url and '/auth/role-selection' not in page.url:
+            logger.info(f'Rol tanlash kerak emas — URL: {page.url}')
+            return True
+
         if '/auth/role-selection' not in page.url:
             await page.goto(DMED_URL + '/auth/role-selection',
                             wait_until='domcontentloaded', timeout=15_000)
-            await page.wait_for_timeout(800)
-        card = page.locator(f'text={role_name}').first
-        await card.wait_for(state='visible', timeout=10_000)
-        await card.click()
-        await page.wait_for_load_state('domcontentloaded', timeout=15_000)
-        await page.wait_for_timeout(1000)
-        logger.info(f'DMED rol tanlandi: {role_name} | URL: {page.url}')
-        return True
+
+        # Vue.js render bo'lishini kutish
+        await page.wait_for_timeout(2500)
+
+        # 1. Aniq nom bo'yicha qidirish
+        try:
+            card = page.locator(f'.el-card:has-text("{role_name}"), text={role_name}').first
+            await card.wait_for(state='visible', timeout=3_000)
+            await card.click()
+            await page.wait_for_load_state('domcontentloaded', timeout=12_000)
+            await page.wait_for_timeout(1000)
+            logger.info(f'DMED rol tanlandi: {role_name} | URL: {page.url}')
+            return True
+        except Exception:
+            pass
+
+        # 2. Fallback: birinchi ko'rinadigan rol kartasini bosish
+        try:
+            first_card = page.locator('.el-card, [class*="role"], [class*="user-role"]').first
+            await first_card.wait_for(state='visible', timeout=3_000)
+            card_text = (await first_card.inner_text()).strip()[:40]
+            await first_card.click()
+            await page.wait_for_load_state('domcontentloaded', timeout=12_000)
+            await page.wait_for_timeout(1000)
+            logger.info(f'DMED fallback rol tanlandi: "{card_text}" | URL: {page.url}')
+            return True
+        except Exception:
+            pass
+
+        logger.warning(f'Rol tanlab bo\'lmadi: {role_name}')
+        return False
     except Exception as exc:
         logger.error(f'Rol tanlab bo\'lmadi ({role_name}): {exc}')
         return False

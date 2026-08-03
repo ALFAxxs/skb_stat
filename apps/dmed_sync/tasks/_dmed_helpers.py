@@ -1,5 +1,6 @@
 """
-DMED Playwright yordamchi funksiyalar — patient.py va visit.py uchun umumiy.
+DMED Playwright yordamchi funksiyalar.
+Barcha DOM interaksiyalar JS orqali — visibility tekshiruvi yo'q.
 """
 import json as _json
 import logging
@@ -11,106 +12,110 @@ logger = logging.getLogger('dmed_sync')
 JSHSHIR_MASK_SELECTOR = 'input[data-maska="##############"]'
 
 
-async def _activate_hidden_panel(page: Page):
-    """
-    Hidden JSHSHIR input ning parent tab/pane ni topib aktive qiladi.
-    Agar tab topilmasa, element ni to'g'ridan ko'rinadigan qiladi.
-    """
-    await page.evaluate(r"""
-        (function() {
-            const inp = document.querySelector('input[data-maska="##############"]');
-            if (!inp) return;
-
-            // 1. Radio yoki button topib JSHSHIR ni tanlaymiz
-            const allInputs = document.querySelectorAll('input[type="radio"], button, .el-tabs__item, .el-radio__label');
-            for (const el of allInputs) {
-                const text = (el.textContent || el.value || '').toLowerCase();
-                if (text.includes('jshshir') || text.includes('pinfl') || text.includes('hujjat')) {
-                    el.click();
-                    break;
-                }
-            }
-
-            // 2. Parent tab-pane ni topib, mos tab header ni bosamiz
-            let el = inp.parentElement;
-            while (el && el !== document.body) {
-                if (el.classList.contains('el-tab-pane')) {
-                    const paneId = el.id;
-                    if (paneId) {
-                        const tabName = paneId.replace('pane-', '');
-                        const tabHeader =
-                            document.querySelector('[aria-controls="' + paneId + '"]') ||
-                            document.getElementById('tab-' + tabName);
-                        if (tabHeader && !tabHeader.classList.contains('is-active')) {
-                            tabHeader.click();
-                            return;
-                        }
-                    }
-                    // Fallback: to'g'ridan ko'rinadigan qilamiz
-                    el.style.display = 'block';
-                    el.style.visibility = 'visible';
-                    return;
-                }
-                el = el.parentElement;
-            }
-        })()
-    """)
-    await page.wait_for_timeout(600)
-
-
 async def fill_jshshir_and_search(page: Page, jshshir: str, patient_pk: int):
     """
     JSHSHIR kiritib qidiruv tugmasini bosadi.
-    Hidden bo'lsa JS yordamida ishlatadi.
-    Topilmasa ValueError ko'taradi.
+    Hammasi JS orqali — hidden/visible farqi yo'q.
     """
-    jshshir_input = page.locator(JSHSHIR_MASK_SELECTOR).first
+    await page.wait_for_timeout(1000)
 
-    # 1. Elementni kutish (hidden bo'lsa ham attached)
-    await jshshir_input.wait_for(state='attached', timeout=12_000)
+    # Sahifa to'g'ri ekanini tekshirish
+    current_url = page.url
+    if 'role-selection' in current_url or '/auth/login' in current_url:
+        raise RuntimeError(
+            f"Bemor #{patient_pk}: to'g'ri sahifaga o'ta olmadi. "
+            f"URL: {current_url}. DMED session muddati tugagan bo'lishi mumkin."
+        )
 
-    # 2. Panel/tabni aktivlashtirish
-    await _activate_hidden_panel(page)
+    # JSHSHIR input mavjudligini tekshirish
+    inp_exists = await page.evaluate(
+        f"!!document.querySelector({_json.dumps(JSHSHIR_MASK_SELECTOR)})"
+    )
+    if not inp_exists:
+        raise ValueError(
+            f"Bemor #{patient_pk}: JSHSHIR input topilmadi. URL: {current_url}"
+        )
 
-    # 3. Visible bo'lishini kutish (5s), bo'lmasa JS fallback
-    try:
-        await jshshir_input.wait_for(state='visible', timeout=5_000)
-        await jshshir_input.click()
-        await page.keyboard.press('Control+a')
-        await page.keyboard.type(jshshir)
-    except Exception:
-        logger.warning(f'#{patient_pk}: JSHSHIR input hidden — JS bilan to\'ldiramiz')
-        await page.evaluate(f"""
-            (function() {{
-                const inp = document.querySelector({_json.dumps(JSHSHIR_MASK_SELECTOR)});
-                if (!inp) return;
-                const setter = Object.getOwnPropertyDescriptor(
-                    window.HTMLInputElement.prototype, 'value'
-                ).set;
-                setter.call(inp, {_json.dumps(jshshir)});
-                inp.dispatchEvent(new Event('input',  {{bubbles: true}}));
-                inp.dispatchEvent(new Event('change', {{bubbles: true}}));
-            }})();
-        """)
-    await page.wait_for_timeout(300)
+    # Tab/panel ochish + JSHSHIR kiritish — hammasi bitta JS da
+    await page.evaluate(f"""
+        (function() {{
+            const JSHSHIR = {_json.dumps(jshshir)};
+            const inp = document.querySelector({_json.dumps(JSHSHIR_MASK_SELECTOR)});
+            if (!inp) return;
 
-    # 4. Qidiruv tugmasi — visible yoki JS click
-    try:
-        search_btn = page.locator(
-            '.select-patient-form__search-btns .el-button--primary'
-        ).first
-        await search_btn.wait_for(state='visible', timeout=5_000)
-        await search_btn.click()
-    except Exception:
-        logger.warning(f'#{patient_pk}: search button hidden — JS click')
-        await page.evaluate("""
-            const btn = document.querySelector(
+            // 1. Radio/tab orqali JSHSHIR panelni ochishga urinish
+            const triggers = [
+                ...document.querySelectorAll(
+                    '.el-tabs__item, .el-radio__label, label, button'
+                )
+            ];
+            for (const t of triggers) {{
+                const txt = (t.textContent || '').toLowerCase().trim();
+                if (txt === 'jshshir' || txt === 'pinfl' || txt.includes('jshshir')) {{
+                    t.click();
+                    break;
+                }}
+            }}
+
+            // 2. Parent el-tab-pane ni topib header ni bosish
+            let el = inp.parentElement;
+            while (el && el !== document.body) {{
+                const isPane =
+                    el.classList.contains('el-tab-pane') ||
+                    el.getAttribute('role') === 'tabpanel';
+                if (isPane) {{
+                    const pId = el.id || '';
+                    if (pId) {{
+                        const hdr =
+                            document.querySelector('[aria-controls="' + pId + '"]') ||
+                            document.getElementById('tab-' + pId.replace('pane-', ''));
+                        if (hdr) hdr.click();
+                    }}
+                    // Har qanday holatda to'g'ridan ko'rinadigan qilish
+                    el.style.cssText += ';display:block!important;visibility:visible!important;';
+                    break;
+                }}
+                el = el.parentElement;
+            }}
+
+            // 3. Vue reactive value setter
+            const setter = Object.getOwnPropertyDescriptor(
+                window.HTMLInputElement.prototype, 'value'
+            ).set;
+            setter.call(inp, JSHSHIR);
+            inp.dispatchEvent(new Event('input',  {{bubbles: true}}));
+            inp.dispatchEvent(new Event('change', {{bubbles: true}}));
+        }})();
+    """)
+    await page.wait_for_timeout(600)
+
+    # Search tugmasini JS orqali bosish
+    clicked = await page.evaluate("""
+        (function() {
+            // Selektor 1: standart joy
+            let btn = document.querySelector(
                 '.select-patient-form__search-btns .el-button--primary'
             );
-            if (btn) btn.click();
-        """)
+            if (btn) { btn.click(); return true; }
 
-    # 5. Bemor ma'lumotlari chiqishini kutish
+            // Selektor 2: input ga yaqin primary button
+            const inp = document.querySelector('input[data-maska="##############"]');
+            if (!inp) return false;
+            let p = inp.parentElement;
+            while (p && p !== document.body) {
+                btn = p.querySelector('button.el-button--primary');
+                if (btn) { btn.click(); return true; }
+                p = p.parentElement;
+            }
+            return false;
+        })()
+    """)
+    if not clicked:
+        raise ValueError(
+            f"Bemor #{patient_pk}: JSHSHIR search tugmasi topilmadi (URL: {page.url})"
+        )
+
+    # Qidiruv natijasini kutish
     try:
         await page.wait_for_function(
             """() => {
@@ -119,9 +124,17 @@ async def fill_jshshir_and_search(page: Page, jshshir: str, patient_pk: int):
                 );
                 return btn && !btn.disabled && btn.textContent.trim() !== '-';
             }""",
-            timeout=15_000,
+            timeout=20_000,
         )
     except Exception:
+        # Screenshot saqlash — debugging uchun
+        try:
+            import tempfile, os
+            path = os.path.join(tempfile.gettempdir(), f'dmed_notfound_{patient_pk}.png')
+            await page.screenshot(path=path)
+            logger.warning(f'Screenshot: {path}')
+        except Exception:
+            pass
         raise ValueError(
             f"Bemor #{patient_pk} DMED'da topilmadi (JSHSHIR: {jshshir})"
         )
