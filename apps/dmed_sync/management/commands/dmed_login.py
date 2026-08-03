@@ -81,12 +81,11 @@ class Command(BaseCommand):
     async def _run(self, pinfl: str, by_user: str):
         async with async_playwright() as pw:
             browser = await pw.chromium.launch(
-                headless=False,
-                slow_mo=250,
-                args=['--start-maximized'],
+                headless=True,
+                slow_mo=200,
             )
             context = await browser.new_context(
-                viewport=None,
+                viewport={'width': 1280, 'height': 900},
                 locale='ru-RU',
                 user_agent=(
                     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
