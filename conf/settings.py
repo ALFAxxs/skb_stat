@@ -160,9 +160,6 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'conf.wsgi.application'
-
-
 # Database — .env da DB_ENGINE o'rnatilmasa SQLite (lokal dev), o'rnatilsa PostgreSQL (server)
 _db_engine = os.getenv('DB_ENGINE', 'django.db.backends.sqlite3')
 
