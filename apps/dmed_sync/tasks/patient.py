@@ -6,6 +6,8 @@ tibbiy karta raqamini (DMED ID) qaytaradi.
 import logging
 from playwright.async_api import Page
 
+from ._dmed_helpers import fill_jshshir_and_search
+
 logger = logging.getLogger('dmed_sync')
 
 
@@ -18,12 +20,12 @@ async def sync_patient(page: Page, patient) -> str:
     DMED_URL = getattr(settings, 'DMED_URL', '') or 'https://mis.dmed.uz'
 
     jshshir = (patient.JSHSHIR or '').strip()
-    if not jshshir or len(jshshir) != 14:
+    if not jshshir or len(jshshir) != 14 or not jshshir.isdigit():
         raise ValueError(
             f"Bemor #{patient.pk} da to'g'ri JSHSHIR yo'q: '{jshshir}'"
         )
 
-    # ── 1. Qabul yaratish sahifasini ochish ───────────────────────────────
+    # ── 1. Sahifani ochish ─────────────────────────────────────────────────
     await page.goto(
         f"{DMED_URL}/appointments/create",
         wait_until='domcontentloaded',
@@ -31,38 +33,10 @@ async def sync_patient(page: Page, patient) -> str:
     )
     await page.wait_for_timeout(1000)
 
-    # "Hujjatlar bo'yicha qidirish" tab default active,
-    # "Hujjat turi" = JSHSHIR default tanlangan
-    jshshir_input = page.locator('input[data-maska="##############"]').first
-    await jshshir_input.wait_for(state='visible', timeout=10_000)
-    await jshshir_input.click()
-    await page.keyboard.press('Control+a')
-    await page.keyboard.type(jshshir)
+    # ── 2. JSHSHIR kiritish, qidirish, natijani kutish ────────────────────
+    await fill_jshshir_and_search(page, jshshir, patient.pk)
 
-    # ── 2. "Topish" tugmasi ───────────────────────────────────────────────
-    search_btn = page.locator(
-        '.select-patient-form__search-btns .el-button--primary'
-    ).first
-    await search_btn.click()
-
-    # ── 3. Bemor ma'lumotlari chiqishini kutish ───────────────────────────
-    # Tibbiy karta raqami linki 'disabled' holdan 'enabled' ga o'tadi
-    try:
-        await page.wait_for_function(
-            """() => {
-                const btn = document.querySelector(
-                    '.selected-patient-info .el-button.is-link'
-                );
-                return btn && !btn.disabled && btn.textContent.trim() !== '-';
-            }""",
-            timeout=15_000,
-        )
-    except Exception:
-        raise ValueError(
-            f"Bemor #{patient.pk} DMED'da topilmadi (JSHSHIR: {jshshir})"
-        )
-
-    # ── 4. Tibbiy karta raqamini olish (DMED ID) ─────────────────────────
+    # ── 3. Tibbiy karta raqamini olish (DMED ID) ─────────────────────────
     card_btn = page.locator('.selected-patient-info .el-button.is-link')
     dmed_id = (await card_btn.inner_text()).strip()
 

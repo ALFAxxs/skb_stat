@@ -19,6 +19,8 @@ import logging
 from asgiref.sync import sync_to_async
 from playwright.async_api import Page
 
+from ._dmed_helpers import fill_jshshir_and_search
+
 logger = logging.getLogger('dmed_sync')
 
 DEFAULT_CATEGORY_MAP = {
@@ -121,31 +123,8 @@ async def sync_visit(page: Page, patient) -> str:
     )
     await page.wait_for_timeout(1000)
 
-    # ── 2. JSHSHIR kiritish va qidirish ───────────────────────────────────
-    jshshir_input = page.locator('input[data-maska="##############"]').first
-    await jshshir_input.wait_for(state='visible', timeout=12_000)
-    await jshshir_input.click()
-    await page.keyboard.press('Control+a')
-    await page.keyboard.type(jshshir)
-    await page.wait_for_timeout(300)
-
-    search_btn = page.locator(
-        '.select-patient-form__search-btns .el-button--primary'
-    ).first
-    await search_btn.click()
-
-    try:
-        await page.wait_for_function(
-            """() => {
-                const btn = document.querySelector(
-                    '.selected-patient-info .el-button.is-link'
-                );
-                return btn && !btn.disabled && btn.textContent.trim() !== '-';
-            }""",
-            timeout=15_000,
-        )
-    except Exception:
-        raise ValueError(f"Bemor #{patient.pk} DMED'da topilmadi (JSHSHIR: {jshshir})")
+    # ── 2. JSHSHIR kiritish, qidirish, natijani kutish ────────────────────
+    await fill_jshshir_and_search(page, jshshir, patient.pk)
 
     # ── 3. Narx toifasini tanlash ─────────────────────────────────────────
     await _select_price_category(page)

@@ -47,12 +47,13 @@ async def _select_role(page: Page, role_name: str) -> bool:
     try:
         if '/auth/role-selection' not in page.url:
             await page.goto(DMED_URL + '/auth/role-selection',
-                            wait_until='networkidle', timeout=15_000)
-        # Karta matni bo'yicha topamiz — Element UI card ichidagi bold sarlavha
+                            wait_until='domcontentloaded', timeout=15_000)
+            await page.wait_for_timeout(800)
         card = page.locator(f'text={role_name}').first
         await card.wait_for(state='visible', timeout=10_000)
         await card.click()
-        await page.wait_for_load_state('networkidle', timeout=15_000)
+        await page.wait_for_load_state('domcontentloaded', timeout=15_000)
+        await page.wait_for_timeout(1000)
         logger.info(f'DMED rol tanlandi: {role_name} | URL: {page.url}')
         return True
     except Exception as exc:
