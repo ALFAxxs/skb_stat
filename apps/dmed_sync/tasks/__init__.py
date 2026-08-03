@@ -93,6 +93,18 @@ async def _run_one(record: DMEDSyncRecord):
     except Exception as exc:
         err = traceback.format_exc()
         logger.error(f"DMED sync xato [{record}]: {err}")
+
+        # Session tugagan bo'lsa — DB da invalid belgilash va sync to'xtatish
+        exc_str = str(exc)
+        if '/auth/login' in exc_str or 'Session muddati tugagan' in exc_str:
+            def _invalidate():
+                from django.db import close_old_connections
+                close_old_connections()
+                from ..models import DMEDSession
+                DMEDSession.objects.filter(pk__gt=0).update(is_valid=False)
+                logger.warning('DMED session muddati tugadi — DB da invalid belgilandi')
+            await sync_to_async(_invalidate)()
+
         await sync_to_async(record.mark_failed)(str(exc)[:500])
 
 

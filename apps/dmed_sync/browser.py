@@ -26,12 +26,14 @@ DMED_URL = 'https://mis.dmed.uz'
 
 async def _check_session(page: Page) -> bool:
     """
-    Saqlangan cookies bilan mis.dmed.uz ochib, session aktiv ekanini tekshiradi.
-    Login sahifasiga qaytib qolsa — session tugagan.
+    Himoyalangan sahifaga o'tib session aktiv ekanini tekshiradi.
+    Login sahifasiga redirect bo'lsa — session tugagan.
     """
     try:
-        await page.goto(DMED_URL, wait_until='domcontentloaded', timeout=15_000)
-        if '/auth/login' in page.url:
+        # Asosiy sahifa o'rniga appointments/create — to'liq session tekshiruvi
+        await page.goto(f'{DMED_URL}/appointments/create',
+                        wait_until='domcontentloaded', timeout=20_000)
+        if '/auth/login' in page.url or '/auth/role-selection' == page.url:
             return False
         return True
     except Exception as exc:
