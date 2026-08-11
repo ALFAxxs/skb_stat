@@ -114,6 +114,12 @@ def run_pending():
     if cache.get('dmed_sync_paused'):
         return
 
+    # Session yo'q yoki muddati tugagan bo'lsa — Playwright ochmaymiz
+    from ..models import DMEDSession
+    session = DMEDSession.get_latest()
+    if not session or not session.is_valid:
+        return
+
     qs = list(
         DMEDSyncRecord.objects.filter(
             status__in=[DMEDSyncRecord.STATUS_PENDING, DMEDSyncRecord.STATUS_FAILED]

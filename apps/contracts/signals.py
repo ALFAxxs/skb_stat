@@ -2,7 +2,6 @@
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.core.files.base import ContentFile
 from apps.patients.models import PatientCard
 
 
@@ -19,7 +18,6 @@ def create_contract_on_admission(sender, instance, created, **kwargs):
         return
 
     from apps.contracts.models import Contract
-    from apps.contracts.utils import generate_contract_pdf
 
     # Shartnoma raqami — qo'lda kiritilgan yoki avtomatik
     year = instance.admission_date.year if instance.admission_date else 2026
@@ -54,12 +52,11 @@ def create_contract_on_admission(sender, instance, created, **kwargs):
         status='active',
     )
 
-    # PDF generatsiya va saqlash
+    # PDF generatsiyani Celery orqali fon jarayonida bajaramiz
+    # (sinxron ishlasa gunicorn worker 120s timeout ga tushib qoladi)
     try:
-        pdf_bytes = generate_contract_pdf(contract)
-        filename = f"contract_{contract_number}.pdf"
-        contract.pdf_file.save(filename, ContentFile(pdf_bytes), save=True)
+        from apps.contracts.tasks import generate_contract_pdf_task
+        generate_contract_pdf_task.delay(contract.pk)
     except Exception as e:
-        # PDF generatsiya xatosi bo'lsa ham shartnoma yozuvi saqlanadi
         import logging
-        logging.getLogger(__name__).error(f"Contract PDF error: {e}")
+        logging.getLogger(__name__).error(f"Contract PDF task yuborishda xato: {e}")
