@@ -111,6 +111,25 @@ def _build_workbook(qs, qs_stats):
         top=Side(style='thin'), bottom=Side(style='thin')
     )
 
+    # Katak-katak qayta yaratilmasin uchun oldindan tayyorlangan style keshi —
+    # minglab qatorda har bir katakka yangi Alignment/Font/PatternFill obyekti
+    # yaratish (asosiy sekinlik sababi) o'rniga bir marta yaratib qayta ishlatamiz.
+    align_wrap        = Alignment(vertical='center', wrap_text=True)
+    align_center_wrap = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    align_left_wrap   = Alignment(horizontal='left',   vertical='center', wrap_text=True)
+    align_right_wrap  = Alignment(horizontal='right',  vertical='center', wrap_text=True)
+    align_right       = Alignment(horizontal='right',  vertical='center')
+    align_left        = Alignment(horizontal='left',   vertical='center')
+    align_center      = Alignment(horizontal='center', vertical='center')
+    font9             = Font(size=9)
+    font9_bold        = Font(size=9, bold=True)
+
+    fill_green  = PatternFill("solid", fgColor="C6EFCE")
+    fill_red    = PatternFill("solid", fgColor="FFC7CE")
+    fill_yellow = PatternFill("solid", fgColor="FFEB9C")
+    fill_zebra  = PatternFill("solid", fgColor="F8F9FA")
+    fill_lblue  = PatternFill("solid", fgColor="D6E4F0")
+
     # ==================== 1-SAHIFA: BEMORLAR RO'YXATI ====================
     ws = wb.active
     ws.title = "Bemorlar ro'yxati"
@@ -138,6 +157,14 @@ def _build_workbook(qs, qs_stats):
     _patient_ids = [p.pk for p in qs]  # qs keshini to'ldiradi
     from .billing_utils import build_payment_lookup, STATUS_COLOR, payment_summary_from_lookup
     _pay = build_payment_lookup(_patient_ids)
+
+    status_fill_default = PatternFill("solid", fgColor="F2F3F4")
+    status_fill_cache = {
+        code: PatternFill("solid", fgColor=hexcolor)
+        for code, hexcolor in STATUS_COLOR.items()
+    }
+    def status_fill(code):
+        return status_fill_cache.get(code, status_fill_default)
 
     for row_num, patient in enumerate(qs, 2):
         # Jarrohlik amaliyotlarini yig'ish
@@ -192,21 +219,21 @@ def _build_workbook(qs, qs_stats):
 
         for col_num, value in enumerate(row_data, 1):
             cell = ws.cell(row=row_num, column=col_num, value=value)
-            cell.alignment = Alignment(vertical='center', wrap_text=True)
+            cell.alignment = align_wrap
             cell.border = border
 
             # Yakun bo'yicha rang
             if col_num == 20:
                 if value == 'Chiqarildi':
-                    cell.fill = PatternFill("solid", fgColor="C6EFCE")
+                    cell.fill = fill_green
                 elif value == 'Vafot etdi':
-                    cell.fill = PatternFill("solid", fgColor="FFC7CE")
+                    cell.fill = fill_red
                 elif value == "Boshqa shifoxonaga o'tkazildi":
-                    cell.fill = PatternFill("solid", fgColor="FFEB9C")
+                    cell.fill = fill_yellow
             # To'lov holati bo'yicha rang (col 27)
             if col_num == 27:
                 _sc = _pay.get(patient.pk, {}).get('status_code', 'none')
-                cell.fill = PatternFill("solid", fgColor=STATUS_COLOR.get(_sc, 'F2F3F4'))
+                cell.fill = status_fill(_sc)
             if col_num in (28, 31) and isinstance(value, (int, float)) and value:
                 cell.number_format = '#,##0'
 
@@ -323,10 +350,10 @@ def _build_workbook(qs, qs_stats):
             ]
             for col_num, value in enumerate(op_data, 1):
                 cell = ws3.cell(row=op_row, column=col_num, value=value)
-                cell.alignment = Alignment(vertical='center', wrap_text=True)
+                cell.alignment = align_wrap
                 cell.border = border
                 if col_num == 8:
-                    cell.fill = PatternFill("solid", fgColor=STATUS_COLOR.get(_pi3.get('status_code', 'none'), 'F2F3F4'))
+                    cell.fill = status_fill(_pi3.get('status_code', 'none'))
                 if col_num in (9, 12) and isinstance(value, (int, float)) and value:
                     cell.number_format = '#,##0'
             op_row += 1
@@ -459,13 +486,12 @@ def _build_workbook(qs, qs_stats):
             for col in range(1, NCOLS + 1):
                 c = ws4.cell(row=r4, column=col)
                 c.border = border
-                c.font = Font(size=9)
-                c.alignment = Alignment(
-                    horizontal='center' if col in (1,3,4,13,14,15,16,17,18) else 'left',
-                    vertical='center', wrap_text=True
+                c.font = font9
+                c.alignment = (
+                    align_center_wrap if col in (1,3,4,13,14,15,16,17,18) else align_left_wrap
                 )
                 if ri % 2 == 0:
-                    c.fill = PatternFill('solid', fgColor='F8F9FA')
+                    c.fill = fill_zebra
 
             # Birinchi qatorda bemor ma'lumotlari
             if ri == 0:
@@ -495,7 +521,7 @@ def _build_workbook(qs, qs_stats):
                 _pi = _pay.get(patient.pk, {'status': "To'lanmagan", 'status_code': 'none', 'paid': 0.0})
                 _c23 = ws4.cell(row=r4, column=23)
                 _c23.value = _pi['status']
-                _c23.fill = PatternFill('solid', fgColor=STATUS_COLOR.get(_pi['status_code'], 'F2F3F4'))
+                _c23.fill = status_fill(_pi['status_code'])
                 _c24 = ws4.cell(row=r4, column=24)
                 if _pi['paid']:
                     _c24.value = _pi['paid']
@@ -535,20 +561,20 @@ def _build_workbook(qs, qs_stats):
         ws4.merge_cells(start_row=r4, start_column=1, end_row=r4, end_column=18)
         cj = ws4.cell(row=r4, column=1)
         cj.value = "Bemor jami: {:,.0f} so'm".format(bem_jami)
-        cj.font = Font(size=9, bold=True)
-        cj.fill = PatternFill('solid', fgColor='D6E4F0')
-        cj.alignment = Alignment(horizontal='center', vertical='center')
+        cj.font = font9_bold
+        cj.fill = fill_lblue
+        cj.alignment = align_center
         cj.border = border
 
-        ws4.cell(row=r4, column=19, value='Xizm:').font = Font(size=9, bold=True)
+        ws4.cell(row=r4, column=19, value='Xizm:').font = font9_bold
         c20j = ws4.cell(row=r4, column=20, value=svc_total)
-        c20j.font = Font(size=9, bold=True)
-        c20j.fill = PatternFill('solid', fgColor='D6E4F0')
+        c20j.font = font9_bold
+        c20j.fill = fill_lblue
         c20j.number_format = '#,##0'
-        ws4.cell(row=r4, column=21, value='Dori:').font = Font(size=9, bold=True)
+        ws4.cell(row=r4, column=21, value='Dori:').font = font9_bold
         c22j = ws4.cell(row=r4, column=22, value=med_total_)
-        c22j.font = Font(size=9, bold=True)
-        c22j.fill = PatternFill('solid', fgColor='D6E4F0')
+        c22j.font = font9_bold
+        c22j.fill = fill_lblue
         c22j.number_format = '#,##0'
         ws4.row_dimensions[r4].height = 18
         r4 += 1
@@ -694,16 +720,15 @@ def _build_workbook(qs, qs_stats):
         for col, val in enumerate(row_data, 1):
             c = ws5.cell(row=r5, column=col, value=val)
             c.border = border
-            c.font = Font(size=9)
-            c.alignment = Alignment(
-                horizontal='center' if col in (1,3,4,13,14,15) else 'left',
-                vertical='center', wrap_text=True
+            c.font = font9
+            c.alignment = (
+                align_center_wrap if col in (1,3,4,13,14,15) else align_left_wrap
             )
             if col > len(FIXED) and col < _pay_status_col: c.number_format = '#,##0'
-            if num % 2 == 0: c.fill = PatternFill('solid', fgColor='F8F9FA')
+            if num % 2 == 0: c.fill = fill_zebra
             # To'lov holati rang
             if col == _pay_status_col:
-                c.fill = PatternFill('solid', fgColor=STATUS_COLOR.get(_pi5['status_code'], 'F2F3F4'))
+                c.fill = status_fill(_pi5['status_code'])
             if col in _num_cols_end and isinstance(val, (int, float)) and val:
                 c.number_format = '#,##0'
         ws5.row_dimensions[r5].height = 18
@@ -839,19 +864,16 @@ def _build_workbook(qs, qs_stats):
 
         for col, val in enumerate(row6, 1):
             c = ws6.cell(row=r6, column=col, value=val)
-            c.alignment = Alignment(
-                horizontal='right' if col in (5, 8, 9, 10) else 'left',
-                vertical='center', wrap_text=True
-            )
+            c.alignment = align_right_wrap if col in (5, 8, 9, 10) else align_left_wrap
             c.border = border
             if col in (8, 9, 10) and isinstance(val, (int, float)) and val:
                 c.number_format = '#,##0'
             if col == 9 and isinstance(val, (int, float)) and val:
-                c.fill = PatternFill('solid', fgColor='C6EFCE')
+                c.fill = fill_green
             if col == 10 and isinstance(val, (int, float)) and val:
-                c.fill = PatternFill('solid', fgColor='FFC7CE')
+                c.fill = fill_red
             if num % 2 == 0 and col < 6:
-                c.fill = PatternFill('solid', fgColor='F8F9FA')
+                c.fill = fill_zebra
 
         ws6.row_dimensions[r6].height = 18
         r6 += 1
@@ -942,10 +964,10 @@ def _build_workbook(qs, qs_stats):
         med_grand += float(m['total_sum'] or 0)
         for col, val in enumerate(row_data, 1):
             c = ws_med.cell(row=ri+2, column=col, value=val)
-            c.alignment = Alignment(horizontal='center' if col in (1,3,4,5) else ('right' if col==6 else 'left'), vertical='center')
+            c.alignment = align_center if col in (1,3,4,5) else (align_right if col==6 else align_left)
             c.border = border
             if col == 6: c.number_format = '#,##0'
-            if ri % 2 == 0: c.fill = PatternFill('solid', fgColor='F8F9FA')
+            if ri % 2 == 0: c.fill = fill_zebra
         ws_med.row_dimensions[ri+2].height = 18
 
     # Jami qator

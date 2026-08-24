@@ -25,9 +25,15 @@
                 data-status-base="{% url 'export_task_status' 'PLACEHOLDER' %}"
                 data-download-base="{% url 'export_file_download' 'PLACEHOLDER' %}">📥 Excel</button>
         {% elif active_tab == 'operations' %}
-        <a href="{% url 'export_operation_excel' %}?{{ current_filters }}" class="btn btn-success btn-sm">📥 Excel</a>
+        <button type="button" id="exportOperationsBtn" class="btn btn-success btn-sm"
+                data-start-url="{% url 'export_operations_start' %}?{{ current_filters }}"
+                data-status-base="{% url 'export_task_status' 'PLACEHOLDER' %}"
+                data-download-base="{% url 'export_file_download' 'PLACEHOLDER' %}">📥 Excel</button>
         {% elif active_tab == 'opservices' %}
-        <a href="{% url 'export_operation_service_excel' %}?{{ current_filters }}" class="btn btn-success btn-sm">📥 Excel</a>
+        <button type="button" id="exportOpServicesBtn" class="btn btn-success btn-sm"
+                data-start-url="{% url 'export_operation_services_start' %}?{{ current_filters }}"
+                data-status-base="{% url 'export_task_status' 'PLACEHOLDER' %}"
+                data-download-base="{% url 'export_file_download' 'PLACEHOLDER' %}">📥 Excel</button>
         {% endif %}
     </div>
 </div>
@@ -585,6 +591,8 @@ new Chart(document.getElementById('opxChart'), {
     }
     setupExportBtn('exportServicesBtn');
     setupExportBtn('exportMedicineBtn');
+    setupExportBtn('exportOperationsBtn');
+    setupExportBtn('exportOpServicesBtn');
 })();
 </script>
 {% endblock %}
