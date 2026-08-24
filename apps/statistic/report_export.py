@@ -11,7 +11,7 @@ from dateutil.relativedelta import relativedelta
 
 from apps.patients.models import PatientCard
 from .exports import get_filtered_queryset
-from .billing_utils import METHOD_DISPLAY
+from .billing_utils import METHOD_DISPLAY, STATUS_COLOR
 
 
 # ==================== STILLAR ====================
@@ -34,6 +34,19 @@ def _styles():
         'C': Alignment(horizontal='center', vertical='center', wrap_text=True),
         'L': Alignment(horizontal='left',   vertical='center', wrap_text=True),
         'R': Alignment(horizontal='right',  vertical='center'),
+        # Katak-katak qayta yaratilmasin uchun oldindan tayyorlangan keshlar —
+        # minglab qatorli sheetlarda (statsionar/ambulator bemorlar) har bir
+        # katakka yangi Alignment/PatternFill yaratish asosiy sekinlik sababi edi.
+        'ALIGN': {
+            'left':   Alignment(horizontal='left',   vertical='center', wrap_text=True),
+            'center': Alignment(horizontal='center', vertical='center', wrap_text=True),
+            'right':  Alignment(horizontal='right',  vertical='center', wrap_text=True),
+        },
+        'STATUS_FILL': {
+            code: PatternFill('solid', fgColor=hexcolor)
+            for code, hexcolor in STATUS_COLOR.items()
+        },
+        'STATUS_FILL_DEFAULT': PatternFill('solid', fgColor='F2F3F4'),
     }
 
 
@@ -72,11 +85,13 @@ def _col_hdrs(ws, row, headers, widths, S, color='1F4E79'):
 
 def _row(ws, r, vals, S, aligns=None, nums=None, even=True):
     fill = S['GRAY'] if even else S['WHITE']
+    align_map = S['ALIGN']
+    align_default = align_map['left']
     for ci, val in enumerate(vals, 1):
         c = ws.cell(row=r, column=ci, value=val)
         c.font = S['NORM']; c.border = S['BRD']; c.fill = fill
         al = aligns[ci-1] if aligns and ci <= len(aligns) else 'left'
-        c.alignment = Alignment(horizontal=al, vertical='center', wrap_text=True)
+        c.alignment = align_map.get(al, align_default)
         if nums and ci in nums:
             c.number_format = '#,##0'
     ws.row_dimensions[r].height = 17
@@ -84,13 +99,14 @@ def _row(ws, r, vals, S, aligns=None, nums=None, even=True):
 
 
 def _total(ws, r, vals, S, color='1F4E79'):
+    fill = PatternFill('solid', fgColor=color)
+    align_r = S['R']
+    align_l = Alignment(horizontal='left', vertical='center')
     for ci, val in enumerate(vals, 1):
         c = ws.cell(row=r, column=ci, value=val)
-        c.fill = PatternFill('solid', fgColor=color)
+        c.fill = fill
         c.font = S['WF']; c.border = S['BRD']
-        c.alignment = Alignment(
-            horizontal='right' if isinstance(val,(int,float)) and val else 'left',
-            vertical='center')
+        c.alignment = align_r if isinstance(val,(int,float)) and val else align_l
         if isinstance(val,(int,float)) and val > 100:
             c.number_format = '#,##0'
     ws.row_dimensions[r].height = 22
@@ -127,8 +143,6 @@ def _workplace(patient):
 def _sheet_statsionar(wb, qs, S, filter_text, pay_lookup=None):
     """1-Sheet: Statsionar bemorlar ro'yxati"""
     from django.db.models import Count
-    from openpyxl.styles import PatternFill as _PF
-    from .billing_utils import STATUS_COLOR
     ws = wb.create_sheet("1. Statsionar bemorlar")
     ncols = 18
     r = _hdr(ws, 1, "STATSIONAR BEMORLAR RO'YXATI", ncols)
@@ -182,15 +196,13 @@ def _sheet_statsionar(wb, qs, S, filter_text, pay_lookup=None):
         start_row = r
         r = _row(ws, r, vals, S, aligns, nums={15, 18, 21}, even=(i%2==0))
         # To'lov holati rangi
-        ws.cell(row=start_row, column=17).fill = _PF('solid', fgColor=STATUS_COLOR.get(pi['status_code'], 'F2F3F4'))
+        ws.cell(row=start_row, column=17).fill = S['STATUS_FILL'].get(pi['status_code'], S['STATUS_FILL_DEFAULT'])
 
     _total(ws, r, [f'JAMI: {patients.count()} ta bemor'] + ['']*(ncols-1), S)
 
 
 def _sheet_ambulatory(wb, qs, S, filter_text, pay_lookup=None):
     """2-Sheet: Ambulator bemorlar ro'yxati"""
-    from openpyxl.styles import PatternFill as _PF
-    from .billing_utils import STATUS_COLOR
     ws = wb.create_sheet("2. Ambulator bemorlar")
     ncols = 14
     r = _hdr(ws, 1, "AMBULATOR BEMORLAR RO'YXATI", ncols, '145A32')
@@ -230,7 +242,7 @@ def _sheet_ambulatory(wb, qs, S, filter_text, pay_lookup=None):
         ]
         start_row = r
         r = _row(ws, r, vals, S, aligns, nums={14, 17}, even=(i%2==0))
-        ws.cell(row=start_row, column=13).fill = _PF('solid', fgColor=STATUS_COLOR.get(pi['status_code'], 'F2F3F4'))
+        ws.cell(row=start_row, column=13).fill = S['STATUS_FILL'].get(pi['status_code'], S['STATUS_FILL_DEFAULT'])
 
     _total(ws, r, [f'JAMI: {patients.count()} ta bemor'] + ['']*(ncols-1), S, '145A32')
 
